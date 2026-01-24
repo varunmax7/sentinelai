@@ -1891,14 +1891,26 @@ def alert_preferences():
 @app.route("/notifications")
 @login_required
 def notifications():
-    """Display all notifications for the current user"""
-    user_notifications = Notification.query.filter_by(
-        user_id=current_user.id
-    ).order_by(Notification.created_at.desc()).all()
+    """Display unread notifications for the current user (by default)"""
+    # Get query parameter to show all or only unread
+    show_all = request.args.get('show_all', 'false').lower() == 'true'
+    
+    if show_all:
+        # Show all notifications (read and unread)
+        user_notifications = Notification.query.filter_by(
+            user_id=current_user.id
+        ).order_by(Notification.created_at.desc()).all()
+    else:
+        # Show only unread notifications (default)
+        user_notifications = Notification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False
+        ).order_by(Notification.created_at.desc()).all()
     
     return render_template('notifications.html', 
                          title=translate('notifications'),
-                         notifications=user_notifications)
+                         notifications=user_notifications,
+                         show_all=show_all)
 
 @app.route("/notification/<int:notification_id>/read", methods=['POST'])
 @login_required
