@@ -69,26 +69,95 @@
     }
 
     .weather-legend {
-        background: rgba(0, 0, 0, 0.85);
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+        padding: 16px;
+        border-radius: 12px;
+        border: 1.5px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        max-width: 280px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .weather-legend h6 {
+        margin: 0 0 12px 0 !important;
+        color: #3b82f6;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-section {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legend-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .legend-section-title {
+        color: #60a5fa;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
     }
 
     .weather-legend-item {
         display: flex;
         align-items: center;
-        margin: 8px 0;
-        font-size: 12px;
+        margin: 6px 0;
+        font-size: 11.5px;
         color: #e5e7eb;
+        transition: all 0.3s ease;
+        padding: 4px 6px;
+        border-radius: 4px;
+    }
+
+    .weather-legend-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        padding-left: 8px;
     }
 
     .weather-legend-dot {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         margin-right: 8px;
         flex-shrink: 0;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease;
+    }
+
+    .weather-legend-item:hover .weather-legend-dot {
+        transform: scale(1.15);
+        box-shadow: 0 0 12px currentColor;
+    }
+
+    .legend-intensity-bar {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    .intensity-segment {
+        height: 4px;
+        width: 8px;
+        border-radius: 2px;
     }
 </style>
 {% endblock %}
@@ -325,56 +394,63 @@
         weatherLegend.onAdd = function() {
             const div = L.DomUtil.create('div', 'weather-legend');
             div.innerHTML = `
-                <h6 style="margin: 0 0 10px 0; color: #fff; font-weight: bold;">📊 Live Hazard Map</h6>
+                <h6>📊 LIVE HAZARD MAP</h6>
                 
-                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <strong style="color: #06b6d4; font-size: 11px;">INCIDENT HEATMAP</strong>
+                <div class="legend-section">
+                    <div class="legend-section-title">🔥 Incident Hotspots</div>
                     <div class="weather-legend-item">
-                        <div class="weather-legend-dot" style="background: #3b82f6;"></div>
-                        <span>Low Activity</span>
+                        <div class="legend-intensity-bar">
+                            <div class="intensity-segment" style="background: #3b82f6;"></div>
+                            <div class="intensity-segment" style="background: #06b6d4;"></div>
+                            <div class="intensity-segment" style="background: #eab308;"></div>
+                            <div class="intensity-segment" style="background: #f59e0b;"></div>
+                            <div class="intensity-segment" style="background: #ef4444;"></div>
+                        </div>
+                        <span>Heat Gradient</span>
                     </div>
-                    <div class="weather-legend-item">
-                        <div class="weather-legend-dot" style="background: #eab308;"></div>
-                        <span>Moderate Activity</span>
-                    </div>
-                    <div class="weather-legend-item">
-                        <div class="weather-legend-dot" style="background: #ef4444;"></div>
-                        <span>High Activity Hotspot</span>
+                    <div class="weather-legend-item" style="font-size: 10px; color: #9ca3af; margin-top: 4px;">
+                        ↳ User-reported disaster hotspots
                     </div>
                 </div>
                 
-                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <strong style="color: #f59e0b; font-size: 11px;">WEATHER DATA</strong>
+                <div class="legend-section">
+                    <div class="legend-section-title">🌡️ Weather Stations</div>
                     <div class="weather-legend-item">
-                        <div class="weather-legend-dot" style="background: #06b6d4;"></div>
-                        <span>🌡️ Temperature (Solid)</span>
+                        <div class="weather-legend-dot" style="background: #06b6d4; box-shadow: 0 0 0 2px rgba(6,182,212,0.3);"></div>
+                        <span>Temperature (Solid)</span>
                     </div>
                     <div class="weather-legend-item">
-                        <div class="weather-legend-dot" style="background: #10b981; border: 2px dashed #10b981;"></div>
-                        <span>💨 Wind Speed (Dashed)</span>
+                        <div class="weather-legend-dot" style="background: #10b981; border: 2px dashed #10b981; box-shadow: none;"></div>
+                        <span>Wind Speed (Dashed)</span>
+                    </div>
+                    <div class="weather-legend-item" style="font-size: 10px; color: #9ca3af; margin-top: 4px;">
+                        ↳ 8 coastal cities monitored
                     </div>
                 </div>
                 
-                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <strong style="color: #dc2626; font-size: 11px;">GOVT HAZARD ALERTS</strong>
+                <div class="legend-section">
+                    <div class="legend-section-title">⚠️ Government Alerts</div>
                     <div class="weather-legend-item">
                         <div class="weather-legend-dot" style="background: #dc2626;"></div>
-                        <span>🔴 Critical (Cyclone/Tsunami)</span>
+                        <span>🔴 Critical Alert</span>
                     </div>
                     <div class="weather-legend-item">
                         <div class="weather-legend-dot" style="background: #ea580c;"></div>
-                        <span>🟠 High (Flood/Earthquake)</span>
+                        <span>🟠 High Alert</span>
                     </div>
                     <div class="weather-legend-item">
                         <div class="weather-legend-dot" style="background: #f59e0b;"></div>
-                        <span>🟡 Medium (Risk)</span>
+                        <span>🟡 Medium Alert</span>
+                    </div>
+                    <div class="weather-legend-item" style="font-size: 10px; color: #9ca3af; margin-top: 4px;">
+                        ↳ IMD, NDMA, USGS, GSI
                     </div>
                 </div>
                 
-                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <div class="weather-legend-item">
-                        <div class="live-indicator"></div>
-                        <span>Live Updates Every 1s</span>
+                <div class="legend-section" style="text-align: center; padding-top: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #4ade80;">
+                        <div class="live-indicator" style="margin: 0;"></div>
+                        <span style="color: #e5e7eb;"><strong>LIVE</strong> Updates Every 1s</span>
                     </div>
                 </div>
             `;
