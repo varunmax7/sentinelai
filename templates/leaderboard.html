@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<style>
+    /* Leaderboard Container */
+    .leaderboard-container {
+        background: radial-gradient(circle at 50% 50%, #1a365d 0%, #0f172a 100%) !important;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 2.5rem 3rem;
+        margin: 2rem auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        position: relative;
+        z-index: 1;
+        max-width: 95%;
+    }
+
+    /* Header Section */
+    .leaderboard-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .leaderboard-header h2 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #ffffff 0%, #e3f2fd 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .leaderboard-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* Cards */
+    .leaderboard-card {
+        background: rgba(0, 0, 0, 0.45) !important;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .leaderboard-card:hover {
+        background: rgba(0, 0, 0, 0.6) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1.25rem 1.5rem;
+    }
+
+    .card-header h5 {
+        color: white;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* List Items */
+    .leaderboard-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .leaderboard-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(8px);
+        text-decoration: none;
+        color: inherit;
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Rank Badges */
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #000;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+        color: #000;
+        box-shadow: 0 4px 15px rgba(192, 192, 192, 0.3);
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32, #A56C28);
+        color: #000;
+        box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3);
+    }
+
+    .rank-other {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* User Info */
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        margin-right: 1rem;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        flex: 1;
+    }
+
+    .username {
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.25rem;
+        font-size: 1.1rem;
+    }
+
+    .user-level {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    /* Points Display */
+    .points-badge {
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.9), rgba(66, 165, 245, 0.9));
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 1rem;
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+
+    /* Points Guide */
+    .points-guide {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 2rem;
+    }
+
+    .points-guide h4 {
+        color: white;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .points-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .points-item:last-child {
+        border-bottom: none;
+    }
+
+    .points-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        color: #42a5f5;
+    }
+
+    .points-details {
+        flex: 1;
+    }
+
+    .points-title {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .points-description {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .points-value {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    /* Current User Highlight */
+    .current-user {
+        background: rgba(33, 150, 243, 0.15);
+        border: 2px solid rgba(33, 150, 243, 0.4);
+        position: relative;
+    }
+
+    .current-user::before {
+        content: '👤 You';
+        position: absolute;
+        top: -10px;
+        right: 15px;
+        background: #42a5f5;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .leaderboard-container {
+            padding: 1.5rem 2rem;
+            margin: 1rem;
+            max-width: 95%;
+        }
+
+        .leaderboard-header h2 {
+            font-size: 2rem;
+        }
+
+        .leaderboard-item {
+            padding: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+        }
+
+        .rank-badge {
+            width: 35px;
+            height: 35px;
+            font-size: 1rem;
+        }
+
+        .points-badge {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .leaderboard-container {
+            padding: 1.25rem 1.5rem;
+            margin: 0.75rem;
+            max-width: 92%;
+        }
+
+        .leaderboard-header h2 {
+            font-size: 1.8rem;
+        }
+
+        .leaderboard-item {
+            padding: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            margin-right: 0.75rem;
+        }
+
+        .rank-badge {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+
+        .username {
+            font-size: 1rem;
+        }
+
+        .points-guide {
+            padding: 1.5rem;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .leaderboard-item {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .leaderboard-item:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .leaderboard-item:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .leaderboard-item:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+
+    .leaderboard-item:nth-child(4) {
+        animation-delay: 0.4s;
+    }
+
+    .leaderboard-item:nth-child(5) {
+        animation-delay: 0.5s;
+    }
+
+    .leaderboard-item:nth-child(6) {
+        animation-delay: 0.6s;
+    }
+
+    .leaderboard-item:nth-child(7) {
+        animation-delay: 0.7s;
+    }
+
+    .leaderboard-item:nth-child(8) {
+        animation-delay: 0.8s;
+    }
+
+    .leaderboard-item:nth-child(9) {
+        animation-delay: 0.9s;
+    }
+
+    .leaderboard-item:nth-child(10) {
+        animation-delay: 1s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <!-- Header Section -->
+    <div class="leaderboard-header">
+        <h2>🏆 Community Leaderboard</h2>
+        <p class="leaderboard-subtitle">
+            Top contributors making coastal communities safer through timely hazard reporting
+        </p>
+    </div>
+
+    <!-- Leaderboard Card -->
+    <div class="leaderboard-card">
+        <div class="card-header">
+            <h5><i class="fas fa-trophy me-2"></i>Top Contributors</h5>
+        </div>
+        <div class="card-body">
+            {% if top_users %}
+            <div class="list-group">
+                {% for user in top_users %}
+                <a href="{{ url_for('profile', username=user.username) }}"
+                    class="leaderboard-item {% if current_user == user %}current-user{% endif %}">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <!-- Rank Badge -->
+                            <div class="rank-badge 
+                                {% if loop.index == 1 %}rank-1
+                                {% elif loop.index == 2 %}rank-2
+                                {% elif loop.index == 3 %}rank-3
+                                {% else %}rank-other{% endif %}">
+                                {{ loop.index }}
+                            </div>
+
+                            <!-- User Avatar -->
+                            <img src="{{ url_for('uploaded_file', filename=user.profile_image) if user.profile_image else url_for('static', filename='images/default-profile.png') }}"
+                                class="user-avatar" alt="{{ user.username }}">
+
+                            <!-- User Info -->
+                            <div class="user-info">
+                                <div class="username">{{ user.username }}</div>
+                                <div class="user-level">
+                                    {% if user.role == 'official' %}
+                                    <i class="fas fa-shield-alt me-1"></i>Official • Level {{ user.level }}
+                                    {% elif user.role == 'analyst' %}
+                                    <i class="fas fa-chart-bar me-1"></i>Analyst • Level {{ user.level }}
+                                    {% else %}
+                                    <i class="fas fa-user me-1"></i>Citizen • Level {{ user.level }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Points -->
+                        <span class="points-badge">
+                            <i class="fas fa-star me-1"></i>{{ user.points }} pts
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🏆</div>
+                <h4>No Users Yet</h4>
+                <p>Be the first to join and start earning points!</p>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary mt-3">
+                    <i class="fas fa-user-plus me-2"></i>Join Now
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Points Guide -->
+    <div class="leaderboard-card">
+        <div class="card-body">
+            <div class="points-guide">
+                <h4><i class="fas fa-bullseye me-2"></i>How to Earn Points</h4>
+
+                <div class="points-item">
+                    <div class="points-icon">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <div class="points-details">
+                        <div class="points-title">Report Submission</div>
+                        <div class="points-description">Submit detailed ocean hazard reports</div>
+                    </div>
+                    <div class="points-value">+10 pts</div>
+                </div>
+
+                <div class="points-item">
+                    <div class="points-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="points-details">
+                        <div class="points-title">Verified Reports</div>
+                        <div class="points-description">Reports verified by officials</div>
+                    </div>
+                    <div class="points-value">+25 pts</div>
+                </div>
+
+                <div class="points-item">
+                    <div class="points-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="points-details">
+                        <div class="points-title">High-Confidence Reports</div>
+                        <div class="points-description">AI-verified high confidence reports</div>
+                    </div>
+                    <div class="points-value">+50 pts</div>
+                </div>
+
+                <div class="points-item">
+                    <div class="points-icon">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <div class="points-details">
+                        <div class="points-title">Special Achievements</div>
+                        <div class="points-description">Earn badges for milestones and contributions</div>
+                    </div>
+                    <div class="points-value">+ varies</div>
+                </div>
+
+                <div class="points-item">
+                    <div class="points-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="points-details">
+                        <div class="points-title">Alert Contributions</div>
+                        <div class="points-description">Reports that trigger community alerts</div>
+                    </div>
+                    <div class="points-value">+30 pts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    {% if current_user.is_authenticated %}
+    <div class="text-center mt-4">
+        <div class="alert alert-info"
+            style="background: rgba(33, 150, 243, 0.15); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 16px; color: rgba(255, 255, 255, 0.9);">
+            <h5><i class="fas fa-rocket me-2"></i>Ready to Move Up?</h5>
+            <p class="mb-0">Submit more reports and help protect coastal communities to climb the leaderboard!</p>
+            <a href="{{ url_for('report') }}" class="btn btn-primary mt-3">
+                <i class="fas fa-plus me-2"></i>Submit New Report
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center mt-4">
+        <div class="alert alert-warning"
+            style="background: rgba(255, 152, 0, 0.15); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 16px; color: rgba(255, 255, 255, 0.9);">
+            <h5><i class="fas fa-user-plus me-2"></i>Join the Community</h5>
+            <p class="mb-0">Create an account to start earning points and help make coastal areas safer!</p>
+            <div class="mt-3">
+                <a href="{{ url_for('register') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-user-plus me-2"></i>Sign Up
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Add smooth scrolling to leaderboard items
+        const leaderboardItems = document.querySelectorAll('.leaderboard-item');
+
+        leaderboardItems.forEach((item, index) => {
+            // Add staggered animation delay
+            item.style.animationDelay = `${(index + 1) * 0.1}s`;
+
+            // Add click feedback
+            item.addEventListener('click', function () {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+
+        // Highlight current user if they're in the list
+        const currentUserItem = document.querySelector('.current-user');
+        if (currentUserItem) {
+            currentUserItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+    /* Home-page style integration */
+    .main-content-container {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 2.5rem 3rem;
+        margin: 2rem auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        position: relative;
+        z-index: 1;
+        max-width: 95%;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px;
+    }
+
+    #map {
+        height: 450px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table {
+        color: #f8f9fa;
+    }
+
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+
+    /* Custom borders for stats */
+    .stat-blue {
+        border-left: 4px solid #0ea5e9 !important;
+    }
+
+    .stat-green {
+        border-left: 4px solid #10b981 !important;
+    }
+
+    .stat-orange {
+        border-left: 4px solid #f59e0b !important;
+    }
+
+    .stat-red {
+        border-left: 4px solid #ef4444 !important;
+    }
+
+    .pdf-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.95);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        flex-direction: column;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="hero-title">📊 Hazard Reports Dashboard</h1>
+            <p class="hero-subtitle mb-0">Live Incident Monitoring & Community Response</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary px-4 fw-bold shadow" id="exportBtn"><i
+                    class="fas fa-file-pdf me-2"></i>Export PDF</button>
+            <button class="btn btn-outline-light px-4 border-secondary" id="refreshBtn"><i
+                    class="fas fa-sync-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-5">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100 p-3 stat-blue">
+                <div class="card-body d-flex justify-content-between align-items-center p-2">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Total Reports</div>
+                        <div class="h3 mb-0 fw-bold text-white">{{ reports|length }}</div>
+                    </div>
+                    <i class="fas fa-clipboard-list fa-2x text-primary opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100 p-3 stat-red">
+                <div class="card-body d-flex justify-content-between align-items-center p-2">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Active Hazards</div>
+                        <div class="h3 mb-0 fw-bold text-white">
+                            {% set active = namespace(v=0) %}
+                            {% for r in reports %}{% if r.status != 'resolved' %}{% set active.v = active.v + 1 %}{%
+                            endif %}{% endfor %}
+                            {{ active.v }}
+                        </div>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x text-danger opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100 p-3 stat-green">
+                <div class="card-body d-flex justify-content-between align-items-center p-2">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Reports with Media</div>
+                        <div class="h3 mb-0 fw-bold text-white">{{ reports_with_media }}</div>
+                    </div>
+                    <i class="fas fa-camera fa-2x text-success opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100 p-3 stat-orange">
+                <div class="card-body d-flex justify-content-between align-items-center p-2">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Top Hazard Type</div>
+                        <div class="h3 mb-0 fw-bold text-white">
+                            <span style="font-size: 0.9rem;">{{ top_hazard_type }}</span>
+                            <span class="badge bg-warning text-dark ms-1">{{ top_hazard_count }}</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-mountain fa-2x text-warning opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100 overflow-hidden">
+                <div class="card-header py-3 bg-transparent d-flex justify-content-between">
+                    <h6 class="m-0 fw-bold text-white">Incident Hotspots Map</h6>
+                    <button class="btn btn-sm text-white opacity-50" onclick="resetMap()"><i
+                            class="fas fa-expand-arrows-alt"></i></button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header py-3 bg-transparent">
+                    <h6 class="m-0 fw-bold text-white">Hazard Distribution</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div style="height: 300px; width: 100%;">
+                        <canvas id="hazardTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card mb-4 overflow-hidden border-0">
+        <div class="card-header py-3 bg-transparent divider-bottom">
+            <h6 class="m-0 fw-bold text-white">Recent Submissions</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-white bg-opacity-10 text-muted small">
+                        <tr>
+                            <th class="ps-4">INCIDENT</th>
+                            <th>TYPE</th>
+                            <th>LOCATION</th>
+                            <th>STATUS</th>
+                            <th class="pe-4">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if report.image_file %}
+                                    <img src="{{ url_for('uploaded_file', filename=report.image_file) }}"
+                                        style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                    {% endif %}
+                                    <div class="fw-bold">{{ report.title }}</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-secondary bg-opacity-50 text-white">{{ report.hazard_type
+                                    }}</span></td>
+                            <td><span class="small text-muted">{{ report.location }}</span></td>
+                            <td>
+                                {% if report.status == 'resolved' %}
+                                <span
+                                    class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Resolved</span>
+                                {% else %}
+                                <span
+                                    class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25">Active</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4"><a href="{{ url_for('view_report', report_id=report.id) }}"
+                                    class="btn btn-sm btn-outline-light border-0"><i class="fas fa-arrow-right"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="pdf-loading">
+    <div class="spinner-border text-primary mb-3"></div>
+    <h5 class="text-white">Generating Digital Analysis...</h5>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+    // Initialize data correctly
+    const allReportsData = {{ reports| tojson | safe }};
+    let mainMap;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initMap();
+        initChart();
+        document.getElementById('refreshBtn').onclick = () => window.location.reload();
+        document.getElementById('exportBtn').onclick = exportPDF;
+    });
+
+    function initMap() {
+        mainMap = L.map('map').setView([20.5, 78.9], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(mainMap);
+
+        if (allReportsData.length) {
+            // Add heatmap layer
+            const heatmapPoints = allReportsData.map(r => [r.latitude, r.longitude, 0.5]);
+            L.heatLayer(heatmapPoints, { radius: 25, blur: 15 }).addTo(mainMap);
+
+            // Add circle markers
+            const markers = [];
+            allReportsData.forEach(r => {
+                const marker = L.circleMarker([r.latitude, r.longitude], {
+                    radius: 8,
+                    color: r.status === 'resolved' ? '#10b981' : '#ef4444',
+                    fillColor: r.status === 'resolved' ? '#10b981' : '#ef4444',
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).addTo(mainMap).bindPopup(`
+                    <div style="color:#222; min-width:150px">
+                        <h6 style="margin:0 0 5px">${r.title}</h6>
+                        <p style="margin:0; font-size:12px"><b>Type:</b> ${r.hazard_type}</p>
+                        <p style="margin:0; font-size:12px"><b>Status:</b> ${r.status}</p>
+                        <hr style="margin:8px 0">
+                        <a href="/view_report/${r.id}" class="btn btn-sm btn-primary text-white w-100">View Details</a>
+                    </div>
+                `);
+                markers.push(marker);
+            });
+
+            // Auto-fit map to markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                mainMap.fitBounds(group.getBounds().pad(0.2));
+            }
+        }
+    }
+
+    function resetMap() {
+        if (allReportsData.length) {
+            const latlngs = allReportsData.map(r => [r.latitude, r.longitude]);
+            mainMap.fitBounds(L.latLngBounds(latlngs).pad(0.2));
+        }
+    }
+
+    function initChart() {
+        const typesCount = {};
+        allReportsData.forEach(r => {
+            typesCount[r.hazard_type] = (typesCount[r.hazard_type] || 0) + 1;
+        });
+
+        const ctx = document.getElementById('hazardTypeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(typesCount),
+                datasets: [{
+                    data: Object.values(typesCount),
+                    backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#64748b'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94a3b8', font: { size: 10, family: 'Outfit' }, padding: 15 }
+                    }
+                },
+                cutout: '75%'
+            }
+        });
+    }
+
+    function exportPDF() {
+        const loader = document.querySelector('.pdf-loading');
+        loader.style.display = 'flex';
+        html2canvas(document.querySelector('.main-content-container'), {
+            scale: 2,
+            backgroundColor: '#0f172a',
+            useCORS: true
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save('CoastalAlert-Dashboard-Report.pdf');
+            loader.style.display = 'none';
+        });
+    }
+</script>
+{% endblock %}

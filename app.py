@@ -1,0 +1,2994 @@
+from flask import Flask, render_template, url_for, flash, redirect, request, jsonify, send_from_directory, session, g
+from flask_login import LoginManager, login_user, current_user, logout_user, login_required
+from models import (
+    db, User, Report, Badge, UserBadge, followers, Like, Comment, Notification,
+    Agency, EmergencyEvent, ResourceAllocation, Volunteer, 
+    VolunteerAssignment, SituationReport, PlasticUsage, CarbonSavings, LocalApproval, ReportView
+)
+from config import Config
+from forms import (
+    RegistrationForm, LoginForm, ReportForm, ProfileForm, LocationForm, AlertPreferencesForm,
+    AgencyForm, EmergencyEventForm, ResourceAllocationForm, VolunteerRegistrationForm,
+    VolunteerAssignmentForm, SituationReportForm, CoordinationSettingsForm,
+    PlasticUsageForm, CarbonSavingsForm  # ADDED
+)
+from utils import save_file, calculate_distance, analyze_plastic_image, calculate_carbon_savings, calculate_points_for_activity  # UPDATED
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
+import json
+from datetime import datetime, timedelta
+from sqlalchemy import func, cast 
+import requests
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import atexit
+from flask_migrate import Migrate
+import json
+from threading import Thread
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use non-GUI backend
+import io
+import base64
+from flask import Response
+import numpy as np
+import random
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+migrate = Migrate(app, db)
+
+db.init_app(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Initialize scheduler for background tasks
+scheduler = BackgroundScheduler()
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
+# Sample data for dashboard (would be replaced with real data)
+sample_reports = [
+    {
+        'id': 1,
+        'title': 'High Waves at Marina Beach',
+        'hazard_type': 'High Waves',
+        'location': 'Marina Beach, Chennai',
+        'timestamp': '2023-10-15 14:30:00',
+        'latitude': 13.0566,
+        'longitude': 80.2783,
+        'image_file': 'wave1.jpg'
+    }
+]
+
+# =============================================================================
+# MULTILINGUAL SUPPORT - Enhanced Language Detection
+# =============================================================================
+
+TRANSLATIONS = {
+    'en': {
+        # Navigation
+        'home': 'Home',
+        'about': 'About',
+        'report': 'Report Hazard',
+        'dashboard': 'Dashboard',
+        'profile': 'Profile',
+        'leaderboard': 'Leaderboard',
+        'login': 'Login',
+        'register': 'Register',
+        'logout': 'Logout',
+        'search': 'Search',
+        'notifications': 'Notifications',
+        'reels': 'Hazard Feed',
+        'share_app': 'Share App',
+        'set_location': 'Set Location',
+        'alert_preferences': 'Alert Preferences',
+        
+        # Common
+        'submit': 'Submit',
+        'save': 'Save',
+        'cancel': 'Cancel',
+        'edit': 'Edit',
+        'delete': 'Delete',
+        'confirm': 'Confirm',
+        'back': 'Back',
+        'next': 'Next',
+        'previous': 'Previous',
+        'follow': 'Follow',
+        'unfollow': 'Unfollow',
+        'view': 'View',
+        'verify': 'Verify',
+        
+        # Hazard Types
+        'tsunami': 'Tsunami',
+        'storm_surge': 'Storm Surge',
+        'high_waves': 'High Waves',
+        'swell_surge': 'Swell Surge',
+        'coastal_flooding': 'Coastal Flooding',
+        'abnormal_tide': 'Abnormal Tide',
+        'other': 'Other',
+        
+        # Messages
+        'report_submitted': 'Your report has been submitted! +10 points! AI Confidence: {confidence}%',
+        'login_success': 'Welcome back! Thank you for contributing to coastal safety.',
+        'official_login': 'Welcome back, Officer! Thank you for keeping our community safe.',
+        'analyst_login': 'Welcome back, Analyst! Your insights help protect our coasts.',
+        'registration_success': 'Your account has been created! You can now log in.',
+        'profile_updated': 'Your profile has been updated!',
+        'location_saved': 'Your location has been saved!',
+        'report_approved': 'Report approved successfully! User awarded +20 points.',
+        'report_rejected': 'Report rejected successfully.',
+        'language_changed': 'Language changed successfully.',
+        'level_up': 'Level up! You reached level {level}!',
+        'badge_earned': '🏆 Earned badge: {badge_name}!',
+        'follow_success': 'You are now following {username}!',
+        'unfollow_success': 'You have unfollowed {username}.',
+        
+        # Alert Messages
+        'tsunami_alert': '🌊 Tsunami Alert! Evacuate to higher ground immediately.',
+        'storm_surge_alert': '🌪 Storm Surge Alert! Seek shelter away from the coast.',
+        'high_waves_alert': '🌊 High Wave Alert! Avoid beach activities.',
+        'swell_surge_alert': '🌊 Swell Surge Alert! Exercise caution near water.',
+        'coastal_flooding_alert': '⚠️ Coastal Flooding Alert! Move to higher ground.',
+        'abnormal_tide_alert': '⚠️ Abnormal Tide Alert! Be cautious of unusual water levels.',
+        'general_alert': '⚠️ Hazard Alert! A verified hazard has been reported in your area.',
+        
+        # Forms
+        'username': 'Username',
+        'email': 'Email',
+        'password': 'Password',
+        'confirm_password': 'Confirm Password',
+        'remember_me': 'Remember Me',
+        'title': 'Title',
+        'description': 'Description',
+        'location': 'Location',
+        'latitude': 'Latitude',
+        'longitude': 'Longitude',
+        'hazard_type': 'Hazard Type',
+        'photo': 'Upload Photo',
+        'video': 'Upload Video',
+        'bio': 'Bio',
+        'home_latitude': 'Home Latitude',
+        'home_longitude': 'Home Longitude',
+        
+        # Stats
+        'total_reports': 'Total Reports',
+        'verified_reports': 'Verified Reports',
+        'pending_reports': 'Pending Reports',
+        'points': 'Points',
+        'level': 'Level',
+        
+        # Errors
+        'required_field': 'This field is required.',
+        'invalid_email': 'Invalid email address.',
+        'password_mismatch': 'Passwords must match.',
+        'file_too_large': 'File too large. Maximum file size is 16MB.',
+        'unauthorized': 'Unauthorized action.',
+        'user_not_found': 'User not found.',
+    },
+    
+    'ta': {  # Tamil
+        'home': 'முகப்பு',
+        'about': 'விவரம்',
+        'report': 'அபாயத்தைப் பதிவு செய்க',
+        'dashboard': 'டாஷ்போர்டு',
+        'profile': 'சுயவிவரம்',
+        'leaderboard': 'முன்னணி வாரியம்',
+        'login': 'உள்நுழைக',
+        'register': 'பதிவு செய்க',
+        'logout': 'வெளியேறுக',
+        'search': 'தேடுக',
+        'notifications': 'அறிவிப்புகள்',
+        'reels': 'அபாய ஊட்டம்',
+        
+        'tsunami': 'ஆழிப்பேரலை',
+        'storm_surge': 'புயல் அலை',
+        'high_waves': 'உயர் அலைகள்',
+        'coastal_flooding': 'கடற்கரை வெள்ளம்',
+        
+        'report_submitted': 'உங்கள் புகாரை சமர்ப்பித்துள்ளோம்! +10 புள்ளிகள்! AI நம்பகத்தன்மை: {confidence}%',
+        'login_success': 'மீண்டும் வரவேற்கிறோம்! கடலோர பாதுகாப்பில் பங்களித்தமைக்கு நன்றி.',
+        'registration_success': 'உங்கள் கணக்கு உருவாக்கப்பட்டது! இப்போது நீங்கள் உள்நுழையலாம்.',
+    },
+    
+    'hi': {  # Hindi
+        'home': 'होम',
+        'about': 'के बारे में',
+        'report': 'खतरा रिपोर्ट करें',
+        'dashboard': 'डैशबोर्ड',
+        'profile': 'प्रोफाइल',
+        'leaderboard': 'लीडरबोर्ड',
+        'login': 'लॉगिन',
+        'register': 'रजिस्टर',
+        'logout': 'लॉगआउट',
+        'search': 'खोजें',
+        'notifications': 'सूचनाएं',
+        'reels': 'खतरा फ़ीड',
+        
+        'tsunami': 'सुनामी',
+        'storm_surge': 'तूफान की लहर',
+        'high_waves': 'उच्च लहरें',
+        'coastal_flooding': 'तटीय बाढ़',
+        
+        'report_submitted': 'आपकी रिपोर्ट सबमिट कर दी गई है! +10 अंक! AI विश्वास: {confidence}%',
+        'login_success': 'वापसी पर स्वागत है! तटीय सुरक्षा में योगदान देने के लिए धन्यवाद।',
+        'registration_success': 'आपका खाता बन गया है! अब आप लॉगिन कर सकते हैं।',
+    },
+    
+    'te': {  # Telugu
+        'home': 'హోమ్',
+        'about': 'గురించి',
+        'report': 'హాజర్డ్ నివేదించండి',
+        'dashboard': 'డాష్బోర్డ్',
+        'profile': 'ప్రొఫైల్',
+        'leaderboard': 'లీడర్బోర్డ్',
+        'login': 'లాగిన్',
+        'register': 'నమోదు',
+        'logout': 'లాగౌట్',
+        'search': 'శోధించు',
+        'notifications': 'నోటిఫికేషన్లు',
+        'reels': 'హాజర్డ్ ఫీడ్',
+        
+        'tsunami': 'సునామి',
+        'storm_surge': 'స్టార్మ్ సర్జ్',
+        'high_waves': 'అధిక అలలు',
+        'coastal_flooding': 'తీర ప్రాంతం వరద',
+        
+        'report_submitted': 'మీ నివేదిక సమర్పించబడింది! +10 పాయింట్లు! AI నమ్మకం: {confidence}%',
+        'login_success': 'మళ్లీ స్వాగతం! తీరప్రాంత భద్రతకు కృషి చేసినందుకు ధన్యవాదాలు.',
+        'registration_success': 'మీ ఖాతా సృష్టించబడింది! మీరు ఇప్పుడు లాగిన్ చేయవచ్చు.',
+    },
+    
+    'ml': {  # Malayalam
+        'home': 'ഹോം',
+        'about': 'വിവരണം',
+        'report': 'അപകടം റിപ്പോർട്ട് ചെയ്യുക',
+        'dashboard': 'ഡാഷ്ബോർഡ്',
+        'profile': 'പ്രൊഫൈൽ',
+        'leaderboard': 'ലീഡർബോർഡ്',
+        'login': 'ലോഗിൻ',
+        'register': 'രജിസ്റ്റർ',
+        'logout': 'ലോഗൗട്ട്',
+        'search': 'തിരയുക',
+        
+        'tsunami': 'സുനാമി',
+        'storm_surge': 'കൊടുങ്കാറ്റ് തിര',
+        'high_waves': 'ഉയർന്ന അലകൾ',
+        
+        'report_submitted': 'നിങ്ങളുടെ റിപ്പോർട്ട് സമർപ്പിച്ചു! +10 പോയിന്റുകൾ! AI ആത്മവിശ്വാസം: {confidence}%',
+        'login_success': 'വീണ്ടും സ്വാഗതം! തീരദേശ സുരക്ഷയിൽ സംഭാവന ചെയ്തതിന് നന്ദി.',
+    },
+    
+    'kn': {  # Kannada
+        'home': 'ಹೋಮ್',
+        'about': 'ವಿವರಣೆ',
+        'report': 'ಅಪಾಯವನ್ನು ವರದಿ ಮಾಡಿ',
+        'dashboard': 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        'profile': 'ಪ್ರೊಫೈಲ್',
+        'leaderboard': 'ಲೀಡರ್‌ಬೋರ್ಡ್',
+        'login': 'ಲಾಗಿನ್',
+        'register': 'ನೋಂದಾಯಿಸಿ',
+        'logout': 'ಲಾಗ್‌ಔಟ್',
+        'search': 'ಹುಡುಕು',
+        
+        'tsunami': 'ಸುನಾಮಿ',
+        'storm_surge': 'ಬಿರುಗಾಳಿ ಅಲೆ',
+        'high_waves': 'ಎತ್ತರದ ಅಲೆಗಳು',
+        
+        'report_submitted': 'ನಿಮ್ಮ ವರದಿಯನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ! +10 ಅಂಕಗಳು! AI ವಿಶ್ವಾಸ: {confidence}%',
+        'login_success': 'ಮತ್ತೆ ಸ್ವಾಗತ! ಕರಾವಳಿ ಭದ್ರತೆಗೆ ಕೊಡುಗೆ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು.',
+    }
+}
+
+def get_translation(lang, key, default=None):
+    """Get translation for a key in specified language with better fallback"""
+    # First try the requested language
+    if lang in TRANSLATIONS and key in TRANSLATIONS[lang]:
+        return TRANSLATIONS[lang][key]
+    
+    # Fallback to English
+    if key in TRANSLATIONS['en']:
+        return TRANSLATIONS['en'][key]
+    
+    # Final fallback - return a formatted version of the key
+    return default or key.replace('_', ' ').title()
+
+def get_available_languages():
+    """Return list of available language codes"""
+    return list(TRANSLATIONS.keys())
+
+def detect_preferred_language(latitude, longitude):
+    """
+    Enhanced language detection based on geographic location
+    Focuses on Indian coastal regions where different languages are spoken
+    """
+    if latitude is None or longitude is None:
+        return 'en'
+    
+    # Language regions with their geographic centers and radius
+    language_regions = [
+        # Tamil Nadu (Tamil)
+        {'lang': 'ta', 'center': (11.1271, 78.6569), 'radius': 300, 'coastal': True},
+        # Kerala (Malayalam)
+        {'lang': 'ml', 'center': (10.8505, 76.2711), 'radius': 200, 'coastal': True},
+        # Andhra Pradesh/Telangana (Telugu)
+        {'lang': 'te', 'center': (15.9129, 79.7400), 'radius': 350, 'coastal': True},
+        # Karnataka (Kannada)
+        {'lang': 'kn', 'center': (12.9716, 77.5946), 'radius': 300, 'coastal': True},
+        # Maharashtra (Hindi/Marathi influenced)
+        {'lang': 'hi', 'center': (19.0760, 72.8777), 'radius': 400, 'coastal': True},
+        # Gujarat (Hindi influenced)
+        {'lang': 'hi', 'center': (22.2587, 71.1924), 'radius': 400, 'coastal': True},
+        # West Bengal (Hindi influenced)
+        {'lang': 'hi', 'center': (22.5726, 88.3639), 'radius': 400, 'coastal': True},
+        # Odisha (Hindi influenced)
+        {'lang': 'hi', 'center': (20.9517, 85.0985), 'radius': 300, 'coastal': True},
+    ]
+    
+    # Special coastal city mappings for more accuracy
+    coastal_cities = {
+        'ta': [  # Tamil - Tamil Nadu coastal cities
+            (13.0827, 80.2707),  # Chennai
+            (8.7139, 77.7567),   # Thirunelveli
+            (9.9252, 78.1198),   # Madurai
+            (10.7905, 78.7047),  # Trichy
+        ],
+        'ml': [  # Malayalam - Kerala coastal cities
+            (9.9312, 76.2673),   # Kochi
+            (11.2588, 75.7804),  # Kozhikode
+            (8.5241, 76.9366),   # Thiruvananthapuram
+        ],
+        'te': [  # Telugu - Andhra Pradesh coastal cities
+            (16.5062, 80.6480),  # Vijayawada
+            (17.6868, 83.2185),  # Visakhapatnam
+        ],
+        'kn': [  # Kannada - Karnataka coastal cities
+            (12.9141, 74.8560),  # Mangalore
+            (13.3409, 74.7421),  # Udupi
+        ],
+        'hi': [  # Hindi influenced coastal cities
+            (19.0760, 72.8777),  # Mumbai
+            (22.5726, 88.3639),  # Kolkata
+            (21.1458, 79.0882),  # Nagpur
+        ]
+    }
+    
+    # First check if it's near specific coastal cities (more accurate)
+    for lang, cities in coastal_cities.items():
+        for city in cities:
+            distance = calculate_distance(latitude, longitude, city[0], city[1])
+            if distance < 50:  # Within 50km of coastal city
+                print(f"🌍 Language detected: {lang} (near coastal city, distance: {distance:.1f}km)")
+                return lang
+    
+    # Then check regional centers
+    for region in language_regions:
+        distance = calculate_distance(latitude, longitude, region['center'][0], region['center'][1])
+        if distance < region['radius']:
+            print(f"🌍 Language detected: {region['lang']} (regional center, distance: {distance:.1f}km)")
+            return region['lang']
+    
+    # Default to English if no match
+    print("🌍 Language defaulted to: English (no regional match)")
+    return 'en'
+
+def get_locale():
+    """Get the current locale from session or user preference"""
+    # Check session first
+    if 'language' in session:
+        return session['language']
+    
+    # Check user preference if logged in
+    if current_user.is_authenticated and hasattr(current_user, 'language'):
+        return current_user.language
+    
+    # Try to detect from browser (for new users)
+    browser_lang = request.accept_languages.best_match(app.config['LANGUAGES'])
+    return browser_lang or 'en'
+
+@app.before_request
+def before_request():
+    """Set global language context before each request"""
+    g.language = get_locale()
+    g.available_languages = get_available_languages()
+
+def translate(key, **kwargs):
+    """Translation helper function"""
+    lang = get_locale()
+    translation = get_translation(lang, key)
+    
+    # Format with kwargs if provided
+    if kwargs and isinstance(translation, str):
+        try:
+            return translation.format(**kwargs)
+        except:
+            return translation
+    return translation
+
+# Make translate function available to all templates
+@app.context_processor
+def inject_translations():
+    def translate(key, **kwargs):
+        """Translation helper available in all templates"""
+        lang = get_locale()
+        translation = get_translation(lang, key)
+        
+        # Format with kwargs if provided
+        if kwargs and isinstance(translation, str):
+            try:
+                return translation.format(**kwargs)
+            except:
+                return translation
+        return translation
+    
+    return dict(
+        translate=translate,
+        current_language=get_locale(),
+        available_languages=get_available_languages()
+    )
+
+@app.route('/set_language/<lang>')
+def set_language(lang):
+    """Set the language preference"""
+    if lang in app.config['LANGUAGES']:
+        session['language'] = lang
+        
+        # Update user preference if logged in
+        if current_user.is_authenticated:
+            current_user.language = lang
+            db.session.commit()
+        
+        flash(f'Language changed to {lang.upper()}', 'success')
+    else:
+        flash('Selected language is not supported.', 'warning')
+    
+    # Redirect to the same page or home
+    return redirect(request.referrer or url_for('home'))
+
+# =============================================================================
+# END OF MULTILINGUAL SUPPORT
+# =============================================================================
+
+def init_badges():
+    badges = [
+        {'name': 'first_reporter', 'description': 'Submitted your first report', 'icon': '🚀', 'points_required': 0},
+        {'name': 'storm_watcher', 'description': 'Reported 3 storm surges', 'icon': '⛈️', 'points_required': 0},
+        {'name': 'community_guardian', 'description': 'Reached 100 points', 'icon': '🛡️', 'points_required': 100},
+        {'name': 'verified_observer', 'description': 'Had 5 reports verified', 'icon': '✅', 'points_required': 0},
+        {'name': 'ai_verified', 'description': 'Submitted a high-confidence AI-verified report', 'icon': '🤖', 'points_required': 0},
+    ]
+    
+    for badge_data in badges:
+        if not Badge.query.filter_by(name=badge_data['name']).first():
+            badge = Badge(
+                name=badge_data['name'],
+                description=badge_data['description'],
+                icon=badge_data['icon'],
+                points_required=badge_data['points_required']
+            )
+            db.session.add(badge)
+    
+    db.session.commit()
+
+def check_and_award_badges(user):
+    # First Reporter badge
+    if len(user.reports) == 1:
+        award_badge(user, 'first_reporter')
+    
+    # Storm Watcher badge
+    storm_reports = Report.query.filter_by(user_id=user.id, hazard_type='storm_surge').count()
+    if storm_reports >= 3:
+        award_badge(user, 'storm_watcher')
+    
+    # Community Guardian badge
+    if user.points >= 100:
+        award_badge(user, 'community_guardian')
+    
+    # Verified Observer badge
+    verified_reports = Report.query.filter_by(user_id=user.id, verification_status='approved').count()
+    if verified_reports >= 5:
+        award_badge(user, 'verified_observer')
+    
+    # AI Verified badge
+    high_confidence_reports = Report.query.filter(
+        Report.user_id == user.id,
+        Report.confidence_score >= 0.8,
+        Report.verification_status == 'approved'
+    ).count()
+    if high_confidence_reports >= 1:
+        award_badge(user, 'ai_verified')
+    
+    # Level up system
+    new_level = user.points // 50 + 1
+    if new_level > user.level:
+        user.level = new_level
+        flash(translate('level_up', level=new_level), 'success')
+
+def award_badge(user, badge_name):
+    badge = Badge.query.filter_by(name=badge_name).first()
+    if badge and not UserBadge.query.filter_by(user_id=user.id, badge_id=badge.id).first():
+        user_badge = UserBadge(user_id=user.id, badge_id=badge.id)
+        db.session.add(user_badge)
+        flash(translate('badge_earned', badge_name=badge.name), 'success')
+
+def analyze_report_with_ai(report):
+    """Analyze a report using AI to generate confidence score and analysis"""
+    try:
+        # Initialize analysis components
+        analysis_parts = []
+        confidence_factors = []
+        
+        # 1. Source Reliability Analysis
+        user_reliability = analyze_user_reliability(report.author)
+        analysis_parts.append(f"Source Reliability: {user_reliability['analysis']}")
+        confidence_factors.append(user_reliability['score'])
+        
+        # 2. Corroboration Analysis
+        corroboration = analyze_corroboration(report)
+        analysis_parts.append(f"Corroboration: {corroboration['analysis']}")
+        confidence_factors.append(corroboration['score'])
+        
+        # 3. Media Analysis (if available)
+        if report.image_file:
+            media_analysis = analyze_media(report)
+            analysis_parts.append(f"Media Analysis: {media_analysis['analysis']}")
+            confidence_factors.append(media_analysis['score'])
+        else:
+            # No media penalty
+            confidence_factors.append(0.3)
+            analysis_parts.append("Media Analysis: No visual evidence provided")
+        
+        # 4. Linguistic Analysis
+        linguistic_analysis = analyze_text(report.description, report.title)
+        analysis_parts.append(f"Linguistic Analysis: {linguistic_analysis['analysis']}")
+        confidence_factors.append(linguistic_analysis['score'])
+        
+        # Calculate overall confidence score (weighted average)
+        weights = [0.2, 0.3, 0.3, 0.2]  # Adjust weights as needed
+        weighted_scores = [score * weight for score, weight in zip(confidence_factors, weights)]
+        confidence_score = sum(weighted_scores) / sum(weights)
+        
+        # Generate comprehensive analysis text
+        analysis_text = " | ".join(analysis_parts)
+        
+        return {
+            'confidence_score': confidence_score,
+            'analysis': analysis_text
+        }
+        
+    except Exception as e:
+        print(f"AI Analysis Error: {e}")
+        return {
+            'confidence_score': 0.5,
+            'analysis': "AI analysis temporarily unavailable. Manual review required."
+        }
+
+def analyze_user_reliability(user):
+    """Analyze user reliability based on history"""
+    user_reports = Report.query.filter_by(user_id=user.id).all()
+    verified_reports = [r for r in user_reports if r.verification_status == 'approved']
+    
+    reliability_score = 0.5  # Default neutral score
+    
+    if user.role in ['official', 'analyst']:
+        reliability_score = 0.9
+        analysis = "High reliability: Verified official user"
+    elif len(verified_reports) >= 5:
+        reliability_score = 0.8
+        analysis = "High reliability: Multiple verified reports"
+    elif len(verified_reports) >= 1:
+        reliability_score = 0.7
+        analysis = "Good reliability: Some verified reports"
+    elif len(user_reports) == 0:
+        reliability_score = 0.4
+        analysis = "New user: No report history"
+    else:
+        reliability_score = 0.5
+        analysis = "Average reliability: Limited history"
+    
+    return {'score': reliability_score, 'analysis': analysis}
+
+def analyze_corroboration(report):
+    """Check for corroborating reports in same area and time"""
+    # Find reports in similar location and time window
+    time_window = timedelta(hours=2)
+    location_threshold = 0.01  # ~1.1 km
+    
+    similar_reports = Report.query.filter(
+        Report.id != report.id,
+        Report.timestamp.between(report.timestamp - time_window, report.timestamp + time_window),
+        Report.latitude.between(report.latitude - location_threshold, report.latitude + location_threshold),
+        Report.longitude.between(report.longitude - location_threshold, report.longitude + location_threshold),
+        Report.hazard_type == report.hazard_type
+    ).all()
+    
+    if len(similar_reports) >= 3:
+        score = 0.9
+        analysis = f"Strong corroboration: {len(similar_reports)} similar reports"
+    elif len(similar_reports) >= 1:
+        score = 0.7
+        analysis = f"Moderate corroboration: {len(similar_reports)} similar reports"
+    else:
+        score = 0.3
+        analysis = "No corroborating reports found"
+    
+    return {'score': score, 'analysis': analysis}
+
+def analyze_media(report):
+    """Analyze uploaded media using AI"""
+    try:
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], report.image_file)
+        
+        # Basic check if file exists and is valid
+        if not os.path.exists(image_path):
+            return {'score': 0.3, 'analysis': 'Media file not available for analysis'}
+        
+        # For demo purposes - simulate AI analysis
+        # In production, integrate with Google Vision AI, AWS Rekognition, etc.
+        
+        # Simulate different analysis based on hazard type
+        hazard_analysis = {
+            'tsunami': {'score': 0.7, 'analysis': 'Image shows large wave patterns consistent with tsunami warnings'},
+            'storm_surge': {'score': 0.8, 'analysis': 'Weather patterns and water levels indicate potential storm surge'},
+            'high_waves': {'score': 0.6, 'analysis': 'Wave height appears elevated compared to normal conditions'},
+            'oil_spill': {'score': 0.9, 'analysis': 'Visual patterns consistent with oil slick formation'},
+        }
+        
+        result = hazard_analysis.get(report.hazard_type, {'score': 0.5, 'analysis': 'Media appears relevant to reported hazard type'})
+        return result
+        
+    except Exception as e:
+        print(f"Media analysis error: {e}")
+        return {'score': 0.3, 'analysis': 'Media analysis failed'}
+
+def analyze_text(description, title):
+    """Analyze text content for urgency and credibility"""
+    text = f"{title} {description}".lower()
+    
+    # Keywords indicating urgency/first-hand observation
+    urgency_keywords = ['just saw', 'right now', 'currently', 'urgent', 'emergency', 
+                       'witness', 'observed', 'seeing', 'happening now', 'personal observation']
+    
+    # Keywords indicating hearsay/uncertainty
+    uncertainty_keywords = ['heard', 'maybe', 'possibly', 'might', 'could be', 
+                           'someone said', 'rumor', 'not sure', 'probably', 'think']
+    
+    urgency_count = sum(1 for word in urgency_keywords if word in text)
+    uncertainty_count = sum(1 for word in uncertainty_keywords if word in text)
+    
+    if urgency_count > 1 and uncertainty_count == 0:
+        score = 0.8
+        analysis = "High urgency: First-hand observation language detected"
+    elif urgency_count > 0:
+        score = 0.6
+        analysis = "Moderate urgency: Some urgent language detected"
+    elif uncertainty_count > 0:
+        score = 0.3
+        analysis = "Low urgency: Hearsay or uncertain language detected"
+    else:
+        score = 0.5
+        analysis = "Neutral: Standard reporting language"
+    
+    return {'score': score, 'analysis': analysis}
+
+def delete_scheduled_reports():
+    """Delete reports that are scheduled for deletion and past their deletion time"""
+    with app.app_context():
+        try:
+            reports_to_delete = Report.query.filter(
+                Report.scheduled_deletion.isnot(None),
+                Report.scheduled_deletion <= datetime.utcnow()
+            ).all()
+            
+            deleted_count = 0
+            for report in reports_to_delete:
+                # Delete associated media files
+                if report.image_file:
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], report.image_file))
+                    except:
+                        pass
+                
+                if report.video_file:
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], report.video_file))
+                    except:
+                        pass
+                
+                # Delete the report
+                db.session.delete(report)
+                deleted_count += 1
+            
+            if deleted_count > 0:
+                db.session.commit()
+                print(f"Deleted {deleted_count} scheduled reports at {datetime.utcnow()}")
+                
+        except Exception as e:
+            print(f"Error in scheduled deletion: {e}")
+
+# Schedule the deletion task to run every 30 minutes
+scheduler.add_job(
+    func=delete_scheduled_reports,
+    trigger=IntervalTrigger(minutes=30),
+    id='delete_scheduled_reports',
+    name='Delete scheduled reports every 30 minutes',
+    replace_existing=True
+)
+
+# Notification System Functions
+@app.route('/api/notifications')
+@login_required
+def get_notifications():
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id, 
+        is_read=False
+    ).order_by(Notification.created_at.desc()).all()
+    
+    notifications_data = []
+    for notification in notifications:
+        time_remaining = None
+        if notification.expires_at:
+            time_remaining = max(0, (notification.expires_at - datetime.utcnow()).total_seconds())
+        
+        notifications_data.append({
+            'id': notification.id,
+            'message': notification.message,
+            'report_id': notification.report_id,
+            'created_at': notification.created_at.isoformat(),
+            'expires_at': notification.expires_at.isoformat() if notification.expires_at else None,
+            'time_remaining': time_remaining
+        })
+    
+    return jsonify(notifications_data)
+
+@app.route('/api/notification/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    
+    if notification.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    notification.is_read = True
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@app.route("/")
+@app.route("/home")
+def home():
+    # Get recent reports for homepage
+    reports = Report.query.order_by(Report.timestamp.desc()).limit(3).all()
+    
+    # If no reports, use sample data
+    if not reports:
+        sample_with_datetime = []
+        for report in sample_reports[:3]:
+            report_copy = report.copy()
+            report_copy['timestamp'] = datetime.strptime(report['timestamp'], '%Y-%m-%d %H:%M:%S')
+            sample_with_datetime.append(report_copy)
+        reports = sample_with_datetime
+    
+    return render_template('index.html', reports=reports)
+
+@app.route("/about")
+def about():
+    return render_template('about.html', title=translate('about'))
+
+@app.route("/register", methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # Detect language based on location if provided in form
+        preferred_lang = 'en'
+        
+        # If location data is provided in registration, use it for language detection
+        if hasattr(form, 'latitude') and form.latitude.data and hasattr(form, 'longitude') and form.longitude.data:
+            preferred_lang = detect_preferred_language(form.latitude.data, form.longitude.data)
+            print(f"🌍 Detected language for new user: {preferred_lang}")
+        
+        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        user = User(
+            username=form.username.data, 
+            email=form.email.data, 
+            password=hashed_password,
+            role='citizen',
+            language=preferred_lang  # Set detected language
+        )
+        db.session.add(user)
+        db.session.commit()
+        
+        flash(translate('registration_success'), 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html', title=translate('register'), form=form)
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        flash(translate('login_success'), 'info')
+        return redirect(url_for('home'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            
+            # Welcome message based on user role
+            if user.role == 'official':
+                flash(translate('official_login'), 'success')
+            elif user.role == 'analyst':
+                flash(translate('analyst_login'), 'success')
+            else:
+                flash(translate('login_success'), 'success')
+            
+            # Check for new notifications or achievements
+            check_and_notify_user(user)
+            
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+        else:
+            flash('Login unsuccessful. Please check email and password.', 'danger')
+    
+    return render_template('login.html', title=translate('login'), form=form)
+
+def check_and_notify_user(user):
+    """Check for new notifications and achievements to display to user"""
+    # Get the comparison timestamp first
+    comparison_time = user.last_login if hasattr(user, 'last_login') and user.last_login else datetime.utcnow()
+    
+    # Check for new approved reports
+    new_approved = Report.query.filter(
+        Report.user_id == user.id,
+        Report.verification_status == 'approved',
+        Report.verified_at >= comparison_time
+    ).count()
+    
+    if new_approved > 0:
+        flash(f'🎉 Great news! {new_approved} of your reports have been approved by officials!', 'success')
+    
+    # Check for new rejected reports
+    new_rejected = Report.query.filter(
+        Report.user_id == user.id,
+        Report.verification_status == 'rejected',
+        Report.verified_at >= comparison_time
+    ).count()
+    
+    if new_rejected > 0:
+        flash(f'⚠️ {new_rejected} of your reports were rejected. Check notifications for details.', 'warning')
+    
+    # Check for new badges earned
+    new_badges = UserBadge.query.filter(
+        UserBadge.user_id == user.id,
+        UserBadge.earned_at >= comparison_time
+    ).count()
+    
+    if new_badges > 0:
+        flash(f'🏆 Congratulations! You earned {new_badges} new badge(s)!', 'success')
+    
+    # Update last login time if the field exists
+    if hasattr(user, 'last_login'):
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+@app.route("/profile/<username>")
+@login_required
+def profile(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    reports = Report.query.filter_by(user_id=user.id).order_by(Report.timestamp.desc()).all()
+    
+    # Calculate stats
+    total_reports = len(reports)
+    verified_reports = sum(1 for report in reports if report.verification_status == 'approved')
+    pending_reports = sum(1 for report in reports if report.verification_status == 'pending')
+    rejected_reports = sum(1 for report in reports if report.verification_status == 'rejected')
+    total_points = user.points
+    
+    return render_template('profile.html', 
+                         title=f'{user.username} Profile',
+                         user=user,
+                         reports=reports,
+                         total_reports=total_reports,
+                         verified_reports=verified_reports,
+                         pending_reports=pending_reports,
+                         rejected_reports=rejected_reports,
+                         total_points=total_points)
+
+@app.route("/edit_profile", methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = ProfileForm(original_username=current_user.username)
+    
+    if form.validate_on_submit():
+        if form.profile_image.data:
+            filename = save_file(form.profile_image.data)
+            current_user.profile_image = filename
+        
+        current_user.username = form.username.data
+        current_user.bio = form.bio.data
+        db.session.commit()
+        
+        flash(translate('profile_updated'), 'success')
+        return redirect(url_for('profile', username=current_user.username))
+    
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.bio.data = current_user.bio
+    
+    return render_template('edit_profile.html', title=translate('edit'), form=form)
+
+@app.route("/follow/<username>")
+@login_required
+def follow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash(translate('user_not_found'), 'danger')
+        return redirect(url_for('home'))
+    
+    if user == current_user:
+        flash('You cannot follow yourself!', 'danger')
+        return redirect(url_for('profile', username=username))
+    
+    current_user.follow(user)
+    db.session.commit()
+    flash(translate('follow_success', username=username), 'success')
+    return redirect(url_for('profile', username=username))
+
+@app.route("/unfollow/<username>")
+@login_required
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash(translate('user_not_found'), 'danger')
+        return redirect(url_for('home'))
+    
+    current_user.unfollow(user)
+    db.session.commit()
+    flash(translate('unfollow_success', username=username), 'success')
+    return redirect(url_for('profile', username=username))
+
+@app.route("/leaderboard")
+def leaderboard():
+    # Get top users by points
+    top_users = User.query.order_by(User.points.desc()).limit(20).all()
+    return render_template('leaderboard.html', title=translate('leaderboard'), top_users=top_users)
+
+@app.route("/report", methods=['GET', 'POST'])
+@login_required
+def report():
+    form = ReportForm()
+    if form.validate_on_submit():
+        # Handle file uploads
+        image_filename = save_file(form.photo.data) if form.photo.data else None
+        video_filename = save_file(form.video.data) if form.video.data else None
+        
+        report = Report(
+            title=form.title.data, 
+            description=form.description.data,
+            hazard_type=form.hazard_type.data,
+            location=form.location.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            image_file=image_filename,
+            video_file=video_filename,
+            author=current_user,
+            status='active',
+            priority='critical' if form.hazard_type.data == 'tsunami' else 'high' if form.hazard_type.data in ['storm_surge', 'earthquake'] else 'medium'
+        )
+        
+        # Run AI analysis on the new report
+        ai_result = analyze_report_with_ai(report)
+        report.confidence_score = ai_result['confidence_score']
+        report.ai_analysis = ai_result['analysis']
+        
+        db.session.add(report)
+        
+        # Award points for reporting
+        current_user.points += 10
+        check_and_award_badges(current_user)
+        
+        db.session.commit()
+        
+        # Show AI confidence in flash message
+        confidence_percent = report.confidence_score * 100
+        flash(translate('report_submitted', confidence=confidence_percent), 'success')
+        return redirect(url_for('home'))
+    
+    return render_template('report.html', title=translate('report'), form=form)
+
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route("/get_location")
+def get_location():
+    return jsonify({'status': 'success'})
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to access the dashboard.', 'warning')
+        return redirect(url_for('home'))
+    
+    reports = Report.query.order_by(Report.timestamp.desc()).all()
+    
+    # Statistics for dashboard
+    total_reports = len(reports)
+    pending_reports = sum(1 for r in reports if r.verification_status == 'pending')
+    approved_reports = sum(1 for r in reports if r.verification_status == 'approved')
+    rejected_reports = sum(1 for r in reports if r.verification_status == 'rejected')
+    high_confidence_reports = sum(1 for r in reports if r.confidence_score >= 0.8)
+    
+    # New statistics requested
+    reports_with_media = sum(1 for r in reports if r.image_file or r.video_file)
+    
+    # Calculate top hazard type
+    hazard_counts = {}
+    for r in reports:
+        hazard_counts[r.hazard_type] = hazard_counts.get(r.hazard_type, 0) + 1
+    
+    top_hazard_type = "None"
+    top_hazard_count = 0
+    if hazard_counts:
+        top_hazard_type = max(hazard_counts, key=hazard_counts.get)
+        top_hazard_count = hazard_counts[top_hazard_type]
+    
+    report_data = []
+    for report in reports:
+        report_data.append({
+            'id': report.id,
+            'title': report.title,
+            'description': report.description,
+            'hazard_type': report.hazard_type,
+            'location': report.location,
+            'latitude': float(report.latitude),
+            'longitude': float(report.longitude),
+            'image_file': report.image_file,
+            'video_file': report.video_file,
+            'timestamp': report.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'author': report.author.username,
+            'confidence_score': report.confidence_score,
+            'verification_status': report.verification_status,
+            'ai_analysis': report.ai_analysis,
+            'status': report.status or 'active',
+            'priority': report.priority or 'medium'
+        })
+    
+    if not report_data:
+        report_data = sample_reports
+    
+    return render_template('dashboard.html', 
+                         title=translate('dashboard'), 
+                         reports=report_data,
+                         total_reports=total_reports,
+                         pending_reports=pending_reports,
+                         approved_reports=approved_reports,
+                         rejected_reports=rejected_reports,
+                         high_confidence_reports=high_confidence_reports,
+                         reports_with_media=reports_with_media,
+                         top_hazard_type=top_hazard_type,
+                         top_hazard_count=top_hazard_count)
+
+@app.route("/api/reports")
+def api_reports():
+    reports = Report.query.order_by(Report.timestamp.desc()).all() or sample_reports
+    report_data = []
+    for report in reports:
+        report_data.append({
+            'id': report.id,
+            'title': report.title,
+            'hazard_type': report.hazard_type,
+            'location': report.location,
+            'latitude': report.latitude,
+            'longitude': report.longitude,
+            'image_file': report.image_file,
+            'video_file': report.video_file,
+            'timestamp': report.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'author': report.author.username,
+            'confidence_score': report.confidence_score,
+            'verification_status': report.verification_status
+        })
+    return jsonify(report_data)
+
+@app.route("/view_report/<int:report_id>")
+@login_required
+def view_report(report_id):
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to view detailed reports.', 'warning')
+        return redirect(url_for('home'))
+    
+    report = Report.query.get_or_404(report_id)
+    return render_template('view_report.html', title='Report Details', report=report)
+
+# Hazard type alert radii (in kilometers)
+HAZARD_ALERT_RADII = {
+    'tsunami': 10.0,        # 10 km radius for tsunamis
+    'storm_surge': 15.0,    # 15 km radius for storm surges  
+    'high_waves': 2.0,      # 2 km radius for high waves
+    'swell_surge': 2.0,     # 2 km radius for swell surges
+    'coastal_flooding': 5.0, # 5 km radius for coastal flooding
+    'abnormal_tide': 2.0,   # 2 km radius for abnormal tides
+    'other': 5.0            # 5 km radius for other hazards
+}
+
+@app.route('/verify_report/<int:report_id>', methods=['POST'])
+@login_required
+def verify_report(report_id):
+    print(f"🔍 verify_report called for report {report_id} by user {current_user.username}")
+    
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to verify reports.', 'warning')
+        return redirect(url_for('view_report', report_id=report_id))
+    
+    report = Report.query.get_or_404(report_id)
+    action = request.form.get('action')
+    print(f"📋 Action: {action} for report '{report.title}' (Hazard: {report.hazard_type})")
+    
+    if action == 'approve':
+        report.verification_status = 'approved'
+        report.verified_by = current_user.id
+        report.verified_at = datetime.utcnow()
+        report.scheduled_deletion = None
+        report.verified = True
+        
+        # Set alert radius based on hazard type
+        report.alert_radius = HAZARD_ALERT_RADII.get(report.hazard_type, 5.0)
+        print(f"📏 Alert radius set to {report.alert_radius}km for {report.hazard_type}")
+        
+        # Award extra points for verified report
+        report.author.points += 20
+        check_and_award_badges(report.author)
+        print(f"⭐ Awarded 20 points to {report.author.username}")
+        
+        # Create notification for the report author
+        author_notification = Notification(
+            user_id=report.user_id,
+            message=f'🎉 Your report "{report.title}" has been approved by an official! +20 points awarded!',
+            report_id=report.id
+        )
+        db.session.add(author_notification)
+        print(f"📨 Created approval notification for report author")
+    elif action == 'resolve':
+        report.status = 'resolved'
+        flash(f'Report "{report.title}" has been marked as resolved.', 'success')
+        return redirect(url_for('dashboard'))
+        
+        # Send alerts to users in the danger zone
+        print("🚨 Starting to send hazard alerts...")
+        users_alerted = send_hazard_alerts(report)
+        print(f"✅ Hazard alerts completed. Users alerted: {users_alerted}")
+        
+        db.session.commit()
+        print("💾 Database changes committed")
+        
+        flash(translate('report_approved'), 'success')
+        
+    elif action == 'reject':
+        print("🔄 Processing rejection...")
+        
+        # Get form data
+        rejection_reason = request.form.get('rejection_reason', 'No reason provided')
+        schedule_deletion = 'schedule_deletion' in request.form
+        notify_user = 'notify_user' in request.form
+        
+        print(f"📝 Rejection reason: {rejection_reason}")
+        print(f"🗑️ Schedule deletion: {schedule_deletion}")
+        print(f"🔔 Notify user: {notify_user}")
+        
+        # Update report status
+        report.verification_status = 'rejected'
+        report.verified_by = current_user.id
+        report.verified_at = datetime.utcnow()
+        report.rejection_reason = rejection_reason
+        report.verified = False
+        
+        # Handle deletion scheduling
+        if schedule_deletion:
+            # Schedule for deletion in 24 hours (not 7 days as before)
+            report.scheduled_deletion = datetime.utcnow() + timedelta(hours=24)
+            print(f"⏰ Scheduled for deletion at: {report.scheduled_deletion}")
+        else:
+            report.scheduled_deletion = None
+            print("⏰ No deletion scheduled")
+        
+        # Create notification for the report author if requested
+        if notify_user:
+            author_notification = Notification(
+                user_id=report.user_id,
+                message=f'⚠️ Your report "{report.title}" was rejected. Reason: {rejection_reason}',
+                report_id=report.id,
+                expires_at=report.scheduled_deletion if schedule_deletion else None
+            )
+            db.session.add(author_notification)
+            print(f"📨 Created rejection notification for report author")
+        else:
+            print("🔕 No notification sent to user")
+        
+        db.session.commit()
+        print("💾 Rejection changes committed")
+        
+        flash('Report rejected successfully.', 'success')
+        
+    elif action == 'pending':
+        print("🔄 Returning report to pending status...")
+        
+        # Reset verification status
+        report.verification_status = 'pending'
+        report.verified_by = None
+        report.verified_at = None
+        report.rejection_reason = None
+        report.scheduled_deletion = None
+        report.verified = False
+        
+        db.session.commit()
+        print("💾 Pending status changes committed")
+        
+        flash('Report returned to pending status.', 'success')
+    
+    else:
+        print(f"❌ Unknown action: {action}")
+        flash('Invalid action.', 'error')
+    
+    return redirect(url_for('view_report', report_id=report_id))
+
+def send_hazard_alerts(report):
+    """Send hazard alerts to all users within the danger radius"""
+    alert_radius = HAZARD_ALERT_RADII.get(report.hazard_type, 5.0)
+    print(f"🔔 Checking alerts for {report.hazard_type} with radius {alert_radius}km at location ({report.latitude}, {report.longitude})")
+    
+    # Get users with locations and matching alert preferences
+    users = User.query.filter(
+        User.home_latitude.isnot(None),
+        User.home_longitude.isnot(None)
+    ).all()
+    
+    print(f"📋 Found {len(users)} users with location data")
+    
+    users_alerted = 0
+    
+    for user in users:
+        # Check if user has alerts enabled for this hazard type
+        user_prefs = user.get_alert_preferences()
+        if not user_prefs.get(report.hazard_type, True):
+            print(f"🔇 User {user.username} has {report.hazard_type} alerts disabled")
+            continue
+            
+        # Calculate distance between report and user
+        distance = calculate_distance(
+            report.latitude, report.longitude,
+            user.home_latitude, user.home_longitude
+        )
+        
+        print(f"📍 User {user.username} at ({user.home_latitude}, {user.home_longitude}) is {distance:.1f}km away")
+        
+        if distance <= alert_radius:
+            # Create notification for the user
+            alert_message = f"⚠️ {get_translation(user.language or 'en', report.hazard_type + '_alert', 'Hazard alert near you!')} - {distance:.1f}km away"
+            print(f"🚨 ALERT SENT to {user.username}: {alert_message}")
+            
+            alert_notification = Notification(
+                user_id=user.id,
+                message=alert_message,
+                report_id=report.id,
+                is_alert=True
+            )
+            db.session.add(alert_notification)
+            users_alerted += 1
+        else:
+            print(f"📏 User {user.username} is outside alert radius ({distance:.1f}km > {alert_radius}km)")
+    
+    report.alert_sent = True
+    report.alert_sent_at = datetime.utcnow()
+    
+    print(f"✅ Total alerts sent: {users_alerted}")
+    return users_alerted
+
+@app.route('/delete_report/<int:report_id>', methods=['POST'])
+@login_required
+def delete_report(report_id):
+    report = Report.query.get_or_404(report_id)
+    
+    # Check if user owns the report or is admin
+    if report.user_id != current_user.id and current_user.role not in ['official', 'analyst']:
+        flash('You can only delete your own reports.', 'danger')
+        return redirect(url_for('view_report', report_id=report_id))
+    
+    # Delete associated media files
+    if report.image_file:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], report.image_file))
+        except:
+            pass
+    
+    if report.video_file:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], report.video_file))
+        except:
+            pass
+    
+    # Delete the report
+    db.session.delete(report)
+    db.session.commit()
+    
+    flash('Report deleted successfully.', 'success')
+    
+    if current_user.role in ['official', 'analyst']:
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('profile', username=current_user.username))
+
+@app.route('/cancel_deletion/<int:report_id>', methods=['POST'])
+@login_required
+def cancel_deletion(report_id):
+    report = Report.query.get_or_404(report_id)
+    
+    # Check if user owns the report or is admin
+    if report.user_id != current_user.id and current_user.role not in ['official', 'analyst']:
+        flash('You can only modify your own reports.', 'danger')
+        return redirect(url_for('view_report', report_id=report_id))
+    
+    report.scheduled_deletion = None
+    
+    # Also mark any related notifications as read
+    Notification.query.filter_by(
+        report_id=report_id, 
+        user_id=current_user.id,
+        is_read=False
+    ).update({'is_read': True})
+    
+    db.session.commit()
+    
+    flash('Scheduled deletion cancelled.', 'success')
+    return redirect(url_for('view_report', report_id=report_id))
+
+@app.errorhandler(413)
+def too_large(e):
+    flash(translate('file_too_large'), 'danger')
+    return redirect(request.url)
+
+@app.route('/create-official-account')
+def create_official_account():
+    existing_user = User.query.filter_by(email='varunmax9989@gmail.com').first()
+    if existing_user:
+        existing_user.role = 'official'
+        existing_user.password = generate_password_hash('Rvarun9989@', method='pbkdf2:sha256')
+        db.session.commit()
+        return f'''
+        <h2>Existing user updated to official role!</h2>
+        <p>Email: varunmax9989@gmail.com</p>
+        <p>Password: Rvarun9989@</p>
+        <p>Role: {existing_user.role}</p>
+        <p><a href="/logout">Click here to log out</a> and then log in with these credentials.</p>
+        '''
+    
+    official_user = User(
+        username='varunmax7',
+        email='varunmax9989@gmail.com',
+        password=generate_password_hash('Rvarun9989@', method='pbkdf2:sha256'),
+        role='official'
+    )
+    db.session.add(official_user)
+    db.session.commit()
+    return '''
+    <h2>Official account created successfully!</h2>
+    <p>Email: varunmax9989@gmail.com</p>
+    <p>Password: Rvarun9989@</p>
+    <p>Role: official</p>
+    <p><a href="/logout">Click here to log out</a> and then log in with these credentials.</p>
+    '''
+
+
+
+@app.route('/check-users')
+def check_users():
+    users = User.query.all()
+    user_list = []
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'points': user.points,
+            'level': user.level,
+            'language': user.language
+        })
+    return jsonify(user_list)
+
+@app.route('/force-logout')
+def force_logout():
+    logout_user()
+    flash('You have been logged out. Please log in with official credentials.', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/elevate-user/<email>/<role>')
+def elevate_user(email, role):
+    if role not in ['citizen', 'official', 'analyst']:
+        return 'Invalid role. Use citizen, official, or analyst.'
+    
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.role = role
+        db.session.commit()
+        return f'User {email} elevated to {role} role successfully!'
+    return f'User with email {email} not found.'
+
+@app.route("/share")
+def share_app():
+    app_url = request.url_root.rstrip('/')
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Share App</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3>🌊 Share Ocean Hazard App</h3>
+                            <p>Copy this link and send it to friends:</p>
+                            
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="appLink" 
+                                       value="{app_url}" readonly>
+                                <button class="btn btn-primary" onclick="copyLink()">
+                                    Copy
+                                </button>
+                            </div>
+                            
+                            <a href="/" class="btn btn-secondary">Back to Home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        function copyLink() {{
+            const linkInput = document.getElementById('appLink');
+            linkInput.select();
+            document.execCommand('copy');
+            alert('✅ Link copied! Send this to your friends: {app_url}');
+        }}
+        </script>
+    </body>
+    </html>
+    '''
+
+@app.route("/search")
+@login_required
+def search():
+    query = request.args.get('q', '')
+    return render_template('search.html', title=translate('search'), query=query)
+
+@app.route("/api/search")
+@login_required
+def api_search():
+    query = request.args.get('q', '').strip().lower()
+    
+    results = {
+        'users': [],
+        'reports': [],
+        'trending_hazards': []
+    }
+    
+    # Search users
+    if query:
+        users = User.query.filter(
+            (User.username.ilike(f'%{query}%')) | 
+            (User.email.ilike(f'%{query}%'))
+        ).limit(5).all()
+        results['users'] = [user.to_dict() for user in users]
+    
+    # Search reports
+    if query:
+        reports = Report.query.filter(
+            (Report.title.ilike(f'%{query}%')) | 
+            (Report.location.ilike(f'%{query}%')) |
+            (Report.hazard_type.ilike(f'%{query}%')) |
+            (Report.description.ilike(f'%{query}%'))
+        ).limit(10).all()
+        results['reports'] = [report.to_dict() for report in reports]
+    
+    # Get trending hazards (most common hazard types)
+    trending_hazards = get_trending_hazards(query)
+    results['trending_hazards'] = trending_hazards
+    
+    return jsonify(results)
+
+def get_trending_hazards(query=None):
+    # Get most common hazard types from recent reports
+    trending = db.session.query(
+        Report.hazard_type,
+        func.count(Report.id).label('count')
+    ).group_by(Report.hazard_type).order_by(func.count(Report.id).desc()).limit(5).all()
+    
+    hazards = []
+    for hazard_type, count in trending:
+        if not query or query.lower() in hazard_type.lower():
+            hazards.append({
+                'name': hazard_type,
+                'count': count,
+                'icon': get_hazard_icon(hazard_type)
+            })
+    
+    return hazards
+
+def get_hazard_icon(hazard_type):
+    icons = {
+        'tsunami': '🌊',
+        'storm_surge': '⛈️',
+        'high_waves': '🌊',
+        'swell_surge': '🌊',
+        'coastal_flooding': '🌧️',
+        'abnormal_tide': '🌕',
+        'other': '⚠️'
+    }
+    return icons.get(hazard_type, '⚠️')
+
+@app.route("/reels")
+def reels():
+    """Instagram Reels-style report viewing - accessible to everyone"""
+    reports = Report.query.order_by(Report.timestamp.desc()).all()
+    
+    # Get IDs of reports the current user has locally approved (if authenticated)
+    user_locally_approved_reports = []
+    if current_user.is_authenticated:
+        user_approvals = LocalApproval.query.filter_by(user_id=current_user.id).all()
+        user_locally_approved_reports = [appr.report_id for appr in user_approvals]
+    
+    return render_template('reels.html', 
+                         title=translate('reels'), 
+                         reports=reports,
+                         user_locally_approved_reports=user_locally_approved_reports)
+
+@app.route("/api/report/<int:report_id>/local_approve", methods=['POST'])
+@login_required
+def local_approve(report_id):
+    """Locally approve/unapprove a report"""
+    report = Report.query.get_or_404(report_id)
+    user_id = current_user.id
+    
+    # Check proximity (must be within 10km to be a "local")
+    is_local = False
+    if current_user.home_latitude and current_user.home_longitude:
+        dist = calculate_distance(current_user.home_latitude, current_user.home_longitude, 
+                                 report.latitude, report.longitude)
+        if dist <= 10:  # 10km radius
+            is_local = True
+    
+    # Check if user already approved this report
+    existing_appr = LocalApproval.query.filter_by(user_id=user_id, report_id=report_id).first()
+    
+    if existing_appr:
+        # Remove approval
+        db.session.delete(existing_appr)
+        liked = False
+    else:
+        # Add new approval
+        new_appr = LocalApproval(user_id=user_id, report_id=report_id)
+        db.session.add(new_appr)
+        liked = True
+        
+    db.session.commit()
+    
+    # Count total local approvals (specifically from users within 10km)
+    local_appr_count = 0
+    all_approvals = LocalApproval.query.filter_by(report_id=report_id).all()
+    
+    for appr in all_approvals:
+        if appr.user.home_latitude and appr.user.home_longitude:
+            d = calculate_distance(appr.user.home_latitude, appr.user.home_longitude,
+                                  report.latitude, report.longitude)
+            if d <= 10:
+                local_appr_count += 1
+    
+    # Auto-verify locally if threshold reached (e.g., 3 local people)
+    if local_appr_count >= 3:
+        report.is_local_verified = True
+    else:
+        report.is_local_verified = False
+        
+    db.session.commit()
+    
+    return jsonify({
+        'approvals': len(all_approvals), 
+        'local_approvals': local_appr_count,
+        'approved': liked, 
+        'is_local': is_local,
+        'local_verified': report.is_local_verified
+    })
+
+@app.route("/api/report/<int:report_id>/view", methods=['POST'])
+def view_report_item(report_id):
+    """Increment view count for a report - uniquely per account"""
+    report = Report.query.get_or_404(report_id)
+    
+    # If user is logged in, check for unique view
+    if current_user.is_authenticated:
+        existing_view = ReportView.query.filter_by(user_id=current_user.id, report_id=report_id).first()
+        if not existing_view:
+            # Create new view record
+            new_view = ReportView(user_id=current_user.id, report_id=report_id)
+            db.session.add(new_view)
+            
+            # Increment count
+            report.views_count = (report.views_count or 0) + 1
+            db.session.commit()
+    else:
+        # For non-logged in users, we just show the count without incrementing uniquely
+        # unless you want to use IP/Session, but the user requested "for an account"
+        pass
+        
+    return jsonify({'views': report.views_count or 0})
+
+@app.route("/api/report/<int:report_id>/comment", methods=['POST'])
+@login_required
+def add_comment(report_id):
+    """Add comment to a report"""
+    report = Report.query.get_or_404(report_id)
+    comment_text = request.json.get('comment', '').strip()
+    
+    if comment_text:
+        # Create a new comment
+        new_comment = Comment(
+            user_id=current_user.id,
+            report_id=report_id,
+            text=comment_text
+        )
+        db.session.add(new_comment)
+        report.comments_count = getattr(report, 'comments_count', 0) + 1
+        db.session.commit()
+    
+    return jsonify({'comments': report.comments_count})
+
+@app.route("/api/report/<int:report_id>/comments")
+def get_comments(report_id):
+    """Get all comments for a report"""
+    report = Report.query.get_or_404(report_id)
+    comments = Comment.query.filter_by(report_id=report_id).order_by(Comment.timestamp.desc()).all()
+    
+    comments_data = []
+    for comment in comments:
+        comments_data.append({
+            'comment': comment.text,
+            'author_username': comment.user.username,
+            'author_profile_image': comment.user.profile_image,
+            'timestamp': comment.timestamp.isoformat()
+        })
+        
+    return jsonify(comments_data)
+
+@app.route("/api/report/<int:report_id>/share", methods=['POST'])
+@login_required
+def share_report(report_id):
+    """Share a report"""
+    report = Report.query.get_or_404(report_id)
+    report.shares_count = getattr(report, 'shares_count', 0) + 1
+    db.session.commit()
+    return jsonify({'shares': report.shares_count})
+
+@app.route('/api/register_push_token', methods=['POST'])
+@login_required
+def register_push_token():
+    token = request.json.get('token')
+    if token:
+        current_user.push_token = token
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route("/set_location", methods=['GET', 'POST'])
+@login_required
+def set_location():
+    form = LocationForm()
+    
+    if form.validate_on_submit():
+        current_user.home_latitude = form.home_latitude.data
+        current_user.home_longitude = form.home_longitude.data
+        
+        # Auto-detect and update language based on new location
+        if form.home_latitude.data and form.home_longitude.data:
+            detected_lang = detect_preferred_language(
+                form.home_latitude.data, 
+                form.home_longitude.data
+            )
+            if detected_lang != current_user.language:
+                current_user.language = detected_lang
+                flash(f'Language auto-detected and set to {detected_lang.upper()} based on your location.', 'info')
+        
+        db.session.commit()
+        flash(translate('location_saved'), 'success')
+        return redirect(url_for('profile', username=current_user.username))
+    
+    elif request.method == 'GET':
+        form.home_latitude.data = current_user.home_latitude
+        form.home_longitude.data = current_user.home_longitude
+    
+    return render_template('set_location.html', title=translate('set_location'), form=form)
+
+@app.route("/alert_preferences", methods=['GET', 'POST'])
+@login_required
+def alert_preferences():
+    form = AlertPreferencesForm()
+    
+    if request.method == 'POST':
+        # Update alert preferences
+        preferences = {}
+        for hazard_type in HAZARD_ALERT_RADII.keys():
+            preferences[hazard_type] = request.form.get(hazard_type) == 'on'
+        
+        current_user.set_alert_preferences(preferences)
+        db.session.commit()
+        flash('Your alert preferences have been updated!', 'success')
+        return redirect(url_for('profile', username=current_user.username))
+    
+    # Pre-populate form with current preferences for GET requests
+    if request.method == 'GET':
+        current_prefs = current_user.get_alert_preferences()
+        # You'll need to set form data based on current_prefs
+    
+    return render_template('alert_preferences.html', 
+                         title=translate('alert_preferences'), 
+                         form=form,
+                         hazard_types=HAZARD_ALERT_RADII)
+
+@app.route("/notifications")
+@login_required
+def notifications():
+    """Display all notifications for the current user"""
+    user_notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    return render_template('notifications.html', 
+                         title=translate('notifications'),
+                         notifications=user_notifications)
+
+@app.route("/notification/<int:notification_id>/read", methods=['POST'])
+@login_required
+def mark_notification_read_web(notification_id):
+    """Mark a notification as read"""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    if notification.user_id != current_user.id:
+        flash(translate('unauthorized'), 'danger')
+        return redirect(url_for('notifications'))
+    
+    notification.is_read = True
+    db.session.commit()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True})
+    
+    flash('Notification marked as read.', 'success')
+    return redirect(url_for('notifications'))
+
+@app.route("/clear_all_notifications", methods=['POST'])
+@login_required
+def clear_all_notifications():
+    """Clear all notifications for the current user"""
+    Notification.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    
+    flash('All notifications cleared.', 'success')
+    return redirect(url_for('notifications'))
+
+@app.route("/api/notifications/unread-count")
+@login_required
+def unread_notifications_count():
+    count = Notification.query.filter_by(
+        user_id=current_user.id, 
+        is_read=False
+    ).count()
+    return jsonify({'count': count})
+
+@app.route('/debug_users')
+@login_required
+def debug_users():
+    """Debug page to check user locations and preferences"""
+    if current_user.role not in ['official', 'analyst']:
+        return "Unauthorized", 403
+    
+    users = User.query.all()
+    user_data = []
+    
+    for user in users:
+        user_data.append({
+            'username': user.username,
+            'location': f"({user.home_latitude}, {user.home_longitude})" if user.home_latitude else "Not set",
+            'language': user.language,
+            'alert_preferences': user.get_alert_preferences()
+        })
+    
+    return render_template('debug_users.html', users=user_data)
+
+@app.route('/user/<username>/reports')
+def user_reports(username):
+    """View all reports by a specific user"""
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    reports = Report.query.filter_by(author_id=user.id)\
+        .order_by(Report.timestamp.desc())\
+        .paginate(page=page, per_page=10, error_out=False)
+    
+    return render_template('user_reports.html', 
+                         user=user, 
+                         reports=reports)
+
+
+@app.route("/analyst_dashboard")
+@login_required
+def analyst_dashboard():
+    """Enhanced dashboard with weather data and analytics"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to access the analyst dashboard.', 'warning')
+        return redirect(url_for('home'))
+    
+    reports = Report.query.order_by(Report.timestamp.desc()).all()
+    
+    # Statistics for dashboard
+    total_reports = len(reports)
+    pending_reports = sum(1 for r in reports if r.verification_status == 'pending')
+    approved_reports = sum(1 for r in reports if r.verification_status == 'approved')
+    rejected_reports = sum(1 for r in reports if r.verification_status == 'rejected')
+    high_confidence_reports = sum(1 for r in reports if r.confidence_score >= 0.8)
+    
+    # Hazard type distribution
+    hazard_counts = {}
+    for report in reports:
+        hazard_type = report.hazard_type
+        hazard_counts[hazard_type] = hazard_counts.get(hazard_type, 0) + 1
+    
+    # Data for timeline chart (last 7 days)
+    timeline_labels = []
+    timeline_data = []
+    
+    # Get all reports from last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    recent_reports_all = Report.query.filter(Report.timestamp >= seven_days_ago).all()
+    
+    # Group by date in Python for cross-DB compatibility
+    counts_by_day = {}
+    for r in recent_reports_all:
+        d_str = r.timestamp.strftime('%Y-%m-%d')
+        counts_by_day[d_str] = counts_by_day.get(d_str, 0) + 1
+        
+    for i in range(6, -1, -1):
+        day = (datetime.utcnow() - timedelta(days=i)).date()
+        date_str = day.strftime('%Y-%m-%d')
+        timeline_labels.append(day.strftime('%b %d'))
+        timeline_data.append(counts_by_day.get(date_str, 0))
+    
+    # User engagement stats
+    total_users = User.query.count()
+    active_users = User.query.filter(User.points > 0).count()
+    
+    report_data = []
+    for report in reports:
+        report_data.append({
+            'id': report.id,
+            'title': report.title,
+            'description': report.description,
+            'hazard_type': report.hazard_type,
+            'location': report.location,
+            'latitude': float(report.latitude),
+            'longitude': float(report.longitude),
+            'image_file': report.image_file,
+            'video_file': report.video_file,
+            'timestamp': report.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'author': report.author.username,
+            'confidence_score': report.confidence_score,
+            'verification_status': report.verification_status,
+            'ai_analysis': report.ai_analysis
+        })
+    
+    if not report_data:
+        report_data = sample_reports
+    
+    recent_reports_count = len(recent_reports_all)
+
+    return render_template('analyst_dashboard.html', 
+                         title='Analyst Dashboard', 
+                         reports=report_data,
+                         total_reports=total_reports,
+                         pending_reports=pending_reports,
+                         approved_reports=approved_reports,
+                         rejected_reports=rejected_reports,
+                         high_confidence_reports=high_confidence_reports,
+                         hazard_counts=hazard_counts,
+                         recent_reports=recent_reports_count,
+                         total_users=total_users,
+                         active_users=active_users,
+                         timeline_labels=timeline_labels,
+                         timeline_data=timeline_data)
+
+@app.route("/chart/hazard_distribution")
+@login_required
+def hazard_distribution_chart():
+    """Generate hazard distribution chart"""
+    if current_user.role not in ['official', 'analyst']:
+        return "Unauthorized", 403
+    
+    reports = Report.query.all()
+    hazard_counts = {}
+    for report in reports:
+        hazard_type = report.hazard_type
+        hazard_counts[hazard_type] = hazard_counts.get(hazard_type, 0) + 1
+    
+    # Create pie chart
+    plt.figure(figsize=(8, 6))
+    if hazard_counts:
+        labels = list(hazard_counts.keys())
+        sizes = list(hazard_counts.values())
+        colors = plt.cm.Set3(np.linspace(0, 1, len(labels)))
+        
+        plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+        plt.axis('equal')
+        plt.title('Hazard Type Distribution')
+    else:
+        plt.text(0.5, 0.5, 'No data available', ha='center', va='center', transform=plt.gca().transAxes)
+    
+    # Save to bytes buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+    buf.seek(0)
+    plt.close()
+    
+    return Response(buf.getvalue(), mimetype='image/png')
+
+@app.route("/chart/reports_timeline")
+@login_required
+def reports_timeline_chart():
+    """Generate reports timeline chart"""
+    if current_user.role not in ['official', 'analyst']:
+        return "Unauthorized", 403
+    
+    # Get reports from last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    reports = Report.query.filter(Report.timestamp >= thirty_days_ago).all()
+    
+    # Group by date
+    daily_counts = {}
+    for report in reports:
+        date_str = report.timestamp.strftime('%Y-%m-%d')
+        daily_counts[date_str] = daily_counts.get(date_str, 0) + 1
+    
+    # Create line chart
+    plt.figure(figsize=(10, 6))
+    if daily_counts:
+        dates = sorted(daily_counts.keys())
+        counts = [daily_counts[date] for date in dates]
+        
+        plt.plot(dates, counts, marker='o', linewidth=2, markersize=6)
+        plt.xlabel('Date')
+        plt.ylabel('Number of Reports')
+        plt.title('Reports Timeline (Last 30 Days)')
+        plt.xticks(rotation=45)
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+    else:
+        plt.text(0.5, 0.5, 'No data available', ha='center', va='center', transform=plt.gca().transAxes)
+    
+    # Save to bytes buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+    buf.seek(0)
+    plt.close()
+    
+    return Response(buf.getvalue(), mimetype='image/png')
+
+@app.route("/chart/user_engagement")
+@login_required
+def user_engagement_chart():
+    """Generate user engagement chart"""
+    if current_user.role not in ['official', 'analyst']:
+        return "Unauthorized", 403
+    
+    users = User.query.all()
+    
+    # Categorize users by points
+    categories = {
+        '0-10': 0,
+        '11-50': 0,
+        '51-100': 0,
+        '101-500': 0,
+        '500+': 0
+    }
+    
+    for user in users:
+        points = user.points
+        if points == 0:
+            categories['0-10'] += 1
+        elif points <= 10:
+            categories['0-10'] += 1
+        elif points <= 50:
+            categories['11-50'] += 1
+        elif points <= 100:
+            categories['51-100'] += 1
+        elif points <= 500:
+            categories['101-500'] += 1
+        else:
+            categories['500+'] += 1
+    
+    # Create bar chart
+    plt.figure(figsize=(10, 6))
+    labels = list(categories.keys())
+    values = list(categories.values())
+    
+    bars = plt.bar(labels, values, color=plt.cm.viridis(np.linspace(0, 1, len(labels))))
+    plt.xlabel('Points Range')
+    plt.ylabel('Number of Users')
+    plt.title('User Engagement Distribution')
+    
+    # Add value labels on bars
+    for bar, value in zip(bars, values):
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
+                str(value), ha='center', va='bottom')
+    
+    plt.tight_layout()
+    
+    # Save to bytes buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+    buf.seek(0)
+    plt.close()
+    
+    return Response(buf.getvalue(), mimetype='image/png')
+
+def get_weather_warnings():
+    """Get weather warnings from external API (mock data for demo)"""
+    # In production, integrate with actual weather APIs like:
+    # - IMD (India Meteorological Department)
+    # - OpenWeatherMap
+    # - WeatherAPI
+    
+    # Mock weather warnings for demonstration
+    warnings = [
+        {
+            'type': 'cyclone',
+            'severity': 'high',
+            'location': 'Bay of Bengal',
+            'latitude': 15.0,
+            'longitude': 88.0,
+            'radius': 300,  # km
+            'message': 'Cyclone warning: System developing in Bay of Bengal',
+            'timestamp': datetime.utcnow().isoformat()
+        },
+        {
+            'type': 'high_waves',
+            'severity': 'medium',
+            'location': 'Arabian Sea Coast',
+            'latitude': 18.5,
+            'longitude': 72.8,
+            'radius': 100,
+            'message': 'High wave warning: 3-4 meter waves expected',
+            'timestamp': (datetime.utcnow() - timedelta(hours=2)).isoformat()
+        },
+        {
+            'type': 'heavy_rain',
+            'severity': 'medium',
+            'location': 'Kerala Coast',
+            'latitude': 10.0,
+            'longitude': 76.2,
+            'radius': 150,
+            'message': 'Heavy rainfall alert: Coastal areas may experience flooding',
+            'timestamp': (datetime.utcnow() - timedelta(hours=1)).isoformat()
+        }
+    ]
+    
+    return warnings
+
+@app.route("/api/weather_warnings")
+@login_required
+def api_weather_warnings():
+    """API endpoint for weather warnings"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    warnings = get_weather_warnings()
+    return jsonify(warnings)
+
+def send_early_warning_alerts(warning):
+    """Send early warning alerts to users in affected areas"""
+    users = User.query.filter(
+        User.home_latitude.isnot(None),
+        User.home_longitude.isnot(None)
+    ).all()
+    
+    users_alerted = 0
+    
+    for user in users:
+        distance = calculate_distance(
+            warning['latitude'], warning['longitude'],
+            user.home_latitude, user.home_longitude
+        )
+        
+        if distance <= warning['radius']:
+            # Create early warning notification
+            alert_message = f"🚨 EARLY WARNING: {warning['message']} - {distance:.1f}km from your location"
+            
+            alert_notification = Notification(
+                user_id=user.id,
+                message=alert_message,
+                is_alert=True,
+                is_read=False
+            )
+            db.session.add(alert_notification)
+            users_alerted += 1
+    
+    db.session.commit()
+    return users_alerted
+
+@app.route("/send_test_warning", methods=['POST'])
+@login_required
+def send_test_warning():
+    """Endpoint to test early warning system"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    test_warning = {
+        'type': 'test',
+        'severity': 'high',
+        'location': 'Test Area',
+        'latitude': current_user.home_latitude or 20.5937,
+        'longitude': current_user.home_longitude or 78.9629,
+        'radius': 50,
+        'message': 'TEST: Early warning system test alert'
+    }
+    
+    users_alerted = send_early_warning_alerts(test_warning)
+    
+    return jsonify({
+        'success': True,
+        'message': f'Test warning sent to {users_alerted} users',
+        'users_alerted': users_alerted
+    })
+
+@app.route('/reject_report/<int:report_id>', methods=['GET', 'POST'])
+@login_required
+def reject_report(report_id):
+    print(f"🔍 reject_report called for report {report_id} by user {current_user.username}")
+    
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to reject reports.', 'warning')
+        return redirect(url_for('view_report', report_id=report_id))
+    
+    report = Report.query.get_or_404(report_id)
+    
+    if request.method == 'POST':
+        rejection_reason = request.form.get('rejection_reason', 'No reason provided')
+        schedule_deletion = 'schedule_deletion' in request.form
+        notify_user = 'notify_user' in request.form
+        
+        print(f"📝 Rejection reason: {rejection_reason}")
+        print(f"🗑️ Schedule deletion: {schedule_deletion}")
+        print(f"🔔 Notify user: {notify_user}")
+        
+        if not rejection_reason or rejection_reason.strip() == '':
+            flash('Please provide a reason for rejection.', 'error')
+            return render_template('reject_report.html', report=report)
+        
+        # Update report status
+        report.verification_status = 'rejected'
+        report.verified_by = current_user.id
+        report.verified_at = datetime.utcnow()
+        report.rejection_reason = rejection_reason.strip()
+        report.verified = False
+        
+        # Handle deletion scheduling
+        if schedule_deletion:
+            report.scheduled_deletion = datetime.utcnow() + timedelta(hours=24)
+            print(f"⏰ Scheduled for deletion at: {report.scheduled_deletion}")
+        else:
+            report.scheduled_deletion = None
+            print("⏰ No deletion scheduled")
+        
+        # Create notification for the report author if requested
+        if notify_user:
+            author_notification = Notification(
+                user_id=report.user_id,
+                message=f'⚠️ Your report "{report.title}" was rejected. Reason: {rejection_reason}',
+                report_id=report.id,
+                expires_at=report.scheduled_deletion if schedule_deletion else None
+            )
+            db.session.add(author_notification)
+            print(f"📨 Created rejection notification for report author")
+        else:
+            print("🔕 No notification sent to user")
+        
+        db.session.commit()
+        print("💾 Rejection changes committed")
+        
+        flash('Report rejected successfully.', 'success')
+        return redirect(url_for('view_report', report_id=report_id))
+    
+    # GET request - show the rejection form
+    return render_template('reject_report.html', report=report)
+
+
+
+
+
+# Add this after: app = Flask(__name__)
+# and before any routes
+
+@app.template_filter('fromjson')
+def fromjson_filter(value):
+    """Convert a JSON string to a Python object"""
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return value
+    return value
+
+# =============================================================================
+# GOVERNMENT-NGO COORDINATION PLATFORM
+# =============================================================================
+
+@app.route("/coordination")
+@login_required
+def coordination_dashboard():
+    """Unified command center dashboard"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to access the coordination platform.', 'warning')
+        return redirect(url_for('home'))
+    
+    # Get active emergency events
+    active_events = EmergencyEvent.query.filter_by(status='active').order_by(EmergencyEvent.created_at.desc()).all()
+    
+    # Get recent situation reports
+    recent_reports = SituationReport.query.order_by(SituationReport.created_at.desc()).limit(5).all()
+    
+    # Get resource allocations
+    resource_allocations = ResourceAllocation.query.join(EmergencyEvent).filter(
+        EmergencyEvent.status == 'active'
+    ).all()
+    
+    # Get available volunteers
+    available_volunteers = Volunteer.query.filter_by(availability='available', is_verified=True).count()
+    
+    return render_template('coordination_dashboard.html',
+                         title='Coordination Platform',
+                         active_events=active_events,
+                         recent_reports=recent_reports,
+                         resource_allocations=resource_allocations,
+                         available_volunteers=available_volunteers)
+
+@app.route("/coordination/agencies")
+@login_required
+def agency_management():
+    """Manage participating agencies"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to manage agencies.', 'warning')
+        return redirect(url_for('home'))
+    
+    agencies = Agency.query.filter_by(is_active=True).order_by(Agency.name).all()
+    return render_template('agency_management.html',
+                         title='Agency Management',
+                         agencies=agencies)
+
+@app.route("/coordination/agencies/new", methods=['GET', 'POST'])
+@login_required
+def new_agency():
+    """Register a new agency"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to register agencies.', 'warning')
+        return redirect(url_for('home'))
+    
+    form = AgencyForm()
+    
+    if form.validate_on_submit():
+        agency = Agency(
+            name=form.name.data,
+            type=form.type.data,
+            contact_email=form.contact_email.data,
+            contact_phone=form.contact_phone.data,
+            resources=form.resources.data,
+            capabilities=form.capabilities.data
+        )
+        db.session.add(agency)
+        db.session.commit()
+        
+        flash(f'Agency {agency.name} registered successfully!', 'success')
+        return redirect(url_for('agency_management'))
+    
+    return render_template('new_agency.html',
+                         title='Register New Agency',
+                         form=form)
+
+@app.route("/coordination/emergencies")
+@login_required
+def emergency_management():
+    """Manage emergency events"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to manage emergencies.', 'warning')
+        return redirect(url_for('home'))
+    
+    emergencies = EmergencyEvent.query.order_by(EmergencyEvent.created_at.desc()).all()
+    return render_template('emergency_management.html',
+                         title='Emergency Management',
+                         emergencies=emergencies)
+
+@app.route("/coordination/emergencies/new", methods=['GET', 'POST'])
+@login_required
+def new_emergency():
+    """Create a new emergency event"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to create emergency events.', 'warning')
+        return redirect(url_for('home'))
+    
+    form = EmergencyEventForm()
+    
+    if form.validate_on_submit():
+        emergency = EmergencyEvent(
+            title=form.title.data,
+            description=form.description.data,
+            hazard_type=form.hazard_type.data,
+            severity=form.severity.data,
+            location=form.location.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            radius_km=form.radius_km.data,
+            created_by=current_user.id
+        )
+        db.session.add(emergency)
+        db.session.commit()
+        
+        # Create initial situation report
+        initial_report = SituationReport(
+            emergency_event_id=emergency.id,
+            title=f"Initial Report: {emergency.title}",
+            content=f"Emergency event created. {emergency.description}",
+            priority=emergency.severity,
+            report_type='damage_assessment',
+            created_by=current_user.id
+        )
+        db.session.add(initial_report)
+        db.session.commit()
+        
+        flash(f'Emergency event "{emergency.title}" created successfully!', 'success')
+        return redirect(url_for('emergency_management'))
+    
+    return render_template('new_emergency.html',
+                         title='Create Emergency Event',
+                         form=form)
+
+@app.route("/coordination/resources")
+@login_required
+def resource_management():
+    """Manage resource allocation"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to manage resources.', 'warning')
+        return redirect(url_for('home'))
+    
+    allocations = ResourceAllocation.query.order_by(ResourceAllocation.created_at.desc()).all()
+    agencies = Agency.query.filter_by(is_active=True).all()
+    emergencies = EmergencyEvent.query.filter_by(status='active').all()
+    
+    return render_template('resource_management.html',
+                         title='Resource Management',
+                         allocations=allocations,
+                         agencies=agencies,
+                         emergencies=emergencies)
+
+@app.route("/coordination/resources/allocate", methods=['GET', 'POST'])
+@login_required
+def allocate_resources():
+    """Allocate resources to emergency events"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to allocate resources.', 'warning')
+        return redirect(url_for('home'))
+    
+    form = ResourceAllocationForm()
+    
+    # Populate dropdown choices
+    form.emergency_event_id.choices = [(e.id, e.title) for e in EmergencyEvent.query.filter_by(status='active').all()]
+    form.agency_id.choices = [(a.id, a.name) for a in Agency.query.filter_by(is_active=True).all()]
+    
+    if form.validate_on_submit():
+        allocation = ResourceAllocation(
+            emergency_event_id=form.emergency_event_id.data,
+            agency_id=form.agency_id.data,
+            resource_type=form.resource_type.data,
+            quantity=form.quantity.data,
+            units=form.units.data,
+            allocated_by=current_user.id
+        )
+        db.session.add(allocation)
+        db.session.commit()
+        
+        flash('Resources allocated successfully!', 'success')
+        return redirect(url_for('resource_management'))
+    
+    return render_template('allocate_resources.html',
+                         title='Allocate Resources',
+                         form=form)
+
+@app.route("/coordination/volunteers")
+@login_required
+def volunteer_management():
+    """Manage volunteers and assignments"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to manage volunteers.', 'warning')
+        return redirect(url_for('home'))
+    
+    volunteers = Volunteer.query.all()
+    assignments = VolunteerAssignment.query.filter_by(status='assigned').all()
+    emergencies = EmergencyEvent.query.filter_by(status='active').all()
+    
+    return render_template('volunteer_management.html',
+                         title='Volunteer Management',
+                         volunteers=volunteers,
+                         assignments=assignments,
+                         emergencies=emergencies)
+
+@app.route("/coordination/volunteers/register", methods=['GET', 'POST'])
+@login_required
+def register_volunteer():
+    """Register as a volunteer"""
+    # Check if user already has a volunteer profile
+    existing_volunteer = Volunteer.query.filter_by(user_id=current_user.id).first()
+    if existing_volunteer:
+        flash('You already have a volunteer profile!', 'info')
+        return redirect(url_for('volunteer_management'))
+    
+    form = VolunteerRegistrationForm()
+    
+    if form.validate_on_submit():
+        volunteer = Volunteer(
+            user_id=current_user.id,
+            skills=form.skills.data,
+            experience_level=form.experience_level.data,
+            certifications=form.certifications.data,
+            location=form.location.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            availability=form.availability.data,
+            is_verified=(current_user.role in ['official', 'analyst'])  # Auto-verify officials
+        )
+        db.session.add(volunteer)
+        db.session.commit()
+        
+        flash('Volunteer profile created successfully!', 'success')
+        return redirect(url_for('volunteer_management'))
+    
+    return render_template('register_volunteer.html',
+                         title='Register as Volunteer',
+                         form=form)
+
+@app.route("/coordination/volunteers/assign", methods=['GET', 'POST'])
+@login_required
+def assign_volunteer():
+    """Assign volunteers to emergency events"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to assign volunteers.', 'warning')
+        return redirect(url_for('home'))
+    
+    form = VolunteerAssignmentForm()
+    
+    # Populate dropdown choices
+    form.volunteer_id.choices = [(v.id, f"{v.user.username} - {v.skills}") 
+                                for v in Volunteer.query.filter_by(availability='available', is_verified=True).all()]
+    form.emergency_event_id.choices = [(e.id, e.title) for e in EmergencyEvent.query.filter_by(status='active').all()]
+    
+    if form.validate_on_submit():
+        assignment = VolunteerAssignment(
+            volunteer_id=form.volunteer_id.data,
+            emergency_event_id=form.emergency_event_id.data,
+            role=form.role.data,
+            assigned_by=current_user.id
+        )
+        
+        # Update volunteer availability
+        volunteer = Volunteer.query.get(form.volunteer_id.data)
+        volunteer.availability = 'busy'
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        flash('Volunteer assigned successfully!', 'success')
+        return redirect(url_for('volunteer_management'))
+    
+    return render_template('assign_volunteer.html',
+                         title='Assign Volunteer',
+                         form=form)
+
+@app.route("/coordination/situation-reports")
+@login_required
+def situation_reports():
+    """View and create situation reports"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to access situation reports.', 'warning')
+        return redirect(url_for('home'))
+    
+    reports = SituationReport.query.order_by(SituationReport.created_at.desc()).all()
+    emergencies = EmergencyEvent.query.filter_by(status='active').all()
+    
+    return render_template('situation_reports.html',
+                         title='Situation Reports',
+                         reports=reports,
+                         emergencies=emergencies)
+
+@app.route("/coordination/situation-reports/new", methods=['GET', 'POST'])
+@login_required
+def new_situation_report():
+    """Create a new situation report"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to create situation reports.', 'warning')
+        return redirect(url_for('home'))
+    
+    form = SituationReportForm()
+    
+    # Populate emergency events dropdown
+    form.emergency_event_id.choices = [(e.id, e.title) for e in EmergencyEvent.query.filter_by(status='active').all()]
+    
+    if form.validate_on_submit():
+        report = SituationReport(
+            emergency_event_id=form.emergency_event_id.data,
+            title=form.title.data,
+            content=form.content.data,
+            priority=form.priority.data,
+            report_type=form.report_type.data,
+            created_by=current_user.id
+        )
+        db.session.add(report)
+        db.session.commit()
+        
+        flash('Situation report created successfully!', 'success')
+        return redirect(url_for('situation_reports'))
+    
+    return render_template('new_situation_report.html',
+                         title='New Situation Report',
+                         form=form)
+
+@app.route("/api/coordination/volunteers/match")
+@login_required
+def match_volunteers():
+    """API endpoint for skill-based volunteer matching"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    emergency_id = request.args.get('emergency_id', type=int)
+    required_skills = request.args.get('skills', '').split(',')
+    
+    if not emergency_id:
+        return jsonify({'error': 'Emergency ID required'}), 400
+    
+    emergency = EmergencyEvent.query.get_or_404(emergency_id)
+    
+    # Find volunteers with matching skills near the emergency location
+    volunteers = Volunteer.query.filter(
+        Volunteer.availability == 'available',
+        Volunteer.is_verified == True
+    ).all()
+    
+    matched_volunteers = []
+    for volunteer in volunteers:
+        # Simple skill matching (in production, use more sophisticated matching)
+        volunteer_skills = [s.strip().lower() for s in volunteer.skills.split(',')] if volunteer.skills else []
+        matched_skills = set(volunteer_skills) & set([s.strip().lower() for s in required_skills])
+        
+        if matched_skills:
+            # Calculate distance if location data available
+            distance = None
+            if volunteer.latitude and volunteer.longitude:
+                distance = calculate_distance(
+                    emergency.latitude, emergency.longitude,
+                    volunteer.latitude, volunteer.longitude
+                )
+            
+            matched_volunteers.append({
+                'id': volunteer.id,
+                'name': volunteer.user.username,
+                'skills': volunteer.skills,
+                'matched_skills': list(matched_skills),
+                'experience_level': volunteer.experience_level,
+                'distance_km': distance,
+                'location': volunteer.location
+            })
+    
+    # Sort by number of matched skills and distance
+    matched_volunteers.sort(key=lambda x: (len(x['matched_skills']), x['distance_km'] or float('inf')))
+    
+    return jsonify({'matched_volunteers': matched_volunteers})
+
+@app.route("/api/coordination/resources/status")
+@login_required
+def resource_status():
+    """API endpoint for real-time resource status"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    emergency_id = request.args.get('emergency_id', type=int)
+    
+    if emergency_id:
+        allocations = ResourceAllocation.query.filter_by(emergency_event_id=emergency_id).all()
+    else:
+        allocations = ResourceAllocation.query.all()
+    
+    resource_data = {}
+    for allocation in allocations:
+        if allocation.resource_type not in resource_data:
+            resource_data[allocation.resource_type] = {
+                'allocated': 0,
+                'deployed': 0,
+                'used': 0
+            }
+        
+        resource_data[allocation.resource_type]['allocated'] += allocation.quantity
+        if allocation.status == 'deployed':
+            resource_data[allocation.resource_type]['deployed'] += allocation.quantity
+        elif allocation.status == 'used':
+            resource_data[allocation.resource_type]['used'] += allocation.quantity
+    
+    return jsonify(resource_data)
+
+@app.route("/api/coordination/emergency-map")
+@login_required
+def emergency_map_data():
+    """API endpoint for emergency map visualization"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    emergencies = EmergencyEvent.query.filter_by(status='active').all()
+    
+    map_data = {
+        'type': 'FeatureCollection',
+        'features': []
+    }
+    
+    for emergency in emergencies:
+        feature = {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [emergency.longitude, emergency.latitude]
+            },
+            'properties': {
+                'id': emergency.id,
+                'title': emergency.title,
+                'severity': emergency.severity,
+                'hazard_type': emergency.hazard_type,
+                'radius_km': emergency.radius_km,
+                'location': emergency.location,
+                'created_at': emergency.created_at.isoformat()
+            }
+        }
+        map_data['features'].append(feature)
+    
+    return jsonify(map_data)
+
+# =============================================================================
+# PLASTIC REDUCTION & CARBON SAVINGS FEATURE
+# =============================================================================
+
+@app.route("/eco_tracker")
+@login_required
+def eco_tracker():
+    """Main eco tracker dashboard"""
+    # Get user's plastic reduction history
+    plastic_usage = PlasticUsage.query.filter_by(user_id=current_user.id)\
+        .order_by(PlasticUsage.date.desc()).limit(10).all()
+    
+    # Get carbon savings history
+    carbon_savings = CarbonSavings.query.filter_by(user_id=current_user.id)\
+        .order_by(CarbonSavings.date.desc()).limit(10).all()
+    
+    # Calculate totals
+    total_plastic_reduced = db.session.query(func.sum(PlasticUsage.quantity))\
+        .filter(PlasticUsage.user_id == current_user.id, PlasticUsage.verified == True).scalar() or 0
+    
+    total_carbon_saved = db.session.query(func.sum(CarbonSavings.carbon_saved))\
+        .filter(CarbonSavings.user_id == current_user.id, CarbonSavings.verified == True).scalar() or 0
+    
+    total_eco_points = db.session.query(func.sum(PlasticUsage.points_earned))\
+        .filter(PlasticUsage.user_id == current_user.id).scalar() or 0
+    total_eco_points += db.session.query(func.sum(CarbonSavings.points_earned))\
+        .filter(CarbonSavings.user_id == current_user.id).scalar() or 0
+    
+    return render_template('eco_tracker.html',
+                         title='Eco Tracker',
+                         plastic_usage=plastic_usage,
+                         carbon_savings=carbon_savings,
+                         total_plastic_reduced=total_plastic_reduced,
+                         total_carbon_saved=total_carbon_saved,
+                         total_eco_points=total_eco_points)
+
+@app.route("/plastic_reduction", methods=['GET', 'POST'])
+@login_required
+def plastic_reduction():
+    """Log plastic reduction with proof"""
+    form = PlasticUsageForm()
+    
+    if form.validate_on_submit():
+        # Handle image upload
+        image_filename = save_file(form.image_proof.data) if form.image_proof.data else None
+        
+        # Calculate carbon savings
+        carbon_saved = calculate_carbon_savings(
+            form.plastic_type.data,
+            form.quantity.data,
+            form.unit.data
+        )
+        
+        # Analyze image with AI if provided
+        verification_score = 0.0
+        verified = False
+        
+        if image_filename:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            ai_analysis = analyze_plastic_image(image_path)
+            verification_score = ai_analysis['confidence_score']
+            verified = ai_analysis['reduction_verified']
+        
+        # Calculate points
+        points = calculate_points_for_activity(carbon_saved, 'plastic_reduction', verified)
+        
+        # Create plastic usage record
+        plastic_usage = PlasticUsage(
+            user_id=current_user.id,
+            plastic_type=form.plastic_type.data,
+            quantity=form.quantity.data,
+            image_proof=image_filename,
+            verified=verified,
+            verification_score=verification_score,
+            points_earned=points
+        )
+        db.session.add(plastic_usage)
+        
+        # Also create carbon savings record
+        carbon_saving = CarbonSavings(
+            user_id=current_user.id,
+            activity_type='plastic_reduction',
+            carbon_saved=carbon_saved,
+            description=f"Reduced {form.quantity.data} {form.unit.data} of {form.plastic_type.data}",
+            proof_type='photo' if image_filename else 'other',
+            proof_file=image_filename,
+            verified=verified,
+            points_earned=points
+        )
+        db.session.add(carbon_saving)
+        
+        # Award points to user
+        current_user.points += points
+        check_and_award_badges(current_user)
+        
+        db.session.commit()
+        
+        flash(f'✅ Plastic reduction logged! +{points} points earned. Carbon saved: {carbon_saved:.2f} kg CO2', 'success')
+        return redirect(url_for('eco_tracker'))
+    
+    return render_template('plastic_reduction.html',
+                         title='Log Plastic Reduction',
+                         form=form)
+
+@app.route("/carbon_savings", methods=['GET', 'POST'])
+@login_required
+def carbon_savings():
+    """Log carbon savings from various activities"""
+    form = CarbonSavingsForm()
+    
+    if form.validate_on_submit():
+        # Handle proof file upload
+        proof_filename = save_file(form.proof_file.data) if form.proof_file.data else None
+        
+        # Calculate points
+        points = calculate_points_for_activity(form.carbon_saved.data, form.activity_type.data)
+        
+        # Create carbon savings record
+        carbon_saving = CarbonSavings(
+            user_id=current_user.id,
+            activity_type=form.activity_type.data,
+            carbon_saved=form.carbon_saved.data,
+            description=form.description.data,
+            proof_type=form.proof_type.data,
+            proof_file=proof_filename,
+            verified=True if proof_filename else False,
+            points_earned=points
+        )
+        db.session.add(carbon_saving)
+        
+        # Award points to user
+        current_user.points += points
+        check_and_award_badges(current_user)
+        
+        db.session.commit()
+        
+        flash(f'✅ Carbon savings logged! +{points} points earned.', 'success')
+        return redirect(url_for('eco_tracker'))
+    
+    return render_template('carbon_savings.html',
+                         title='Log Carbon Savings',
+                         form=form)
+
+@app.route("/api/eco_stats")
+@login_required
+def api_eco_stats():
+    """API endpoint for eco statistics"""
+    # Weekly plastic reduction
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    weekly_plastic = db.session.query(func.sum(PlasticUsage.quantity))\
+        .filter(PlasticUsage.user_id == current_user.id, 
+                PlasticUsage.date >= week_ago,
+                PlasticUsage.verified == True).scalar() or 0
+    
+    # Weekly carbon savings
+    weekly_carbon = db.session.query(func.sum(CarbonSavings.carbon_saved))\
+        .filter(CarbonSavings.user_id == current_user.id,
+                CarbonSavings.date >= week_ago,
+                CarbonSavings.verified == True).scalar() or 0
+    
+    # Monthly totals
+    month_ago = datetime.utcnow() - timedelta(days=30)
+    monthly_plastic = db.session.query(func.sum(PlasticUsage.quantity))\
+        .filter(PlasticUsage.user_id == current_user.id,
+                PlasticUsage.date >= month_ago,
+                PlasticUsage.verified == True).scalar() or 0
+    
+    monthly_carbon = db.session.query(func.sum(CarbonSavings.carbon_saved))\
+        .filter(CarbonSavings.user_id == current_user.id,
+                CarbonSavings.date >= month_ago,
+                CarbonSavings.verified == True).scalar() or 0
+    
+    # Activity breakdown
+    activity_types = db.session.query(
+        CarbonSavings.activity_type,
+        func.sum(CarbonSavings.carbon_saved),
+        func.count(CarbonSavings.id)
+    ).filter(
+        CarbonSavings.user_id == current_user.id,
+        CarbonSavings.verified == True
+    ).group_by(CarbonSavings.activity_type).all()
+    
+    activity_breakdown = []
+    for activity_type, carbon_total, count in activity_types:
+        activity_breakdown.append({
+            'type': activity_type,
+            'carbon_saved': carbon_total,
+            'activity_count': count
+        })
+    
+    return jsonify({
+        'weekly_plastic_reduced': weekly_plastic,
+        'weekly_carbon_saved': weekly_carbon,
+        'monthly_plastic_reduced': monthly_plastic,
+        'monthly_carbon_saved': monthly_carbon,
+        'activity_breakdown': activity_breakdown
+    })
+
+@app.route("/eco_leaderboard")
+def eco_leaderboard():
+    """Leaderboard for eco-friendly activities"""
+    # Get top users by carbon savings
+    top_carbon_savers = db.session.query(
+        User.username,
+        func.sum(CarbonSavings.carbon_saved).label('total_carbon_saved'),
+        func.sum(CarbonSavings.points_earned).label('total_eco_points')
+    ).join(CarbonSavings).filter(
+        CarbonSavings.verified == True
+    ).group_by(User.id).order_by(func.sum(CarbonSavings.carbon_saved).desc()).limit(20).all()
+    
+    # Get top plastic reducers
+    top_plastic_reducers = db.session.query(
+        User.username,
+        func.sum(PlasticUsage.quantity).label('total_plastic_reduced'),
+        func.sum(PlasticUsage.points_earned).label('total_eco_points')
+    ).join(PlasticUsage).filter(
+        PlasticUsage.verified == True
+    ).group_by(User.id).order_by(func.sum(PlasticUsage.quantity).desc()).limit(20).all()
+    
+    return render_template('eco_leaderboard.html',
+                         title='Eco Leaderboard',
+                         top_carbon_savers=top_carbon_savers,
+                         top_plastic_reducers=top_plastic_reducers)
+
+# Update the badge system to include eco badges
+def init_badges():
+    badges = [
+        # Existing badges...
+        {'name': 'first_reporter', 'description': 'Submitted your first report', 'icon': '🚀', 'points_required': 0},
+        {'name': 'storm_watcher', 'description': 'Reported 3 storm surges', 'icon': '⛈️', 'points_required': 0},
+        {'name': 'community_guardian', 'description': 'Reached 100 points', 'icon': '🛡️', 'points_required': 100},
+        
+        # New eco badges
+        {'name': 'plastic_warrior', 'description': 'Reduced 1kg of plastic', 'icon': '♻️', 'points_required': 0},
+        {'name': 'carbon_neutral', 'description': 'Saved 100kg of CO2', 'icon': '🌱', 'points_required': 0},
+        {'name': 'eco_champion', 'description': 'Earned 500 eco points', 'icon': '🏆', 'points_required': 500},
+        {'name': 'green_commuter', 'description': 'Used eco transport 10 times', 'icon': '🚲', 'points_required': 0},
+    ]
+    
+    for badge_data in badges:
+        if not Badge.query.filter_by(name=badge_data['name']).first():
+            badge = Badge(
+                name=badge_data['name'],
+                description=badge_data['description'],
+                icon=badge_data['icon'],
+                points_required=badge_data['points_required']
+            )
+            db.session.add(badge)
+    
+    db.session.commit()
+
+def check_and_award_badges(user):
+    # Existing badge checks...
+    
+    # New eco badge checks
+    total_plastic_reduced = db.session.query(func.sum(PlasticUsage.quantity))\
+        .filter(PlasticUsage.user_id == user.id, PlasticUsage.verified == True).scalar() or 0
+    if total_plastic_reduced >= 1.0:  # 1kg plastic reduced
+        award_badge(user, 'plastic_warrior')
+    
+    total_carbon_saved = db.session.query(func.sum(CarbonSavings.carbon_saved))\
+        .filter(CarbonSavings.user_id == user.id, CarbonSavings.verified == True).scalar() or 0
+    if total_carbon_saved >= 100.0:  # 100kg CO2 saved
+        award_badge(user, 'carbon_neutral')
+    
+    total_eco_points = db.session.query(func.sum(PlasticUsage.points_earned))\
+        .filter(PlasticUsage.user_id == user.id).scalar() or 0
+    total_eco_points += db.session.query(func.sum(CarbonSavings.points_earned))\
+        .filter(CarbonSavings.user_id == user.id).scalar() or 0
+    if total_eco_points >= 500:
+        award_badge(user, 'eco_champion')
+    
+    eco_commutes = CarbonSavings.query.filter_by(
+        user_id=user.id, 
+        activity_type='public_transport',
+        verified=True
+    ).count()
+    eco_commutes += CarbonSavings.query.filter_by(
+        user_id=user.id,
+        activity_type='cycling', 
+        verified=True
+    ).count()
+    if eco_commutes >= 10:
+        award_badge(user, 'green_commuter')
+
+# =============================================================================
+# PWA ROUTES
+# =============================================================================
+
+@app.route('/sw.js')
+def service_worker():
+    """Serve the service worker file"""
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
+
+@app.route('/manifest.json')
+def manifest():
+    """Serve the manifest file"""
+    return send_from_directory('static', 'manifest.json', mimetype='application/json')
+
+@app.route('/offline.html')
+def offline():
+    """Offline fallback page"""
+    return render_template('offline.html', title='Offline')
+
+        
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        init_badges()  # Initialize badges
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.run(debug=True, host='0.0.0.0', port=5001)

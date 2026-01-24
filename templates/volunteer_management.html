@@ -1,0 +1,194 @@
+<!-- templates/volunteer_management.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="fas fa-hands-helping me-2"></i>Volunteer Management
+            </h1>
+            <p class="text-muted mb-0">Manage volunteers and assignments</p>
+        </div>
+        <a href="{{ url_for('new_volunteer') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Volunteer
+        </a>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title fw-bold">{{ total_volunteers }}</h2>
+                            <p class="card-text mb-0">Total Volunteers</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title fw-bold">{{ available_volunteers }}</h2>
+                            <p class="card-text mb-0">Available</p>
+                        </div>
+                        <i class="fas fa-user-check fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title fw-bold">{{ assigned_volunteers }}</h2>
+                            <p class="card-text mb-0">Assigned</p>
+                        </div>
+                        <i class="fas fa-tasks fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title fw-bold">{{ trained_volunteers }}</h2>
+                            <p class="card-text mb-0">Trained</p>
+                        </div>
+                        <i class="fas fa-certificate fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Volunteers Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0 fw-bold">
+                <i class="fas fa-list me-2"></i>Volunteer List
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if volunteers %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Contact</th>
+                            <th scope="col">Skills</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Assigned To</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for volunteer in volunteers %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                        <span class="text-white fw-bold">{{ volunteer.name[0] if volunteer.name else 'U' }}</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">{{ volunteer.name }}</h6>
+                                        <small class="text-muted">ID: {{ volunteer.id[:8] if volunteer.id else 'N/A' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-medium">{{ volunteer.phone or 'N/A' }}</div>
+                                    <small class="text-muted">{{ volunteer.email or 'No email' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if volunteer.skills %}
+                                    {% for skill in volunteer.skills.split(',')[:2] %}
+                                        <span class="badge bg-info me-1 mb-1">{{ skill.strip() }}</span>
+                                    {% endfor %}
+                                    {% if volunteer.skills.split(',')|length > 2 %}
+                                        <span class="badge bg-secondary">+{{ volunteer.skills.split(',')|length - 2 }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No skills listed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if volunteer.status == 'available' else 'warning' if volunteer.status == 'assigned' else 'secondary' }}">
+                                    {{ volunteer.status|title if volunteer.status else 'Unknown' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if volunteer.assigned_event %}
+                                    <span class="fw-medium text-primary">{{ volunteer.assigned_event }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3 opacity-50"></i>
+                <h5 class="text-muted mb-3">No Volunteers Found</h5>
+                <p class="text-muted mb-4">Get started by adding your first volunteer.</p>
+                <a href="{{ url_for('new_volunteer') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Volunteer
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+}
+
+.btn-group .btn {
+    border-radius: 6px;
+    margin-right: 2px;
+}
+</style>
+{% endblock %}

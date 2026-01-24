@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Analyst Dashboard{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .main-content-container {
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 2.5rem;
+        margin: 2rem auto;
+        max-width: 1400px;
+    }
+
+    .card {
+        background: rgba(30, 41, 59, 0.7) !important;
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 20px;
+        color: white;
+    }
+
+    .dashboard-map {
+        height: 400px;
+        width: 100%;
+        border-radius: 16px;
+        background: #111;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .hidden-reports {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content-container" id="dashboardContent">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-0">🧠 Analyst Dashboard</h2>
+            <p class="text-white-50 small mb-0">AI-Powered Disaster Analytics</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-warning btn-sm fw-bold" onclick="sendTestWarning()">Global Alert</button>
+            <button class="btn btn-primary btn-sm fw-bold" id="exportBtn">Export PDF</button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card h-100" style="border-color: #0ea5e9;">
+                <label class="text-white-50 small text-uppercase fw-bold">Total Incidents</label>
+                <div class="h3 fw-bold">{{ total_reports }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100" style="border-color: #10b981;">
+                <label class="text-white-50 small text-uppercase fw-bold">Verification Rate</label>
+                <div class="h3 fw-bold">{{ "%.1f"|format((approved_reports/total_reports*100) if total_reports > 0 else
+                    0) }}%</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100" style="border-color: #06b6d4;">
+                <label class="text-white-50 small text-uppercase fw-bold">Personnel</label>
+                <div class="h3 fw-bold">{{ active_users }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100" style="border-color: #f59e0b;">
+                <label class="text-white-50 small text-uppercase fw-bold">Pending</label>
+                <div class="h3 fw-bold">{{ pending_reports }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maps -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100 overflow-hidden">
+                <div class="card-header border-bottom border-white border-opacity-10 py-2">
+                    <h6 class="m-0 fw-bold">Incident Hotspots Heatmap</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="heatmapMap" class="dashboard-map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100 overflow-hidden">
+                <div class="card-header border-bottom border-white border-opacity-10 py-2">
+                    <h6 class="m-0 fw-bold">Weather & Early Warnings</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="warningMap" class="dashboard-map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h6 class="fw-bold mb-3">Hazard Distribution</h6>
+                <div style="height: 250px;"><canvas id="hazardDistributionChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h6 class="fw-bold mb-3">Incident Velocity</h6>
+                <div style="height: 250px;"><canvas id="reportsTimelineChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h6 class="fw-bold mb-3">Network Participation</h6>
+                <div style="height: 250px;"><canvas id="userEngagementChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Table -->
+    <div class="card p-3 mb-4">
+        <h6 class="fw-bold mb-3 border-bottom border-white border-opacity-10 pb-2">Incident Intelligence Log</h6>
+        <div class="table-responsive">
+            <table class="table text-white table-hover small">
+                <thead class="text-white-50">
+                    <tr>
+                        <th>#ID</th>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr class="{% if loop.index > 10 %}hidden-reports{% endif %}">
+                        <td class="text-info fw-bold">#{{ report.id }}</td>
+                        <td>{{ report.timestamp }}</td>
+                        <td>{{ report.hazard_type }}</td>
+                        <td>{{ (report.confidence_score * 100)|int }}%</td>
+                        <td>
+                            <span
+                                class="badge bg-{{ 'success' if report.verification_status == 'approved' else 'danger' if report.verification_status == 'rejected' else 'warning' }} bg-opacity-25 text-{{ 'success' if report.verification_status == 'approved' else 'danger' if report.verification_status == 'rejected' else 'warning' }} border border-opacity-25 w-100">
+                                {{ report.verification_status|upper }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if reports|length > 10 %}
+        <button class="btn btn-outline-info btn-sm mt-2"
+            onclick="document.querySelectorAll('.hidden-reports').forEach(r => r.classList.remove('hidden-reports')); this.remove()">Load
+            More</button>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    // CRITICAL: Force no-space syntax for template variables
+    const DASHBOARD_DATA = {
+        reports: {{ reports | tojson | safe }},
+    hazards: {{ hazard_counts | tojson | safe }},
+    timeline: {
+        labels: {{ timeline_labels | tojson | safe }},
+        data: {{ timeline_data | tojson | safe }}
+    },
+    users: {
+        total: {{ total_users }},
+        active: {{ active_users }}
+    }};
+
+    let hMap, wMap;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        window.initCharts();
+        setTimeout(window.initMaps, 500);
+        document.getElementById('exportBtn').onclick = exportDashboard;
+    });
+
+    window.initMaps = function () {
+        if (!document.getElementById('heatmapMap')) return;
+
+        // Destroy existing if any
+        if (hMap) hMap.remove();
+        if (wMap) wMap.remove();
+
+        hMap = L.map('heatmapMap').setView([20.5, 78.9], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(hMap);
+
+        if (DASHBOARD_DATA.reports && DASHBOARD_DATA.reports.length > 0) {
+            const pts = DASHBOARD_DATA.reports.map(r => [r.latitude, r.longitude, 1.0]);
+            L.heatLayer(pts, { radius: 35, blur: 15, maxOpacity: 0.8 }).addTo(hMap);
+            hMap.fitBounds(L.latLngBounds(pts.map(p => [p[0], p[1]])).pad(0.2));
+        }
+
+        wMap = L.map('warningMap').setView([20.5, 78.9], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(wMap);
+
+        fetch('/api/weather_warnings')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const circles = data.map(w => L.circle([w.latitude, w.longitude], {
+                        radius: w.radius * 1000,
+                        color: w.severity === 'high' ? '#ef4444' : '#f59e0b',
+                        fillOpacity: 0.2
+                    }).bindPopup(`<b>${w.type} Alert</b>`));
+                    const group = L.featureGroup(circles).addTo(wMap);
+                    wMap.fitBounds(group.getBounds().pad(0.2));
+                }});
+
+        setTimeout(() => {
+            hMap.invalidateSize();
+            wMap.invalidateSize();
+        }, 300);
+    };
+
+    window.initCharts = function () {
+        const cfg = (type, labels, data, colors) => ({
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#fff', font: { size: 10 }} }},
+                scales: type === 'line' || type === 'bar' ? {
+                    x: { ticks: { color: '#fff' }, grid: { display: false }},
+                    y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.05)' }}
+                } : {}}
+        });
+
+        if (document.getElementById('hazardDistributionChart')) {
+            new Chart(document.getElementById('hazardDistributionChart'), cfg('pie',
+                Object.keys(DASHBOARD_DATA.hazards),
+                Object.values(DASHBOARD_DATA.hazards),
+                ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            ));
+        }
+
+        if (document.getElementById('reportsTimelineChart')) {
+            const chart = new Chart(document.getElementById('reportsTimelineChart'), cfg('line',
+                DASHBOARD_DATA.timeline.labels,
+                DASHBOARD_DATA.timeline.data,
+                'rgba(14, 165, 233, 0.2)'
+            ));
+            chart.data.datasets[0].borderColor = '#0ea5e9';
+            chart.data.datasets[0].fill = true;
+            chart.update();
+        }
+
+        if (document.getElementById('userEngagementChart')) {
+            new Chart(document.getElementById('userEngagementChart'), cfg('bar',
+                ['Total Users', 'Active Users'],
+                [DASHBOARD_DATA.users.total, DASHBOARD_DATA.users.active],
+                ['#0ea5e9', '#10b981']
+            ));
+        }};
+
+    function exportDashboard() {
+        html2canvas(document.getElementById('dashboardContent'), { scale: 1 }).then(canvas => {
+            const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+            pdf.save('analyst-report.pdf');
+        });
+    }
+
+    function sendTestWarning() {
+        if (confirm('Broadcast alert to all users?')) {
+            fetch('/send_test_warning', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message));
+        }}
+</script>
+{% endblock %}
