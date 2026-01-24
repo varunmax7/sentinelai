@@ -884,7 +884,16 @@ def mark_notification_read(notification_id):
     notification.is_read = True
     db.session.commit()
     
-    return jsonify({'success': True})
+    # Check if it's an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': True,
+            'message': 'Notification marked as read',
+            'notification_id': notification_id
+        })
+    
+    # For regular form submissions, redirect
+    return redirect(url_for('notifications'))
 
 @app.route("/")
 @app.route("/home")
