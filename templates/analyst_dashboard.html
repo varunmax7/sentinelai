@@ -41,6 +41,55 @@
     .hidden-reports {
         display: none;
     }
+
+    /* Live Weather Styling */
+    .weather-info {
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .live-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        margin-right: 6px;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    .weather-legend {
+        background: rgba(0, 0, 0, 0.85);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .weather-legend-item {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+        font-size: 12px;
+        color: #e5e7eb;
+    }
+
+    .weather-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
 </style>
 {% endblock %}
 
@@ -271,6 +320,105 @@
             attribution: '&copy; OpenStreetMap'
         }).addTo(wMap);
 
+        // Add live weather legend
+        const weatherLegend = L.control({ position: 'bottomright' });
+        weatherLegend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'weather-legend');
+            div.innerHTML = `
+                <h6 style="margin: 0 0 10px 0; color: #fff; font-weight: bold;">Live Weather Data</h6>
+                <div class="weather-legend-item">
+                    <div class="weather-legend-dot" style="background: #ef4444;"></div>
+                    <span>🌡️ Temperature (>35°C)</span>
+                </div>
+                <div class="weather-legend-item">
+                    <div class="weather-legend-dot" style="background: #f59e0b;"></div>
+                    <span>💨 Wind (>40 km/h)</span>
+                </div>
+                <div class="weather-legend-item">
+                    <div class="weather-legend-dot" style="background: #06b6d4;"></div>
+                    <span>🌧️ Rain/Radar</span>
+                </div>
+                <div class="weather-legend-item">
+                    <div class="live-indicator"></div>
+                    <span>Live Updates Every 1s</span>
+                </div>
+            `;
+            return div;
+        };
+        weatherLegend.addTo(wMap);
+
+        // Live weather data update function
+        async function updateLiveWeather() {
+            try {
+                const response = await fetch('/api/weather_data');
+                const weatherData = await response.json();
+                
+                if (weatherData.alerts && weatherData.alerts.length > 0) {
+                    // Remove old weather markers
+                    if (window.weatherMarkers) {
+                        window.weatherMarkers.forEach(marker => wMap.removeLayer(marker));
+                    }
+                    window.weatherMarkers = [];
+                    
+                    // Add new weather markers
+                    weatherData.alerts.forEach(alert => {
+                        // Temperature circle
+                        const tempColor = alert.temperature > 35 ? '#ef4444' : 
+                                        alert.temperature > 28 ? '#f59e0b' : 
+                                        alert.temperature > 20 ? '#eab308' : '#06b6d4';
+                        const tempRadius = Math.min((alert.temperature / 10), 15);
+                        
+                        const tempMarker = L.circle([alert.latitude, alert.longitude], {
+                            radius: tempRadius * 2000,
+                            color: tempColor,
+                            fillColor: tempColor,
+                            fillOpacity: 0.4,
+                            weight: 2
+                        }).bindPopup(`
+                            <b>${alert.city}</b><br>
+                            🌡️ Temp: ${alert.temperature}°C<br>
+                            💧 Humidity: ${alert.humidity}%<br>
+                            <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
+                        `);
+                        tempMarker.addTo(wMap);
+                        window.weatherMarkers.push(tempMarker);
+                        
+                        // Wind speed circle (dashed effect with lines)
+                        const windColor = alert.wind_speed > 40 ? '#ef4444' : 
+                                        alert.wind_speed > 25 ? '#f59e0b' : '#10b981';
+                        const windRadius = Math.min((alert.wind_speed / 5), 12);
+                        
+                        const windMarker = L.circle([alert.latitude, alert.longitude], {
+                            radius: windRadius * 2000,
+                            color: windColor,
+                            fillColor: windColor,
+                            fillOpacity: 0.2,
+                            weight: 2,
+                            dashArray: '5, 5'
+                        }).bindPopup(`
+                            <b>${alert.city} - Wind</b><br>
+                            💨 Speed: ${alert.wind_speed} km/h<br>
+                            ⬅️ Direction: ${alert.wind_direction}°<br>
+                            <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
+                        `);
+                        windMarker.addTo(wMap);
+                        window.weatherMarkers.push(windMarker);
+                    });
+                    
+                    // Update info box
+                    const lastUpdate = new Date(weatherData.alerts[0].timestamp);
+                    console.log(`🌍 Weather data updated: ${weatherData.count} locations | ${lastUpdate.toLocaleTimeString()}`);
+                }
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+            }
+        }
+
+        // Initial update and then every second
+        updateLiveWeather();
+        window.weatherUpdateInterval = setInterval(updateLiveWeather, 1000);
+
+        // Add weather warnings
         fetch('/api/weather_warnings')
             .then(r => r.json())
             .then(data => {
