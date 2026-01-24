@@ -1148,7 +1148,8 @@ def report():
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    upload_folder = os.path.join(os.path.dirname(__file__), app.config['UPLOAD_FOLDER'])
+    return send_from_directory(upload_folder, filename)
 
 @app.route("/get_location")
 def get_location():
