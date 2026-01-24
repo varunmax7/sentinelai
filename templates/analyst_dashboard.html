@@ -159,6 +159,98 @@
         width: 8px;
         border-radius: 2px;
     }
+
+    /* Alert Location Items */
+    .alert-locations-list {
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 15px 0;
+        padding: 0;
+    }
+
+    .alert-location-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .alert-location-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateX(4px);
+    }
+
+    .alert-location-checkbox {
+        margin-right: 12px;
+        flex-shrink: 0;
+        padding-top: 2px;
+    }
+
+    .alert-location-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+    }
+
+    .alert-location-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .alert-location-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .alert-location-icon {
+        font-size: 16px;
+    }
+
+    .alert-location-name .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+
+    .alert-location-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    .alert-location-details small {
+        white-space: nowrap;
+    }
+
+    /* Scrollbar styling */
+    .alert-locations-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .alert-locations-list::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .alert-locations-list::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    .alert-locations-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
 </style>
 {% endblock %}
 
@@ -630,9 +722,174 @@
     }
 
     function sendTestWarning() {
-        if (confirm('Broadcast alert to all users?')) {
-            fetch('/send_test_warning', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message));
+        // Fetch live incident data to show affected areas
+        Promise.all([
+            fetch('/api/live_hazard_incidents').then(r => r.json()),
+            fetch('/api/live_govt_hazards').then(r => r.json())
+        ]).then(([incidents, hazards]) => {
+            const allAffectedAreas = [];
+            
+            // Add incidents
+            if (incidents.incidents && incidents.incidents.length > 0) {
+                incidents.incidents.forEach(incident => {
+                    allAffectedAreas.push({
+                        id: `incident_${incident.id}`,
+                        name: incident.title || incident.hazard_type,
+                        type: 'Incident',
+                        hazard_type: incident.hazard_type,
+                        latitude: incident.latitude,
+                        longitude: incident.longitude,
+                        author: incident.author,
+                        priority: incident.priority,
+                        icon: '🔴'
+                    });
+                });
+            }
+            
+            // Add government hazards
+            if (hazards.hazards && hazards.hazards.length > 0) {
+                hazards.hazards.forEach(hazard => {
+                    allAffectedAreas.push({
+                        id: `hazard_${hazard.id}`,
+                        name: hazard.type,
+                        type: 'Govt Alert',
+                        severity: hazard.severity,
+                        latitude: hazard.latitude,
+                        longitude: hazard.longitude,
+                        source: hazard.source,
+                        radius: hazard.radius,
+                        icon: hazard.severity === 'critical' ? '🔴' : hazard.severity === 'high' ? '🟠' : '🟡'
+                    });
+                });
+            }
+            
+            // Populate modal with areas
+            populateAlertLocations(allAffectedAreas);
+            
+            // Open modal
+            document.getElementById('globalAlertModal').style.display = 'flex';
+        });
+    }
+    
+    function populateAlertLocations(locations) {
+        const listContainer = document.getElementById('alertLocationsList');
+        const totalLocationsEl = document.getElementById('totalLocations');
+        const selectedLocationsEl = document.getElementById('selectedLocations');
+        
+        // Store locations for later use
+        window.availableLocations = locations;
+        window.selectedLocationIds = new Set();
+        
+        // Update total count
+        totalLocationsEl.textContent = locations.length;
+        selectedLocationsEl.textContent = '0';
+        
+        // Clear existing items
+        listContainer.innerHTML = '';
+        
+        // Add location items
+        locations.forEach((location, index) => {
+            const item = document.createElement('div');
+            item.className = 'alert-location-item';
+            item.innerHTML = `
+                <div class="alert-location-checkbox">
+                    <input type="checkbox" id="loc_${location.id}" 
+                           onchange="updateLocationSelection(this, '${location.id}')">
+                </div>
+                <div class="alert-location-info">
+                    <div class="alert-location-name">
+                        <span class="alert-location-icon">${location.icon}</span>
+                        <strong>${location.name}</strong>
+                        <span class="badge bg-secondary">${location.type}</span>
+                    </div>
+                    <div class="alert-location-details">
+                        <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small>
+                        ${location.hazard_type ? `<small> • 🏷️ ${location.hazard_type.replace(/_/g, ' ')}</small>` : ''}
+                        ${location.severity ? `<small> • 🎯 ${location.severity.toUpperCase()}</small>` : ''}
+                        ${location.radius ? `<small> • 📏 ${location.radius}km</small>` : ''}
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+    
+    function updateLocationSelection(checkbox, locationId) {
+        const selectedLocationsEl = document.getElementById('selectedLocations');
+        const sendBtn = document.getElementById('sendAlertBtn');
+        
+        if (checkbox.checked) {
+            window.selectedLocationIds.add(locationId);
+        } else {
+            window.selectedLocationIds.delete(locationId);
         }
+        
+        selectedLocationsEl.textContent = window.selectedLocationIds.size;
+        sendBtn.disabled = window.selectedLocationIds.size === 0;
+    }
+    
+    function toggleSelectAll() {
+        const checkboxes = document.querySelectorAll('#alertLocationsList input[type="checkbox"]');
+        const selectAllChk = document.getElementById('selectAllChk');
+        const selectedLocationsEl = document.getElementById('selectedLocations');
+        const sendBtn = document.getElementById('sendAlertBtn');
+        
+        window.selectedLocationIds.clear();
+        
+        checkboxes.forEach(chk => {
+            chk.checked = selectAllChk.checked;
+            if (selectAllChk.checked && window.availableLocations) {
+                const locationId = chk.id.replace('loc_', '');
+                window.selectedLocationIds.add(locationId);
+            }
+        });
+        
+        selectedLocationsEl.textContent = window.selectedLocationIds.size;
+        sendBtn.disabled = window.selectedLocationIds.size === 0;
+    }
+    
+    function closeAlertModal() {
+        document.getElementById('globalAlertModal').style.display = 'none';
+        document.getElementById('selectAllChk').checked = false;
+        window.selectedLocationIds.clear();
+    }
+    
+    function sendSelectedAlert() {
+        if (window.selectedLocationIds.size === 0) {
+            alert('Please select at least one location');
+            return;
+        }
+        
+        // Prepare affected locations
+        const affectedLocations = Array.from(window.selectedLocationIds)
+            .map(id => window.availableLocations.find(loc => loc.id === id))
+            .filter(loc => loc)
+            .map(loc => ({
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+                name: loc.name,
+                type: loc.type
+            }));
+        
+        // Send alert
+        fetch('/send_global_alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                affected_locations: affectedLocations,
+                message: `Alert broadcast for ${affectedLocations.length} affected area(s)`
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ Global Alert Sent!\n• Affected Areas: ${data.locations_count}\n• Users Alerted: ${data.users_alerted}`);
+                closeAlertModal();
+            } else {
+                alert(`❌ Error: ${data.error}`);
+            }
+        })
+        .catch(err => alert(`Error: ${err.message}`));
     }
 </script>
 
