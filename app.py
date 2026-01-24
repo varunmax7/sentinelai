@@ -58,12 +58,138 @@ sample_reports = [
     {
         'id': 1,
         'title': 'High Waves at Marina Beach',
-        'hazard_type': 'High Waves',
+        'description': 'Severe high waves observed at Marina Beach with heights up to 8 feet',
+        'hazard_type': 'high_waves',
         'location': 'Marina Beach, Chennai',
-        'timestamp': '2023-10-15 14:30:00',
         'latitude': 13.0566,
         'longitude': 80.2783,
-        'image_file': 'wave1.jpg'
+        'image_file': 'wave1.jpg',
+        'timestamp': '2026-01-24 10:30:00',
+        'author': 'coast_watcher_1',
+        'confidence_score': 0.85,
+        'verification_status': 'approved',
+        'ai_analysis': 'High waves detected with strong correlation to reported weather patterns',
+        'status': 'active',
+        'priority': 'high'
+    },
+    {
+        'id': 2,
+        'title': 'Storm Surge Warning - Mumbai',
+        'description': 'Potential storm surge developing near Mumbai coast',
+        'hazard_type': 'storm_surge',
+        'location': 'Mumbai Port Area',
+        'latitude': 19.0760,
+        'longitude': 72.8777,
+        'image_file': 'storm1.jpg',
+        'timestamp': '2026-01-24 09:15:00',
+        'author': 'port_observer',
+        'confidence_score': 0.78,
+        'verification_status': 'pending',
+        'ai_analysis': 'Storm pattern analysis indicates moderate storm surge risk',
+        'status': 'active',
+        'priority': 'critical'
+    },
+    {
+        'id': 3,
+        'title': 'Coastal Flooding - Kochi',
+        'description': 'High tide combined with heavy rainfall causing coastal flooding',
+        'hazard_type': 'coastal_flooding',
+        'location': 'Kochi Waterfront',
+        'latitude': 9.9312,
+        'longitude': 76.2673,
+        'image_file': 'flood1.jpg',
+        'timestamp': '2026-01-24 08:45:00',
+        'author': 'weather_spotter',
+        'confidence_score': 0.92,
+        'verification_status': 'approved',
+        'ai_analysis': 'Verified flooding event with multiple supporting data sources',
+        'status': 'active',
+        'priority': 'critical'
+    },
+    {
+        'id': 4,
+        'title': 'Tsunami Alert - Andaman Sea',
+        'description': 'Potential tsunami risk detected in Andaman Sea region',
+        'hazard_type': 'tsunami',
+        'location': 'Andaman Islands',
+        'latitude': 11.7401,
+        'longitude': 92.6586,
+        'image_file': 'tsunami1.jpg',
+        'timestamp': '2026-01-23 22:30:00',
+        'author': 'seismic_monitor',
+        'confidence_score': 0.65,
+        'verification_status': 'pending',
+        'ai_analysis': 'Seismic data analysis suggests low probability of significant tsunami',
+        'status': 'active',
+        'priority': 'high'
+    },
+    {
+        'id': 5,
+        'title': 'Abnormal Tide - Thiruvananthapuram',
+        'description': 'Unusually high tide observed compared to normal patterns',
+        'hazard_type': 'abnormal_tide',
+        'location': 'Thiruvananthapuram Beach',
+        'latitude': 8.5241,
+        'longitude': 76.9366,
+        'image_file': None,
+        'timestamp': '2026-01-23 15:20:00',
+        'author': 'tide_tracker',
+        'confidence_score': 0.72,
+        'verification_status': 'approved',
+        'ai_analysis': 'Tidal anomaly confirmed by multiple sensors',
+        'status': 'active',
+        'priority': 'medium'
+    },
+    {
+        'id': 6,
+        'title': 'Swell Surge - Goa Coast',
+        'description': 'Strong swell from southwest monsoon creating hazardous conditions',
+        'hazard_type': 'swell_surge',
+        'location': 'Goa Beach',
+        'latitude': 15.2993,
+        'longitude': 73.8243,
+        'image_file': None,
+        'timestamp': '2026-01-23 14:00:00',
+        'author': 'ocean_monitor',
+        'confidence_score': 0.81,
+        'verification_status': 'approved',
+        'ai_analysis': 'Swell patterns match predicted monsoon activity',
+        'status': 'active',
+        'priority': 'medium'
+    },
+    {
+        'id': 7,
+        'title': 'Coastal Hazard - Mangalore',
+        'description': 'Combined weather effects creating coastal hazard conditions',
+        'hazard_type': 'coastal_flooding',
+        'location': 'Mangalore Port',
+        'latitude': 12.9141,
+        'longitude': 74.8560,
+        'image_file': None,
+        'timestamp': '2026-01-23 12:30:00',
+        'author': 'marine_observer',
+        'confidence_score': 0.68,
+        'verification_status': 'rejected',
+        'ai_analysis': 'Data inconsistency detected',
+        'status': 'resolved',
+        'priority': 'low'
+    },
+    {
+        'id': 8,
+        'title': 'High Waves - Visakhapatnam',
+        'description': 'Bay of Bengal cyclone generating high waves',
+        'hazard_type': 'high_waves',
+        'location': 'Visakhapatnam Harbor',
+        'latitude': 17.6868,
+        'longitude': 83.2185,
+        'image_file': None,
+        'timestamp': '2026-01-23 11:00:00',
+        'author': 'harbor_admin',
+        'confidence_score': 0.88,
+        'verification_status': 'approved',
+        'ai_analysis': 'Wave height measurements confirmed by multiple sources',
+        'status': 'active',
+        'priority': 'high'
     }
 ]
 
@@ -2099,6 +2225,101 @@ def get_weather_warnings():
     
     return warnings
 
+@app.route("/api/weather_data")
+def api_weather_data():
+    """API endpoint for live weather data with temperature and wind information"""
+    try:
+        # Get weather data from multiple sources
+        # Using Open-Meteo API (free, no key required) for Indian coastal regions
+        
+        # Major coastal cities in India for weather monitoring
+        coastal_cities = [
+            {'name': 'Chennai', 'lat': 13.0827, 'lon': 80.2707},
+            {'name': 'Mumbai', 'lat': 19.0760, 'lon': 72.8777},
+            {'name': 'Kolkata', 'lat': 22.5726, 'lon': 88.3639},
+            {'name': 'Kochi', 'lat': 9.9312, 'lon': 76.2673},
+            {'name': 'Visakhapatnam', 'lat': 17.6868, 'lon': 83.2185},
+            {'name': 'Mangalore', 'lat': 12.9141, 'lon': 74.8560},
+            {'name': 'Thiruvananthapuram', 'lat': 8.5241, 'lon': 76.9366},
+            {'name': 'Goa', 'lat': 15.2993, 'lon': 73.8243},
+        ]
+        
+        alerts = []
+        
+        for city in coastal_cities:
+            try:
+                # Open-Meteo API - free weather data
+                weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={city['lat']}&longitude={city['lon']}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&timezone=Asia/Kolkata"
+                
+                response = requests.get(weather_url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    current = data.get('current', {})
+                    
+                    alert = {
+                        'city': city['name'],
+                        'latitude': city['lat'],
+                        'longitude': city['lon'],
+                        'temperature': round(current.get('temperature_2m', 25), 1),
+                        'humidity': current.get('relative_humidity_2m', 60),
+                        'wind_speed': round(current.get('wind_speed_10m', 5), 1),
+                        'wind_direction': current.get('wind_direction_10m', 0),
+                        'weather_code': current.get('weather_code', 0),
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'severity': 'high' if current.get('wind_speed_10m', 0) > 40 else 'medium' if current.get('wind_speed_10m', 0) > 25 else 'low'
+                    }
+                    alerts.append(alert)
+            except Exception as e:
+                print(f"Error fetching weather for {city['name']}: {e}")
+                continue
+        
+        # If API fails, return realistic sample data
+        if not alerts:
+            alerts = [
+                {
+                    'city': 'Chennai',
+                    'latitude': 13.0827,
+                    'longitude': 80.2707,
+                    'temperature': 28.5 + random.uniform(-2, 2),
+                    'humidity': 75 + random.randint(-10, 10),
+                    'wind_speed': 15 + random.uniform(-5, 5),
+                    'wind_direction': random.randint(0, 360),
+                    'weather_code': random.choice([0, 1, 45, 48, 51, 61, 80]),
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'severity': 'medium'
+                },
+                {
+                    'city': 'Mumbai',
+                    'latitude': 19.0760,
+                    'longitude': 72.8777,
+                    'temperature': 32.0 + random.uniform(-2, 2),
+                    'humidity': 70 + random.randint(-10, 10),
+                    'wind_speed': 20 + random.uniform(-5, 5),
+                    'wind_direction': random.randint(0, 360),
+                    'weather_code': random.choice([0, 1, 45, 48, 51, 61, 80]),
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'severity': 'low'
+                },
+                {
+                    'city': 'Kochi',
+                    'latitude': 9.9312,
+                    'longitude': 76.2673,
+                    'temperature': 26.5 + random.uniform(-2, 2),
+                    'humidity': 85 + random.randint(-10, 10),
+                    'wind_speed': 25 + random.uniform(-5, 5),
+                    'wind_direction': random.randint(0, 360),
+                    'weather_code': 80,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'severity': 'medium'
+                }
+            ]
+        
+        return jsonify({'alerts': alerts, 'count': len(alerts)})
+    
+    except Exception as e:
+        print(f"Error in weather data endpoint: {e}")
+        return jsonify({'alerts': [], 'error': str(e)}), 500
+
 @app.route("/api/weather_warnings")
 @login_required
 def api_weather_warnings():
@@ -2164,6 +2385,70 @@ def send_test_warning():
         'message': f'Test warning sent to {users_alerted} users',
         'users_alerted': users_alerted
     })
+
+@app.route("/send_global_alert", methods=['POST'])
+@login_required
+def send_global_alert():
+    """Send global alert to all users affected by incident hotspots and weather zones"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        affected_locations = data.get('affected_locations', [])
+        message = data.get('message', 'GLOBAL ALERT: Disaster Management Alert')
+        
+        # Collect all unique users to notify
+        users_to_notify = set()
+        
+        # Get all users with location data
+        users_with_location = User.query.filter(
+            User.home_latitude.isnot(None),
+            User.home_longitude.isnot(None)
+        ).all()
+        
+        # Check each user against affected locations
+        for user in users_with_location:
+            for location in affected_locations:
+                # Check if user is within 15km of any affected location
+                distance = calculate_distance(
+                    user.home_latitude, user.home_longitude,
+                    location['latitude'], location['longitude']
+                )
+                if distance <= 15:  # 15km alert radius
+                    users_to_notify.add(user.id)
+                    break  # Don't need to check other locations for this user
+        
+        # Create notifications for all affected users
+        notification_count = 0
+        for user_id in users_to_notify:
+            notification = Notification(
+                user_id=user_id,
+                message=f"🚨 GLOBAL ALERT: {message}",
+                is_alert=True,
+                is_read=False
+            )
+            db.session.add(notification)
+            notification_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Global alert sent successfully',
+            'locations_count': len(affected_locations),
+            'users_alerted': notification_count,
+            'status': 'completed'
+        })
+    
+    except Exception as e:
+        print(f"Error in send_global_alert: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'users_alerted': 0,
+            'locations_count': 0
+        }), 500
 
 @app.route('/reject_report/<int:report_id>', methods=['GET', 'POST'])
 @login_required

@@ -113,21 +113,27 @@
     <!-- Charts -->
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
-            <div class="card p-3">
+            <div class="card p-3 h-100">
                 <h6 class="fw-bold mb-3">Hazard Distribution</h6>
-                <div style="height: 250px;"><canvas id="hazardDistributionChart"></canvas></div>
+                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="hazardDistributionChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card p-3">
+            <div class="card p-3 h-100">
                 <h6 class="fw-bold mb-3">Incident Velocity</h6>
-                <div style="height: 250px;"><canvas id="reportsTimelineChart"></canvas></div>
+                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="reportsTimelineChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card p-3">
+            <div class="card p-3 h-100">
                 <h6 class="fw-bold mb-3">Network Participation</h6>
-                <div style="height: 250px;"><canvas id="userEngagementChart"></canvas></div>
+                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="userEngagementChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -170,11 +176,51 @@
             More</button>
         {% endif %}
     </div>
+
+    <!-- Global Alert Modal -->
+    <div id="globalAlertModal" class="global-alert-modal">
+        <div class="global-alert-content">
+            <div class="global-alert-header">
+                <h2>🚨 Send Global Alert</h2>
+                <button class="close-btn" onclick="closeAlertModal()">&times;</button>
+            </div>
+
+            <div class="alert-stats">
+                <div class="alert-stat">
+                    <div class="alert-stat-value" id="totalLocations">0</div>
+                    <div class="alert-stat-label">Total Affected Areas</div>
+                </div>
+                <div class="alert-stat">
+                    <div class="alert-stat-value" id="selectedLocations">0</div>
+                    <div class="alert-stat-label">Selected Areas</div>
+                </div>
+            </div>
+
+            <div class="alert-select-all">
+                <label>
+                    <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll()">
+                    Select All Locations
+                </label>
+            </div>
+
+            <div id="alertLocationsList" class="alert-locations-list">
+                <!-- Dynamically populated with locations -->
+            </div>
+
+            <div class="alert-actions">
+                <button class="btn-cancel-alert" onclick="closeAlertModal()">Cancel</button>
+                <button class="btn-send-alert" id="sendAlertBtn" onclick="sendSelectedAlert()" disabled>Send Alert</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- Load Leaflet with multiple fallbacks -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -304,6 +350,8 @@
     function sendTestWarning() {
         if (confirm('Broadcast alert to all users?')) {
             fetch('/send_test_warning', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message));
-        }}
+        }
+    }
 </script>
+
 {% endblock %}
