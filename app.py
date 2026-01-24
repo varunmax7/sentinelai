@@ -2320,6 +2320,133 @@ def api_weather_data():
         print(f"Error in weather data endpoint: {e}")
         return jsonify({'alerts': [], 'error': str(e)}), 500
 
+@app.route("/api/live_hazard_incidents")
+def api_live_hazard_incidents():
+    """API endpoint for live incident heatmap data - real-time hazard reports from users"""
+    try:
+        # Get all active/approved reports from the database
+        reports = Report.query.filter(
+            Report.status == 'active',
+            Report.verification_status.in_(['approved', 'pending']),
+            Report.latitude.isnot(None),
+            Report.longitude.isnot(None)
+        ).order_by(Report.timestamp.desc()).limit(500).all()
+        
+        incidents = []
+        for report in reports:
+            incidents.append({
+                'id': report.id,
+                'latitude': float(report.latitude),
+                'longitude': float(report.longitude),
+                'hazard_type': report.hazard_type,
+                'title': report.title,
+                'priority': report.priority,
+                'confidence_score': float(report.confidence_score) if report.confidence_score else 0.5,
+                'timestamp': report.timestamp.isoformat() if report.timestamp else None,
+                'author': report.author.username if report.author else 'Unknown',
+                'verified': report.verified,
+                'verification_status': report.verification_status
+            })
+        
+        return jsonify({
+            'incidents': incidents,
+            'count': len(incidents),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    
+    except Exception as e:
+        print(f"Error in live hazard incidents endpoint: {e}")
+        return jsonify({'incidents': [], 'count': 0, 'error': str(e)}), 500
+
+@app.route("/api/live_govt_hazards")
+def api_live_govt_hazards():
+    """API endpoint for live government hazard alerts and disaster information"""
+    try:
+        import random
+        from datetime import datetime, timedelta
+        
+        # Simulated government hazard data from NDMA, IMD, USGS, etc.
+        # In production, this would integrate with actual government APIs
+        govt_hazards = [
+            {
+                'type': 'Cyclone Warning',
+                'severity': 'critical',
+                'latitude': 13.0827,
+                'longitude': 80.2707,
+                'description': 'High probability of cyclone formation over Bay of Bengal',
+                'radius': 200,  # km
+                'source': 'IMD (India Meteorological Department)',
+                'alert_level': 'Red',
+                'wind_speed': '65-75 km/h',
+                'rainfall': '150-200 mm'
+            },
+            {
+                'type': 'Flood Alert',
+                'severity': 'high',
+                'latitude': 22.5726,
+                'longitude': 88.3639,
+                'description': 'Heavy rainfall warning for Kolkata region',
+                'radius': 150,
+                'source': 'NDMA (National Disaster Management Authority)',
+                'alert_level': 'Orange',
+                'rainfall': '100-150 mm',
+                'river_level': 'Above normal'
+            },
+            {
+                'type': 'Earthquake Risk',
+                'severity': 'medium',
+                'latitude': 19.0760,
+                'longitude': 72.8777,
+                'description': 'Seismic activity detected near Mumbai coast',
+                'radius': 100,
+                'source': 'USGS Earthquake Hazards Program',
+                'alert_level': 'Yellow',
+                'magnitude': '3.2 Richter',
+                'depth': '35 km'
+            },
+            {
+                'type': 'Landslide Warning',
+                'severity': 'high',
+                'latitude': 9.9312,
+                'longitude': 76.2673,
+                'description': 'Heavy rainfall triggered landslide risk in Western Ghats',
+                'radius': 80,
+                'source': 'GSI (Geological Survey of India)',
+                'alert_level': 'Orange',
+                'rainfall': '200+ mm',
+                'slope_condition': 'Unstable'
+            },
+            {
+                'type': 'Tsunami Warning',
+                'severity': 'critical',
+                'latitude': 8.5241,
+                'longitude': 76.9366,
+                'description': 'Potential tsunami threat in Indian Ocean',
+                'radius': 300,
+                'source': 'Indian Tsunami Early Warning System',
+                'alert_level': 'Red',
+                'wave_height': '1-3 meters',
+                'eta': '2-4 hours'
+            }
+        ]
+        
+        # Add dynamic timestamp and randomize some severity levels
+        for hazard in govt_hazards:
+            hazard['id'] = hazard['type'].replace(' ', '_').lower()
+            hazard['timestamp'] = (datetime.utcnow() - timedelta(minutes=random.randint(1, 30))).isoformat()
+            hazard['confidence_score'] = round(0.7 + random.uniform(0, 0.3), 2)
+        
+        return jsonify({
+            'hazards': govt_hazards,
+            'count': len(govt_hazards),
+            'timestamp': datetime.utcnow().isoformat(),
+            'sources': ['IMD', 'NDMA', 'USGS', 'GSI', 'Indian Tsunami Early Warning System']
+        })
+    
+    except Exception as e:
+        print(f"Error in live govt hazards endpoint: {e}")
+        return jsonify({'hazards': [], 'count': 0, 'error': str(e)}), 500
+
 @app.route("/api/weather_warnings")
 @login_required
 def api_weather_warnings():
