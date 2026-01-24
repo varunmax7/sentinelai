@@ -441,13 +441,23 @@
                     });
                     
                     window.hazardHeatLayer = L.heatLayer(heatPoints, {
-                        radius: 30,
+                        radius: 35,
                         blur: 20,
-                        maxOpacity: 0.7,
+                        maxOpacity: 0.8,
                         maxZoom: 18,
-                        gradient: {0.2: '#3b82f6', 0.4: '#06b6d4', 0.6: '#eab308', 0.8: '#f59e0b', 1.0: '#ef4444'}
+                        minOpacity: 0.2,
+                        gradient: {
+                            0.0: '#3b82f6',   // Blue - low
+                            0.25: '#06b6d4',  // Cyan
+                            0.5: '#eab308',   // Yellow
+                            0.75: '#f59e0b',  // Orange
+                            1.0: '#ef4444'    // Red - high hotspots
+                        }
                     });
                     window.hazardHeatLayer.addTo(wMap);
+                    
+                    // Console log for live updates
+                    console.log(`🔥 Incident Heatmap: ${incidentsData.count} active incidents | Hotspot intensity 0-1`);
                 }
                 
                 // ===== LAYER 2: Weather Data (Temperature & Wind) =====
