@@ -1,5 +1,6 @@
 import os
 import random
+from twilio.rest import Client
 from flask import current_app
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -27,6 +28,37 @@ def save_file(file):
         
         return unique_filename
     return None
+
+def send_whatsapp_message(to_number, message_body, media_url=None):
+    """Send a WhatsApp message using Twilio"""
+    if not to_number:
+        return None
+        
+    # Ensure number starts with whatsapp:
+    if not to_number.startswith('whatsapp:'):
+        to_number = f'whatsapp:{to_number}'
+        
+    try:
+        client = Client(
+            current_app.config['TWILIO_ACCOUNT_SID'],
+            current_app.config['TWILIO_AUTH_TOKEN']
+        )
+        
+        message_args = {
+            'from_': current_app.config['TWILIO_WHATSAPP_NUMBER'],
+            'body': message_body,
+            'to': to_number
+        }
+        
+        if media_url:
+            message_args['media_url'] = [media_url]
+            
+        message = client.messages.create(**message_args)
+        print(f"✅ WhatsApp message sent to {to_number}: SID {message.sid}")
+        return message.sid
+    except Exception as e:
+        print(f"❌ WhatsApp message failed to {to_number}: {e}")
+        return None
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """
@@ -461,3 +493,231 @@ def format_environmental_metric(value, metric_type):
     
     else:
         return f"{value:.1f}"
+
+# =============================================================================
+# AI ACCURACY VALIDATION - 3 PARAMETER SYSTEM
+# =============================================================================
+
+def validate_report_accuracy_3params(report, weather_data=None, heatmap_data=None):
+    """
+    Validate report accuracy using 3 key parameters:
+    1. Weather & Early Warnings - Check if report hazard is confirmed in heatmap/active hazards
+    2. Live Climate Data - Check if report aligns with current weather conditions
+    3. User Quality Score - Check user's historical credibility and track record
+    
+    Returns accuracy score (0-1) and detailed breakdown
+    """
+    
+    # Parameter 1: Weather & Early Warnings Heatmap Match (33% weight)
+    heatmap_accuracy = _validate_heatmap_match(report, heatmap_data)
+    
+    # Parameter 2: Live Climate Data Alignment (33% weight)
+    climate_accuracy = _validate_climate_alignment(report, weather_data)
+    
+    # Parameter 3: User Quality/Credibility Score (34% weight)
+    user_quality = _calculate_user_quality_score(report.author)
+    
+    # Calculate weighted average accuracy
+    weights = [0.33, 0.33, 0.34]
+    accuracy_scores = [heatmap_accuracy['score'], climate_accuracy['score'], user_quality['score']]
+    overall_accuracy = sum(s * w for s, w in zip(accuracy_scores, weights))
+    
+    return {
+        'overall_accuracy': overall_accuracy,
+        'accuracy_percent': int(overall_accuracy * 100),
+        'parameter_1_heatmap': heatmap_accuracy,
+        'parameter_2_climate': climate_accuracy,
+        'parameter_3_user_quality': user_quality,
+        'detailed_analysis': f"Heatmap Match: {int(heatmap_accuracy['score']*100)}% | Climate Alignment: {int(climate_accuracy['score']*100)}% | User Quality: {int(user_quality['score']*100)}%"
+    }
+
+def _validate_heatmap_match(report, heatmap_data=None):
+    """
+    Parameter 1: Check if report hazard type matches active hazards in heatmap area
+    Returns score 0-1 based on hazard type match and incident density
+    """
+    try:
+        from models import Report
+        
+        # Find similar hazards in same location (within 5km) in last 24 hours
+        from datetime import timedelta
+        time_window = timedelta(hours=24)
+        location_threshold = 0.05  # ~5.5 km
+        
+        similar_hazards = Report.query.filter(
+            Report.id != report.id,
+            Report.hazard_type == report.hazard_type,
+            Report.timestamp.between(report.timestamp - time_window, report.timestamp + time_window),
+            Report.latitude.between(report.latitude - location_threshold, report.latitude + location_threshold),
+            Report.longitude.between(report.longitude - location_threshold, report.longitude + location_threshold),
+            Report.verification_status.in_(['approved', 'pending'])
+        ).count()
+        
+        # Calculate heatmap density score
+        if similar_hazards >= 5:
+            score = 0.95  # Strong hazard hotspot confirmed
+            analysis = f"Strong heatmap confirmation: {similar_hazards} reports of {report.hazard_type} in area"
+        elif similar_hazards >= 3:
+            score = 0.85  # Moderate hotspot
+            analysis = f"Moderate heatmap confirmation: {similar_hazards} similar reports detected"
+        elif similar_hazards >= 1:
+            score = 0.70  # Some corroboration
+            analysis = f"Partial heatmap match: {similar_hazards} corroborating report(s)"
+        else:
+            score = 0.50  # No heatmap corroboration but plausible
+            analysis = "No active heatmap data for this hazard type in area"
+        
+        return {'score': score, 'analysis': analysis}
+    except Exception as e:
+        print(f"Heatmap validation error: {e}")
+        return {'score': 0.50, 'analysis': 'Heatmap data unavailable'}
+
+def _validate_climate_alignment(report, weather_data=None):
+    """
+    Parameter 2: Check if report aligns with live climate conditions
+    Uses hazard type to verify weather conditions support the report
+    Returns score 0-1 based on weather alignment
+    """
+    try:
+        import requests
+        from datetime import datetime
+        
+        # Get live weather data from Open-Meteo API for report location
+        lat, lon = report.latitude, report.longitude
+        
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m"
+        
+        try:
+            response = requests.get(weather_url, timeout=5)
+            if response.status_code == 200:
+                weather = response.json().get('current', {})
+                temp = weather.get('temperature_2m', 25)
+                humidity = weather.get('relative_humidity_2m', 60)
+                wind_speed = weather.get('wind_speed_10m', 10)
+            else:
+                # Fallback values if API fails
+                temp, humidity, wind_speed = 25, 60, 10
+        except:
+            # Default fallback
+            temp, humidity, wind_speed = 25, 60, 10
+        
+        # Validate hazard against weather conditions
+        hazard_type = report.hazard_type.lower()
+        
+        if hazard_type == 'tsunami':
+            # Tsunami usually caused by underwater earthquakes, not weather
+            score = 0.75
+            analysis = f"Tsunami report noted. Weather: {temp}°C, Wind: {wind_speed}km/h"
+        elif hazard_type == 'storm_surge':
+            # Storm surge: high winds expected
+            if wind_speed >= 25:
+                score = 0.90
+                analysis = f"Storm conditions confirmed: High winds {wind_speed}km/h detected"
+            elif wind_speed >= 15:
+                score = 0.75
+                analysis = f"Moderate wind conditions: {wind_speed}km/h matches storm surge pattern"
+            else:
+                score = 0.45
+                analysis = f"Low wind speed {wind_speed}km/h - unexpected for storm surge"
+        elif hazard_type == 'high_waves':
+            # High waves: wind + humidity
+            if wind_speed >= 20 or humidity >= 70:
+                score = 0.85
+                analysis = f"Wave conditions supported: Wind {wind_speed}km/h, Humidity {humidity}%"
+            else:
+                score = 0.60
+                analysis = f"Borderline conditions: Wind {wind_speed}km/h, Humidity {humidity}%"
+        elif hazard_type == 'coastal_flooding':
+            # Flooding: high humidity/rainfall
+            if humidity >= 75:
+                score = 0.80
+                analysis = f"Flood conditions likely: High humidity {humidity}% detected"
+            else:
+                score = 0.65
+                analysis = f"Moderate flood risk: Humidity {humidity}%"
+        elif hazard_type == 'abnormal_tide':
+            # Tides: temperature/humidity indicators
+            score = 0.70
+            analysis = f"Abnormal tide reported. Current conditions: {temp}°C, Humidity {humidity}%"
+        elif hazard_type == 'swell_surge':
+            # Swell: wind patterns
+            if wind_speed >= 15:
+                score = 0.80
+                analysis = f"Swell surge conditions: Wind {wind_speed}km/h supports report"
+            else:
+                score = 0.60
+                analysis = f"Swell report noted: Wind {wind_speed}km/h"
+        else:
+            score = 0.65
+            analysis = f"General hazard: Weather {temp}°C, Wind {wind_speed}km/h, Humidity {humidity}%"
+        
+        return {'score': score, 'analysis': analysis}
+    except Exception as e:
+        print(f"Climate validation error: {e}")
+        return {'score': 0.65, 'analysis': 'Climate data validation partial'}
+
+def _calculate_user_quality_score(user):
+    """
+    Parameter 3: Calculate user's credibility score based on:
+    - User role (official > analyst > regular users)
+    - History of verified reports
+    - Report accuracy track record
+    - Activity level
+    
+    Returns score 0-1
+    """
+    try:
+        from models import Report
+        
+        # Base score by role
+        role_scores = {
+            'official': 0.95,
+            'analyst': 0.90,
+            'agency': 0.88,
+            'citizen': 0.50
+        }
+        base_role_score = role_scores.get(user.role, 0.50)
+        
+        # Get user's report history
+        user_reports = Report.query.filter_by(user_id=user.id).all()
+        total_reports = len(user_reports)
+        
+        if total_reports == 0:
+            # New user - reduce score
+            history_multiplier = 0.6
+            analysis = f"New user (no reports). Base credibility: {int(base_role_score*100)}%"
+        else:
+            # Calculate approval rate
+            approved = sum(1 for r in user_reports if r.verification_status == 'approved')
+            approval_rate = approved / total_reports if total_reports > 0 else 0
+            
+            if approval_rate >= 0.8:
+                history_multiplier = 1.0
+                analysis = f"Excellent track record: {approved}/{total_reports} reports approved ({int(approval_rate*100)}%)"
+            elif approval_rate >= 0.6:
+                history_multiplier = 0.85
+                analysis = f"Good track record: {approved}/{total_reports} reports approved ({int(approval_rate*100)}%)"
+            elif approval_rate >= 0.4:
+                history_multiplier = 0.70
+                analysis = f"Moderate track record: {approved}/{total_reports} reports approved ({int(approval_rate*100)}%)"
+            else:
+                history_multiplier = 0.50
+                analysis = f"Low accuracy: {approved}/{total_reports} reports approved ({int(approval_rate*100)}%)"
+        
+        # Calculate user points/level factor (higher level = more experienced)
+        user_level_factor = min(1.0, (user.level / 10.0) * 0.3 + 0.7)  # Scales from 0.7 to 1.0
+        
+        # Combined quality score
+        quality_score = base_role_score * history_multiplier * user_level_factor
+        quality_score = min(1.0, quality_score)  # Cap at 1.0
+        
+        return {
+            'score': quality_score,
+            'analysis': analysis,
+            'role': user.role,
+            'level': user.level,
+            'total_reports': total_reports
+        }
+    except Exception as e:
+        print(f"User quality score error: {e}")
+        return {'score': 0.50, 'analysis': 'User quality assessment unavailable'}

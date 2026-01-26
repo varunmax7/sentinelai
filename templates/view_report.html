@@ -465,29 +465,39 @@
         </div>
     </div>
 
-    {% if current_user.role in ['official', 'analyst'] and report.verification_status != 'approved' %}
+    {% if current_user.role in ['official', 'analyst'] %}
     <div class="action-card">
         <div class="action-header"><i class="fas fa-user-shield"></i>Verification Actions</div>
         <div class="action-buttons">
-            <form action="{{ url_for('verify_report', report_id=report.id) }}" method="post" class="d-inline">
-                <input type="hidden" name="action" value="approve">
-                <button type="submit" class="btn-custom btn-success-custom">
-                    <i class="fas fa-check me-1"></i>Approve Report
-                </button>
-            </form>
+            {% if report.verification_status != 'approved' %}
+                <form action="{{ url_for('verify_report', report_id=report.id) }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit" class="btn-custom btn-success-custom">
+                        <i class="fas fa-check me-1"></i>Approve Report
+                    </button>
+                </form>
 
-            <!-- REPLACED: Modal with direct link to reject page -->
-            <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn-custom btn-danger-custom">
-                <i class="fas fa-times me-1"></i>Reject Report
-            </a>
+                <!-- REPLACED: Modal with direct link to reject page -->
+                <a href="{{ url_for('reject_report', report_id=report.id) }}" class="btn-custom btn-danger-custom">
+                    <i class="fas fa-times me-1"></i>Reject Report
+                </a>
 
-            {% if report.verification_status == 'rejected' %}
-            <form action="{{ url_for('verify_report', report_id=report.id) }}" method="post" class="d-inline">
-                <input type="hidden" name="action" value="pending">
-                <button type="submit" class="btn-custom btn-warning-custom">
-                    <i class="fas fa-undo me-1"></i>Return to Pending
-                </button>
-            </form>
+                {% if report.verification_status == 'rejected' %}
+                <form action="{{ url_for('verify_report', report_id=report.id) }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="pending">
+                    <button type="submit" class="btn-custom btn-warning-custom">
+                        <i class="fas fa-undo me-1"></i>Return to Pending
+                    </button>
+                </form>
+                {% endif %}
+            {% else %}
+                <!-- Report is already approved -->
+                <form action="{{ url_for('verify_report', report_id=report.id) }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="pending">
+                    <button type="submit" class="btn-custom btn-warning-custom">
+                        <i class="fas fa-arrow-left me-1"></i>Revert to Pending
+                    </button>
+                </form>
             {% endif %}
         </div>
     </div>

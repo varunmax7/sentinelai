@@ -18,3 +18,8 @@ class Config:
     LANGUAGES = ['en', 'ta', 'hi', 'te', 'ml', 'kn']  # English, Tamil, Hindi, Telugu, Malayalam, Kannada
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_DEFAULT_TIMEZONE = 'UTC'
+    
+    # Twilio WhatsApp Configuration
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+    TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER')

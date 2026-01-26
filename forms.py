@@ -30,7 +30,8 @@ class MultilingualForm(FlaskForm):
                 return translated
         except:
             pass
-            
+        
+        # If no translation found, return the default label
         return default_label
 
 class RegistrationForm(MultilingualForm):
@@ -380,8 +381,11 @@ class VolunteerRegistrationForm(MultilingualForm):
     latitude = FloatField('Latitude', validators=[Optional()])
     longitude = FloatField('Longitude', validators=[Optional()])
     availability = SelectField('Availability', choices=[
-        ('available', 'Available'),
-        ('busy', 'Busy'),
+        ('available_24_7', 'Available 24/7'),
+        ('available_weekdays', 'Available Weekdays'),
+        ('available_weekends', 'Available Weekends'),
+        ('available_evenings', 'Available Evenings'),
+        ('available_limited', 'Limited Availability'),
         ('unavailable', 'Unavailable')
     ], validators=[DataRequired()])
     submit = SubmitField('Register as Volunteer')
@@ -407,9 +411,12 @@ class VolunteerRegistrationForm(MultilingualForm):
                 ('expert', translate('expert_level'))
             ]
             self.availability.choices = [
-                ('available', translate('available_status')),
-                ('busy', translate('busy_status')),
-                ('unavailable', translate('unavailable_status'))
+                ('available_24_7', translate('available_24_7') or 'Available 24/7'),
+                ('available_weekdays', translate('available_weekdays') or 'Available Weekdays'),
+                ('available_weekends', translate('available_weekends') or 'Available Weekends'),
+                ('available_evenings', translate('available_evenings') or 'Available Evenings'),
+                ('available_limited', translate('available_limited') or 'Limited Availability'),
+                ('unavailable', translate('unavailable_status') or 'Unavailable')
             ]
         except ImportError:
             pass

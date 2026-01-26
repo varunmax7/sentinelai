@@ -4,16 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>{% block title %}{{ translate('coastal_safety_network') }}{% endblock %}</title>
+    <title>{% block title %}{{ translate('coastal_alert') }}{% endblock %}</title>
 
     <!-- PWA Meta Tags -->
     <meta name="description"
-        content="AI-Powered Emergency Response & Incident Management System for coastal safety and disaster management">
+        content="AI-Powered Emergency Response & Incident Management System for community safety and disaster management">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a365d">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CoastalAlert">
+    <meta name="apple-mobile-web-app-title" content="MaxAlert AI">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -141,6 +142,23 @@
             background: #c82333 !important;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .nav-link.btn-complete-rescue {
+            background: var(--info-color) !important;
+            color: white !important;
+            border-radius: 25px;
+            padding: 0.5rem 1.2rem !important;
+            margin: 0 0.3rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-link.btn-complete-rescue:hover {
+            background: #0891b2 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
         }
 
 
@@ -314,6 +332,11 @@
             color: white !important;
         }
 
+        .floating-btn-info {
+            background: #17a2b8 !important;
+            color: white !important;
+        }
+
         .floating-btn:hover {
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
@@ -356,7 +379,7 @@
             padding: 1rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
+            margin-bottom: 0;
             width: 100%;
         }
 
@@ -366,7 +389,7 @@
             color: white;
             border-radius: 12px;
             padding: 1.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0;
             width: 100%;
         }
 
@@ -376,7 +399,7 @@
             padding: 1rem;
             text-align: center;
             backdrop-filter: blur(10px);
-            margin-bottom: 1rem;
+            margin-bottom: 0;
         }
 
         .metric-value {
@@ -876,8 +899,8 @@
     <!-- Enhanced Navigation with Coordination Platform -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top py-2" id="main-navbar">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">
-                <i class="fas fa-water me-2"></i>CoastalAlert
+            <a class="navbar-brand text-white" href="{{ url_for('home') }}">
+                <i class="fas fa-shield-alt me-2"></i>MaxAlert AI
             </a>
 
             <!-- Language Selector -->
@@ -1020,6 +1043,14 @@
                     {% endif %}
 
                     {% if current_user.is_authenticated %}
+                    <!-- Complete Rescue Button (Navbar) -->
+                    <li class="nav-item" id="nav-rescue-item" style="display: none;">
+                        <a class="nav-link btn-complete-rescue" href="#" onclick="navigateToActiveRescue(event)"
+                            id="nav-complete-rescue-btn-top">
+                            <i class="fas fa-flag-checkered me-1"></i>Complete Rescue
+                        </a>
+                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link btn-report" href="{{ url_for('report') }}">
                             <i class="fas fa-plus me-1"></i>{{ translate('report') }}
@@ -1121,8 +1152,8 @@
                                 <h6 class="dropdown-header">Quick Access</h6>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{{ url_for('leaderboard') }}">
-                                    <i class="fas fa-trophy me-2"></i>{{ translate('leaderboard') }}
+                                <a class="dropdown-item" href="{{ url_for('leaderboards') }}">
+                                    <i class="fas fa-crown me-2"></i>All Leaderboards
                                     <span class="badge bg-warning ms-2">{{ current_user.points }} points</span>
                                 </a>
                             </li>
@@ -1179,8 +1210,9 @@
                                 href="{{ url_for('profile', username=current_user.username) }}">
                                 <i class="fas fa-user me-2"></i>My Profile
                             </a>
-                            <a class="btn btn-outline-light btn-sm" href="{{ url_for('leaderboard') }}">
-                                <i class="fas fa-trophy me-2"></i>Leaderboard
+                            <a class="btn btn-outline-light btn-sm" href="{{ url_for('leaderboards') }}">
+                                <i class="fas fa-crown me-2"></i>All Leaderboards <span class="badge bg-warning ms-1">{{
+                                    current_user.points }}</span>
                             </a>
                             <a class="btn btn-outline-light btn-sm" href="{{ url_for('edit_profile') }}">
                                 <i class="fas fa-cog me-2"></i>Settings
@@ -1264,6 +1296,16 @@
         </a>
         {% endif %}
 
+        <!-- Be a Volunteer Button -->
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('register_volunteer') }}" class="floating-btn floating-btn-success" title="Be a Volunteer"
+            id="volunteer-btn">
+            <i class="fas fa-hands-helping"></i>
+            <span class="floating-label">Be a Volunteer</span>
+        </a>
+        {% endif %}
+
+
         <!-- Coordination Platform Button - For Officials/Analysts -->
         {% if current_user.is_authenticated and current_user.role in ['official', 'analyst'] %}
         <a href="{{ url_for('coordination_dashboard') }}" class="floating-btn floating-btn-warning"
@@ -1276,7 +1318,7 @@
 
         <!-- AI Assistant Button - Always Visible -->
         <button class="floating-btn floating-btn-primary" data-bs-toggle="modal" data-bs-target="#chatbotModal"
-            title="Coastal Safety AI Assistant" id="ai-btn">
+            title="MaxAlert AI Assistant" id="ai-btn">
             <i class="fas fa-robot"></i>
             <span class="floating-label">AI Assistant</span>
         </button>
@@ -1288,15 +1330,18 @@
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="chatbotModalLabel">
-                        <i class="fas fa-robot me-2"></i>Coastal Safety AI Assistant
+                        <i class="fas fa-robot me-2"></i>MaxAlert AI Assistant
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
+                <p class="text-muted mx-auto" style="max-width: 400px;">AI monitoring indicates safe conditions. For
+                    real-time updates and comprehensive safety intelligence, please refer to official sources and local
+                    authorities. MaxAlert AI provides general information and assistance.</p>
                 <div class="modal-body p-0" style="height: 600px;">
-                    <iframe src="https://0e01fb24-614b-4710-8462-3232d9ce01e7-00-ny24ou21ogwu.pike.replit.dev/"
+                    <iframe src="https://4719b0f3-e556-4a85-ae5b-b8f6a9b345d7-00-3li3araff4yhw.sisko.replit.dev/"
                         style="width: 100%; height: 100%; border: none; border-radius: 0 0 0.375rem 0.375rem;"
-                        title="Coastal Safety AI Assistant">
+                        title="MaxAlert AI Assistant">
                     </iframe>
                 </div>
             </div>
@@ -1309,10 +1354,10 @@
             <div class="row align-items-center">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-water fa-2x me-3 text-info"></i>
+                        <i class="fas fa-shield-alt fa-2x me-3 text-info"></i>
                         <div>
-                            <h5 class="fw-bold mb-0">CoastalAlert</h5>
-                            <p class="text-light-50 mb-0 small">Protecting coastal communities worldwide</p>
+                            <h5 class="fw-bold mb-0">MaxAlert AI</h5>
+                            <p class="text-muted small">Help protect your community</p>
                         </div>
                     </div>
                 </div>
@@ -1347,13 +1392,13 @@
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <p class="mb-0 small text-light-50">
-                        <i class="fas fa-shield-alt me-1"></i>Officially collaborating with INCOIS and coastal safety
+                        <i class="fas fa-shield-alt me-1"></i>Officially collaborating with safety and emergency
                         organizations
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <p class="mb-0 small text-light-50">
-                        &copy; 2025 CoastalAlert. All rights reserved.
+                        &copy; 2026 MaxAlert AI. All rights reserved.
                     </p>
                 </div>
             </div>
@@ -1370,6 +1415,61 @@
     <!-- Real-time Notifications -->
     {% if current_user.is_authenticated %}
     <script>
+        // Toast notification system
+        let lastToastTime = 0;
+        function showNotificationToast() {
+            // Debounce to avoid showing multiple toasts
+            const now = Date.now();
+            if (now - lastToastTime < 10000) return; // Don't show within 10 seconds
+            lastToastTime = now;
+
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('notificationToastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'notificationToastContainer';
+                toastContainer.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999;';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-info alert-dismissible fade show';
+            toast.style.cssText = 'min-width: 300px; animation: slideIn 0.3s ease-in-out;';
+            toast.innerHTML = `
+                <strong>🔔 New Notification!</strong>
+                <p>You have a new assignment notification.</p>
+                <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-primary">View Notification</a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Add slide-in animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Fast polling for new notifications (every 3 seconds)
         function checkNewNotifications() {
             fetch('{{ url_for("unread_notifications_count") }}')
                 .then(response => response.json())
@@ -1382,19 +1482,43 @@
                             newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
                             newBadge.textContent = data.count;
                             link.appendChild(newBadge);
+
+                            // Show toast notification
+                            if (typeof showNotificationToast === 'function') {
+                                showNotificationToast();
+                            }
                         } else {
+                            const oldCount = parseInt(badge.textContent);
+                            if (data.count > oldCount) {
+                                // New notification(s) arrived
+                                if (typeof showNotificationToast === 'function') {
+                                    showNotificationToast();
+                                }
+                            }
                             badge.textContent = data.count;
                         }
                     } else if (badge) {
                         badge.remove();
                     }
                 })
-                .catch(console.error);
+                .catch(err => console.log('Notification poll failed:', err));
         }
 
-        // Check notifications every 30 seconds
-        setInterval(checkNewNotifications, 30000);
-        document.addEventListener('DOMContentLoaded', () => setTimeout(checkNewNotifications, 1000));
+        // Check notifications every 3 seconds (much faster response)
+        setInterval(checkNewNotifications, 3000);
+
+        // Check immediately on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkNewNotifications();
+            // Check again after 1 second to catch delayed notifications
+            setTimeout(checkNewNotifications, 1000);
+        });
+
+        // Also check if page is already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            checkNewNotifications();
+            setTimeout(checkNewNotifications, 1000);
+        }
     </script>
     {% endif %}
 
@@ -1642,6 +1766,110 @@
             }
         };
     </script>
+
+    <!-- Complete Rescue Button Handler -->
+    <script>
+        // Check for active rescue assignment on page load
+        function checkActiveRescue() {
+            const btn = document.getElementById('complete-rescue-btn');
+            const navRescueItem = document.getElementById('nav-rescue-item');
+            const navRescueBtn = document.getElementById('nav-complete-rescue-btn-top');
+
+            if (!btn && !navRescueBtn) {
+                console.log('Complete Rescue buttons not found');
+                return;
+            }
+
+            console.log('Checking for active rescue assignment...');
+            fetch('/api/coordination/assignments/active', {
+                method: 'GET',
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok && response.status !== 403) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.assignment_id) {
+                        const assignmentId = data.assignment_id;
+
+                        // Update floating button
+                        if (btn) {
+                            btn.dataset.assignmentId = assignmentId;
+                            btn.style.visibility = 'visible';
+                            btn.style.opacity = '1';
+                        }
+
+                        // Update navbar button
+                        if (navRescueItem) {
+                            navRescueItem.style.display = 'block';
+                        }
+                        if (navRescueBtn) {
+                            navRescueBtn.dataset.assignmentId = assignmentId;
+                        }
+                    } else {
+                        // Hide floating button
+                        if (btn) {
+                            btn.style.visibility = 'hidden';
+                            btn.style.opacity = '0';
+                        }
+
+                        // Hide navbar button
+                        if (navRescueItem) {
+                            navRescueItem.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking active rescue:', error);
+                    if (btn) {
+                        btn.style.visibility = 'hidden';
+                        btn.style.opacity = '0';
+                    }
+                    if (navRescueItem) {
+                        navRescueItem.style.display = 'none';
+                    }
+                });
+        }
+
+        // Navigate to active rescue completion form
+        function navigateToActiveRescue(e) {
+            e.preventDefault();
+            // Try getting assignmentId from either the clicked button or the global buttons
+            const clickedBtn = e.currentTarget;
+            let assignmentId = clickedBtn.dataset.assignmentId;
+
+            if (!assignmentId) {
+                const navBtn = document.getElementById('nav-complete-rescue-btn-top');
+                const floatBtn = document.getElementById('complete-rescue-btn');
+                assignmentId = (navBtn && navBtn.dataset.assignmentId) || (floatBtn && floatBtn.dataset.assignmentId);
+            }
+
+            if (assignmentId) {
+                window.location.href = `/rescue-complete?assignment_id=${assignmentId}`;
+            } else {
+                // Secondary check if data is missing but assignment might exist
+                checkActiveRescue();
+                alert('No active rescue assignment found. Please refresh if you just accepted one.');
+            }
+        }
+
+        // Check on page load
+        document.addEventListener('DOMContentLoaded', checkActiveRescue);
+
+        // Also check immediately if document is already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            checkActiveRescue();
+        }
+
+        // Re-check every 30 seconds to update button visibility
+        setInterval(checkActiveRescue, 30000);
+    </script>
+
+    <!-- Real-Time Notification System -->
+    <!-- Removed - using improved checkNewNotifications() from earlier in template -->
 
     <!-- PWA Registration Script -->
     <script src="{{ url_for('static', filename='js/pwa.js') }}"></script>

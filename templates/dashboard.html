@@ -97,6 +97,8 @@
             <p class="hero-subtitle mb-0">Live Incident Monitoring & Community Response</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ url_for('register_volunteer') }}" class="btn btn-success px-4 fw-bold shadow"><i
+                    class="fas fa-hands-helping me-2"></i>Be a Volunteer</a>
             <button class="btn btn-primary px-4 fw-bold shadow" id="exportBtn"><i
                     class="fas fa-file-pdf me-2"></i>Export PDF</button>
             <button class="btn btn-outline-light px-4 border-secondary" id="refreshBtn"><i
@@ -354,7 +356,7 @@
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save('CoastalAlert-Dashboard-Report.pdf');
+            pdf.save('MaxAlert-AI-Dashboard-Report.pdf');
             loader.style.display = 'none';
         });
     }

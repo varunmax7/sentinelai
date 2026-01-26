@@ -12,10 +12,15 @@ from forms import (
     VolunteerAssignmentForm, SituationReportForm, CoordinationSettingsForm,
     PlasticUsageForm, CarbonSavingsForm  # ADDED
 )
-from utils import save_file, calculate_distance, analyze_plastic_image, calculate_carbon_savings, calculate_points_for_activity  # UPDATED
+from utils import (
+    save_file, calculate_distance, analyze_plastic_image, 
+    calculate_carbon_savings, calculate_points_for_activity, 
+    validate_report_accuracy_3params, send_whatsapp_message
+)  # UPDATED
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import json
+import time
 from datetime import datetime, timedelta
 from sqlalchemy import func, cast 
 import requests
@@ -33,6 +38,7 @@ import base64
 from flask import Response
 import numpy as np
 import random
+from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -242,9 +248,9 @@ TRANSLATIONS = {
         
         # Messages
         'report_submitted': 'Your report has been submitted! +10 points! AI Confidence: {confidence}%',
-        'login_success': 'Welcome back! Thank you for contributing to coastal safety.',
+        'login_success': 'Welcome back! Thank you for contributing to MaxAlert AI.',
         'official_login': 'Welcome back, Officer! Thank you for keeping our community safe.',
-        'analyst_login': 'Welcome back, Analyst! Your insights help protect our coasts.',
+        'analyst_login': 'Welcome back, Analyst! Your insights help protect our community.',
         'registration_success': 'Your account has been created! You can now log in.',
         'profile_updated': 'Your profile has been updated!',
         'location_saved': 'Your location has been saved!',
@@ -297,6 +303,12 @@ TRANSLATIONS = {
         'file_too_large': 'File too large. Maximum file size is 16MB.',
         'unauthorized': 'Unauthorized action.',
         'user_not_found': 'User not found.',
+
+        # Brand Keys
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
+        'coastal_safety_ai_assistant': 'MaxAlert AI Assistant',
+        'protecting_coastal_communities': 'Protecting communities worldwide',
     },
     
     'ta': {  # Tamil
@@ -319,8 +331,11 @@ TRANSLATIONS = {
         'coastal_flooding': 'கடற்கரை வெள்ளம்',
         
         'report_submitted': 'உங்கள் புகாரை சமர்ப்பித்துள்ளோம்! +10 புள்ளிகள்! AI நம்பகத்தன்மை: {confidence}%',
-        'login_success': 'மீண்டும் வரவேற்கிறோம்! கடலோர பாதுகாப்பில் பங்களித்தமைக்கு நன்றி.',
+        'login_success': 'மீண்டும் வரவேற்கிறோம்! MaxAlert AI-க்கு பங்களித்தமைக்கு நன்றி.',
         'registration_success': 'உங்கள் கணக்கு உருவாக்கப்பட்டது! இப்போது நீங்கள் உள்நுழையலாம்.',
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
+        'coastal_safety_ai_assistant': 'MaxAlert AI உதவியாளர்',
     },
     
     'hi': {  # Hindi
@@ -343,8 +358,11 @@ TRANSLATIONS = {
         'coastal_flooding': 'तटीय बाढ़',
         
         'report_submitted': 'आपकी रिपोर्ट सबमिट कर दी गई है! +10 अंक! AI विश्वास: {confidence}%',
-        'login_success': 'वापसी पर स्वागत है! तटीय सुरक्षा में योगदान देने के लिए धन्यवाद।',
+        'login_success': 'वापसी पर स्वागत है! MaxAlert AI में योगदान देने के लिए धन्यवाद।',
         'registration_success': 'आपका खाता बन गया है! अब आप लॉगिन कर सकते हैं।',
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
+        'coastal_safety_ai_assistant': 'MaxAlert AI सहायक',
     },
     
     'te': {  # Telugu
@@ -367,8 +385,11 @@ TRANSLATIONS = {
         'coastal_flooding': 'తీర ప్రాంతం వరద',
         
         'report_submitted': 'మీ నివేదిక సమర్పించబడింది! +10 పాయింట్లు! AI నమ్మకం: {confidence}%',
-        'login_success': 'మళ్లీ స్వాగతం! తీరప్రాంత భద్రతకు కృషి చేసినందుకు ధన్యవాదాలు.',
+        'login_success': 'మళ్లీ స్వాగతం! MaxAlert AI పట్ల మీ కృషికి ధన్యవాదాలు.',
         'registration_success': 'మీ ఖాతా సృష్టించబడింది! మీరు ఇప్పుడు లాగిన్ చేయవచ్చు.',
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
+        'coastal_safety_ai_assistant': 'MaxAlert AI అసిస్టెంట్',
     },
     
     'ml': {  # Malayalam
@@ -388,7 +409,9 @@ TRANSLATIONS = {
         'high_waves': 'ഉയർന്ന അലകൾ',
         
         'report_submitted': 'നിങ്ങളുടെ റിപ്പോർട്ട് സമർപ്പിച്ചു! +10 പോയിന്റുകൾ! AI ആത്മവിശ്വാസം: {confidence}%',
-        'login_success': 'വീണ്ടും സ്വാഗതം! തീരദേശ സുരക്ഷയിൽ സംഭാവന ചെയ്തതിന് നന്ദി.',
+        'login_success': 'വീണ്ടും സ്വാഗതം! MaxAlert AI-ലേക്ക് സംഭാവന ചെയ്തതിന് നന്ദി.',
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
     },
     
     'kn': {  # Kannada
@@ -408,7 +431,11 @@ TRANSLATIONS = {
         'high_waves': 'ಎತ್ತರದ ಅಲೆಗಳು',
         
         'report_submitted': 'ನಿಮ್ಮ ವರದಿಯನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ! +10 ಅಂಕಗಳು! AI ವಿಶ್ವಾಸ: {confidence}%',
-        'login_success': 'ಮತ್ತೆ ಸ್ವಾಗತ! ಕರಾವಳಿ ಭದ್ರತೆಗೆ ಕೊಡುಗೆ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು.',
+        'login_success': 'ಮತ್ತೆ ಸ್ವಾಗತ! MaxAlert AI ಗೆ ಕೊಡುಗೆ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು.',
+        'coastal_alert': 'MaxAlert AI',
+        'coastal_safety_network': 'MaxAlert AI',
+        'coastal_safety_ai_assistant': 'MaxAlert AI Assistant',
+        'protecting_coastal_communities': 'Protecting communities worldwide',
     }
 }
 
@@ -644,55 +671,73 @@ def award_badge(user, badge_name):
         flash(translate('badge_earned', badge_name=badge.name), 'success')
 
 def analyze_report_with_ai(report):
-    """Analyze a report using AI to generate confidence score and analysis"""
+    """Analyze a report using AI to generate confidence score and analysis
+    
+    Uses 3-parameter validation system:
+    1. Weather & Early Warnings - Heatmap match (33%)
+    2. Live Climate Data - Weather alignment (33%)
+    3. User Quality - Credibility score (34%)
+    """
     try:
-        # Initialize analysis components
+        # NEW: Use 3-parameter validation system
+        accuracy_result = validate_report_accuracy_3params(report)
+        
+        # Initialize analysis components with legacy method
         analysis_parts = []
         confidence_factors = []
         
-        # 1. Source Reliability Analysis
-        user_reliability = analyze_user_reliability(report.author)
-        analysis_parts.append(f"Source Reliability: {user_reliability['analysis']}")
-        confidence_factors.append(user_reliability['score'])
+        # 1. Source Reliability Analysis (User Quality from 3-param system)
+        user_quality = accuracy_result['parameter_3_user_quality']
+        analysis_parts.append(f"User Quality: {user_quality['analysis']}")
+        confidence_factors.append(user_quality['score'])
         
-        # 2. Corroboration Analysis
-        corroboration = analyze_corroboration(report)
-        analysis_parts.append(f"Corroboration: {corroboration['analysis']}")
-        confidence_factors.append(corroboration['score'])
+        # 2. Corroboration Analysis (Heatmap Match from 3-param system)
+        heatmap_match = accuracy_result['parameter_1_heatmap']
+        analysis_parts.append(f"Heatmap Match: {heatmap_match['analysis']}")
+        confidence_factors.append(heatmap_match['score'])
         
-        # 3. Media Analysis (if available)
+        # 3. Climate Data Analysis (Weather Alignment from 3-param system)
+        climate_align = accuracy_result['parameter_2_climate']
+        analysis_parts.append(f"Climate Alignment: {climate_align['analysis']}")
+        confidence_factors.append(climate_align['score'])
+        
+        # 4. Media Analysis (if available)
         if report.image_file:
             media_analysis = analyze_media(report)
             analysis_parts.append(f"Media Analysis: {media_analysis['analysis']}")
             confidence_factors.append(media_analysis['score'])
         else:
-            # No media penalty
             confidence_factors.append(0.3)
             analysis_parts.append("Media Analysis: No visual evidence provided")
         
-        # 4. Linguistic Analysis
+        # 5. Linguistic Analysis
         linguistic_analysis = analyze_text(report.description, report.title)
         analysis_parts.append(f"Linguistic Analysis: {linguistic_analysis['analysis']}")
         confidence_factors.append(linguistic_analysis['score'])
         
         # Calculate overall confidence score (weighted average)
-        weights = [0.2, 0.3, 0.3, 0.2]  # Adjust weights as needed
+        weights = [0.25, 0.25, 0.25, 0.15, 0.10]  # Adjusted weights to include all factors
         weighted_scores = [score * weight for score, weight in zip(confidence_factors, weights)]
         confidence_score = sum(weighted_scores) / sum(weights)
         
+        # Blend with 3-parameter accuracy for final score
+        final_confidence_score = (confidence_score * 0.5) + (accuracy_result['overall_accuracy'] * 0.5)
+        
         # Generate comprehensive analysis text
-        analysis_text = " | ".join(analysis_parts)
+        analysis_text = f"3-PARAM ACCURACY: {accuracy_result['accuracy_percent']}% | {accuracy_result['detailed_analysis']} | " + " | ".join(analysis_parts)
         
         return {
-            'confidence_score': confidence_score,
-            'analysis': analysis_text
+            'confidence_score': final_confidence_score,
+            'analysis': analysis_text,
+            'accuracy_3param': accuracy_result  # Include full 3-param breakdown
         }
         
     except Exception as e:
         print(f"AI Analysis Error: {e}")
         return {
             'confidence_score': 0.5,
-            'analysis': "AI analysis temporarily unavailable. Manual review required."
+            'analysis': "AI analysis temporarily unavailable. Manual review required.",
+            'accuracy_3param': None
         }
 
 def analyze_user_reliability(user):
@@ -1097,11 +1142,47 @@ def unfollow(username):
     flash(translate('unfollow_success', username=username), 'success')
     return redirect(url_for('profile', username=username))
 
+@app.route("/rescue-complete")
+@login_required
+def rescue_complete():
+    """Page for volunteers to mark rescue as complete with photo proof"""
+    assignment_id = request.args.get('assignment_id', type=int)
+    
+    if not assignment_id:
+        flash('Assignment ID is required', 'danger')
+        return redirect(url_for('notifications'))
+    
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Check that current user is the assigned volunteer
+    if assignment.volunteer.user_id != current_user.id:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Check that assignment is accepted
+    if assignment.status != 'accepted':
+        flash('Assignment must be accepted to complete', 'danger')
+        return redirect(url_for('notifications'))
+    
+    return render_template('rescue_completion.html', title='Mark Rescue Complete', assignment=assignment, assignment_id=assignment_id)
+
+@app.route("/leaderboards")
+@login_required
+def leaderboards():
+    """Unified Leaderboards - Community, Rescue Heroes, and Eco"""
+    return render_template('leaderboards.html', title=translate('leaderboard'))
+
 @app.route("/leaderboard")
 def leaderboard():
     # Get top users by points
     top_users = User.query.order_by(User.points.desc()).limit(20).all()
     return render_template('leaderboard.html', title=translate('leaderboard'), top_users=top_users)
+
+@app.route("/community_leaderboard")
+@login_required
+def community_leaderboard():
+    """Community Leaderboard - All users ranked by total combined points"""
+    return render_template('community_leaderboard.html', title=translate('leaderboard'))
 
 @app.route("/report", methods=['GET', 'POST'])
 @login_required
@@ -1139,9 +1220,13 @@ def report():
         
         db.session.commit()
         
-        # Show AI confidence in flash message
+        # Show AI confidence in flash message with 3-parameter breakdown
         confidence_percent = report.confidence_score * 100
-        flash(translate('report_submitted', confidence=confidence_percent), 'success')
+        if ai_result.get('accuracy_3param'):
+            param_breakdown = f" [Heatmap: {int(ai_result['accuracy_3param']['parameter_1_heatmap']['score']*100)}% | Climate: {int(ai_result['accuracy_3param']['parameter_2_climate']['score']*100)}% | User: {int(ai_result['accuracy_3param']['parameter_3_user_quality']['score']*100)}%]"
+            flash(f"{translate('report_submitted', confidence=confidence_percent)}{param_breakdown}", 'success')
+        else:
+            flash(translate('report_submitted', confidence=confidence_percent), 'success')
         return redirect(url_for('home'))
     
     return render_template('report.html', title=translate('report'), form=form)
@@ -1254,13 +1339,13 @@ def view_report(report_id):
 
 # Hazard type alert radii (in kilometers)
 HAZARD_ALERT_RADII = {
-    'tsunami': 10.0,        # 10 km radius for tsunamis
+    'tsunami': 15.0,        # 15 km radius for tsunamis
     'storm_surge': 15.0,    # 15 km radius for storm surges  
-    'high_waves': 2.0,      # 2 km radius for high waves
-    'swell_surge': 2.0,     # 2 km radius for swell surges
-    'coastal_flooding': 5.0, # 5 km radius for coastal flooding
-    'abnormal_tide': 2.0,   # 2 km radius for abnormal tides
-    'other': 5.0            # 5 km radius for other hazards
+    'high_waves': 10.0,      # 10 km radius for high waves
+    'swell_surge': 10.0,     # 10 km radius for swell surges
+    'coastal_flooding': 10.0, # 10 km radius for coastal flooding
+    'abnormal_tide': 10.0,   # 10 km radius for abnormal tides
+    'other': 10.0            # 10 km radius for other hazards
 }
 
 @app.route('/verify_report/<int:report_id>', methods=['POST'])
@@ -1300,10 +1385,94 @@ def verify_report(report_id):
         )
         db.session.add(author_notification)
         print(f"📨 Created approval notification for report author")
-    elif action == 'resolve':
-        report.status = 'resolved'
-        flash(f'Report "{report.title}" has been marked as resolved.', 'success')
-        return redirect(url_for('dashboard'))
+        
+        db.session.commit()
+        print("💾 Approval changes committed")
+        
+        flash(f'Report "{report.title}" has been approved successfully!', 'success')
+        
+        # --- AUTOMATION: Assign nearby volunteers automatically ---
+        print(f"[AUTO-ASSIGN] Searching for volunteers within 10km of '{report.title}'...")
+        try:
+            # Find all potential volunteers
+            volunteers = Volunteer.query.filter(
+                Volunteer.latitude.isnot(None),
+                Volunteer.longitude.isnot(None)
+            ).all()
+            
+            autassigned_count = 0
+            for volunteer in volunteers:
+                distance = calculate_distance(
+                    report.latitude, report.longitude,
+                    volunteer.latitude, volunteer.longitude
+                )
+                
+                # Check if within 10km
+                if distance <= 10.0:
+                    # Check if not already assigned to this report (to avoid duplicates)
+                    existing = VolunteerAssignment.query.filter_by(
+                        volunteer_id=volunteer.id,
+                        emergency_event_id=report.id,
+                        hazard_type='report'
+                    ).filter(VolunteerAssignment.status.in_(['pending', 'accepted', 'deployed'])).first()
+                    
+                    if not existing:
+                        # Create auto-assignment
+                        assignment = VolunteerAssignment(
+                            volunteer_id=volunteer.id,
+                            emergency_event_id=report.id,
+                            hazard_type='report',
+                            assigned_by=current_user.id,
+                            status='pending',
+                            distance_km=distance
+                        )
+                        db.session.add(assignment)
+                        db.session.flush() # Get ID
+                        
+                        # Send notification to volunteer
+                        notification = Notification(
+                            user_id=volunteer.user_id,
+                            message=f'🤝 HELP REQUEST: You have been assigned to assist with a verified hazard "{report.title}" reported within {distance:.1f}km of you. Would you like to respond?',
+                            assignment_id=assignment.id,
+                            is_alert=True,
+                            is_read=False
+                        )
+                        db.session.add(notification)
+                        
+                        # Send WhatsApp notification if linked
+                        if volunteer.user and volunteer.user.whatsapp_number:
+                            # 1. Send Alert Message with Image
+                            alert_body = f"🚨 *MaxAlert AI: HAZARD ALERT*\n\n*Title:* {report.title}\n*Description:* {report.description}\n*Location:* {report.location}"
+                            
+                            media_url = None
+                            if report.image_file:
+                                # Use ngrok URL for public access
+                                base_url = "https://adele-unfocused-scientistically.ngrok-free.dev"
+                                media_url = f"{base_url}/static/uploads/{report.image_file}"
+                                
+                            send_whatsapp_message(volunteer.user.whatsapp_number, alert_body, media_url)
+                            
+                            # Small delay to ensure order
+                            time.sleep(1)
+                            
+                            # 2. Send Assignment Request
+                            assign_body = f"🤝 *MaxAlert AI: AUTO-ASSIGNMENT*\n\nHelp Requested! You are within {distance:.1f}km of this verified hazard.\n\n*Reply:*\n1️⃣ to *Accept*\n2️⃣ to *Reject*"
+                            send_whatsapp_message(volunteer.user.whatsapp_number, assign_body)
+                            
+                        autassigned_count += 1
+                        print(f"[AUTO-ASSIGN] Assigned {volunteer.user.username} ({distance:.2f}km)")
+            
+            if autassigned_count > 0:
+                db.session.commit()
+                print(f"[AUTO-ASSIGN] Successfully assigned {autassigned_count} nearby volunteers")
+                flash(f'Automatically requested help from {autassigned_count} nearby volunteers.', 'info')
+            else:
+                print("[AUTO-ASSIGN] No volunteers within 5km found")
+                
+        except Exception as e:
+            db.session.rollback()
+            print(f"[AUTO-ASSIGN ERROR] Failed to automate assignments: {e}")
+        # --- END AUTOMATION ---
         
         # Send alerts to users in the danger zone
         print("🚨 Starting to send hazard alerts...")
@@ -1311,9 +1480,13 @@ def verify_report(report_id):
         print(f"✅ Hazard alerts completed. Users alerted: {users_alerted}")
         
         db.session.commit()
-        print("💾 Database changes committed")
+        print("💾 Database changes committed and alerts sent")
         
-        flash(translate('report_approved'), 'success')
+    elif action == 'resolve':
+        report.status = 'resolved'
+        db.session.commit()
+        flash(f'Report "{report.title}" has been marked as resolved.', 'success')
+        return redirect(url_for('dashboard'))
         
     elif action == 'reject':
         print("🔄 Processing rejection...")
@@ -1425,6 +1598,12 @@ def send_hazard_alerts(report):
                 is_alert=True
             )
             db.session.add(alert_notification)
+            
+            # Send WhatsApp alert if user has linked their account
+            if user.whatsapp_number:
+                whatsapp_body = f"🚨 *MaxAlert AI: HAZARD ALERT*\n\n{alert_message}\n\n📍 *Location:* {report.location}\n📝 *Description:* {report.description[:100]}...\n\nStay alert and follow official safety guidelines."
+                send_whatsapp_message(user.whatsapp_number, whatsapp_body)
+                
             users_alerted += 1
         else:
             print(f"📏 User {user.username} is outside alert radius ({distance:.1f}km > {alert_radius}km)")
@@ -1459,6 +1638,9 @@ def delete_report(report_id):
             pass
     
     # Delete the report
+    # Manually delete related VolunteerAssignments since they use a shared ID field
+    VolunteerAssignment.query.filter_by(emergency_event_id=report.id, hazard_type='report').delete()
+    
     db.session.delete(report)
     db.session.commit()
     
@@ -2479,6 +2661,44 @@ def api_weather_warnings():
     warnings = get_weather_warnings()
     return jsonify(warnings)
 
+@app.route("/api/report/<int:report_id>/accuracy_3param", methods=['GET'])
+@login_required
+def get_report_3param_accuracy(report_id):
+    """Get 3-parameter accuracy breakdown for a report"""
+    report = Report.query.get_or_404(report_id)
+    
+    # Calculate 3-parameter accuracy
+    accuracy_result = validate_report_accuracy_3params(report)
+    
+    return jsonify({
+        'report_id': report.id,
+        'title': report.title,
+        'hazard_type': report.hazard_type,
+        'overall_accuracy_percent': accuracy_result['accuracy_percent'],
+        'parameter_1_heatmap': {
+            'name': 'Weather & Early Warnings - Heatmap Match',
+            'score_percent': int(accuracy_result['parameter_1_heatmap']['score'] * 100),
+            'analysis': accuracy_result['parameter_1_heatmap']['analysis'],
+            'weight': '33%'
+        },
+        'parameter_2_climate': {
+            'name': 'Live Climate Data - Weather Alignment',
+            'score_percent': int(accuracy_result['parameter_2_climate']['score'] * 100),
+            'analysis': accuracy_result['parameter_2_climate']['analysis'],
+            'weight': '33%'
+        },
+        'parameter_3_user_quality': {
+            'name': 'User Quality - Credibility Score',
+            'score_percent': int(accuracy_result['parameter_3_user_quality']['score'] * 100),
+            'analysis': accuracy_result['parameter_3_user_quality']['analysis'],
+            'weight': '34%',
+            'user_role': accuracy_result['parameter_3_user_quality'].get('role'),
+            'user_level': accuracy_result['parameter_3_user_quality'].get('level'),
+            'user_total_reports': accuracy_result['parameter_3_user_quality'].get('total_reports')
+        },
+        'detailed_breakdown': accuracy_result['detailed_analysis']
+    })
+
 def send_early_warning_alerts(warning):
     """Send early warning alerts to users in affected areas"""
     users = User.query.filter(
@@ -2505,6 +2725,12 @@ def send_early_warning_alerts(warning):
                 is_read=False
             )
             db.session.add(alert_notification)
+            
+            # Send WhatsApp Alert if linked
+            if user.whatsapp_number:
+                whatsapp_body = f"🛡️ *MaxAlert AI: EARLY WARNING*\n\n{alert_message}\n\n📍 *Area:* {warning.get('location', 'Your Region')}\n\nFollow safety protocols immediately."
+                send_whatsapp_message(user.whatsapp_number, whatsapp_body)
+                
             users_alerted += 1
     
     db.session.commit()
@@ -2571,13 +2797,23 @@ def send_global_alert():
         # Create notifications for all affected users
         notification_count = 0
         for user_id in users_to_notify:
+            user = User.query.get(user_id)
+            if not user: continue
+            
+            alert_message = f"🚨 GLOBAL ALERT: {message}"
             notification = Notification(
                 user_id=user_id,
-                message=f"🚨 GLOBAL ALERT: {message}",
+                message=alert_message,
                 is_alert=True,
                 is_read=False
             )
             db.session.add(notification)
+            
+            # Send WhatsApp Alert if linked
+            if user.whatsapp_number:
+                whatsapp_body = f"⚡ *MaxAlert AI: GLOBAL BROADCAST*\n\n{message}\n\nBroadcast for {len(affected_locations)} affected area(s).\n\nCheck dashboard for full details."
+                send_whatsapp_message(user.whatsapp_number, whatsapp_body)
+                
             notification_count += 1
         
         db.session.commit()
@@ -2864,7 +3100,7 @@ def allocate_resources():
 @login_required
 def volunteer_management():
     """Manage volunteers and assignments"""
-    if current_user.role not in ['official', 'analyst']:
+    if current_user.role not in ['official', 'analyst', 'admin', 'coordinator']:
         flash('You need elevated privileges to manage volunteers.', 'warning')
         return redirect(url_for('home'))
     
@@ -2872,11 +3108,21 @@ def volunteer_management():
     assignments = VolunteerAssignment.query.filter_by(status='assigned').all()
     emergencies = EmergencyEvent.query.filter_by(status='active').all()
     
+    # Calculate stats
+    total_volunteers = len(volunteers)
+    available_volunteers = len([v for v in volunteers if v.availability == 'available'])
+    assigned_volunteers = len([v for v in volunteers if v.availability == 'busy'])
+    trained_volunteers = len([v for v in volunteers if v.experience_level in ['Advanced', 'Intermediate']])
+    
     return render_template('volunteer_management.html',
                          title='Volunteer Management',
                          volunteers=volunteers,
                          assignments=assignments,
-                         emergencies=emergencies)
+                         emergencies=emergencies,
+                         total_volunteers=total_volunteers,
+                         available_volunteers=available_volunteers,
+                         assigned_volunteers=assigned_volunteers,
+                         trained_volunteers=trained_volunteers)
 
 @app.route("/coordination/volunteers/register", methods=['GET', 'POST'])
 @login_required
@@ -3048,6 +3294,58 @@ def match_volunteers():
     
     return jsonify({'matched_volunteers': matched_volunteers})
 
+@app.route("/api/hazards/active")
+@login_required
+def get_active_hazards():
+    """Get all approved hazards from both emergency events and approved reports"""
+    hazards_data = []
+    
+    # Get emergency events (excluding cancelled)
+    emergencies = EmergencyEvent.query.filter(
+        EmergencyEvent.status != 'cancelled'
+    ).order_by(EmergencyEvent.created_at.desc()).all()
+    
+    for emergency in emergencies:
+        hazards_data.append({
+            'id': emergency.id,
+            'type': 'emergency',
+            'title': emergency.title,
+            'description': emergency.description,
+            'hazard_type': emergency.hazard_type,
+            'severity': emergency.severity,
+            'location': emergency.location,
+            'latitude': emergency.latitude,
+            'longitude': emergency.longitude,
+            'status': emergency.status,
+            'created_at': emergency.created_at.isoformat() if emergency.created_at else None
+        })
+    
+    # Get approved reports from hazard feed
+    approved_reports = Report.query.filter_by(
+        verification_status='approved'
+    ).order_by(Report.timestamp.desc()).all()
+    
+    for report in approved_reports:
+        hazards_data.append({
+            'id': report.id,
+            'type': 'report',
+            'title': report.title,
+            'description': report.description,
+            'hazard_type': report.hazard_type,
+            'severity': None,
+            'location': report.location,
+            'latitude': report.latitude,
+            'longitude': report.longitude,
+            'status': 'approved',
+            'created_at': report.timestamp.isoformat() if report.timestamp else None,
+            'author': report.author.username if report.author else 'Unknown'
+        })
+    
+    # Sort all by date (newest first)
+    hazards_data.sort(key=lambda x: x['created_at'], reverse=True)
+    
+    return jsonify({'hazards': hazards_data})
+
 @app.route("/api/coordination/resources/status")
 @login_required
 def resource_status():
@@ -3078,6 +3376,813 @@ def resource_status():
             resource_data[allocation.resource_type]['used'] += allocation.quantity
     
     return jsonify(resource_data)
+
+# =============================================================================
+# VOLUNTEER ASSIGNMENT ENDPOINTS
+# =============================================================================
+
+@app.route("/api/coordination/assign-volunteer", methods=['POST'])
+@login_required
+def assign_volunteer_to_hazard():
+    """Assign a volunteer to a hazard (emergency event or report) within 50km"""
+    print(f"[ASSIGN] User {current_user.username} (role: {current_user.role}) is attempting assignment...")
+    
+    if current_user.role not in ['official', 'analyst', 'admin', 'coordinator']:
+        print(f"[ASSIGN ERROR] Unauthorized role: {current_user.role}")
+        return jsonify({'error': 'Unauthorized - You must have official, analyst, admin or coordinator role'}), 403
+    
+    data = request.get_json()
+    volunteer_id = data.get('volunteer_id')
+    emergency_event_id = data.get('emergency_event_id')
+    hazard_type = data.get('hazard_type', 'emergency')
+    
+    print(f"[ASSIGN] Data: vol_id={volunteer_id}, hazard_id={emergency_event_id}, type={hazard_type}")
+    
+    if not volunteer_id or not emergency_event_id:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    volunteer = Volunteer.query.get_or_404(volunteer_id)
+    print(f"[ASSIGN] Found volunteer: {volunteer.id}, user_id={volunteer.user_id}")
+    
+    # Verify volunteer has a user relationship
+    if not volunteer.user:
+        print(f"[ASSIGN ERROR] Volunteer {volunteer.id} has no associated user!")
+        return jsonify({'error': 'Volunteer profile is not properly linked to a user account'}), 500
+    
+    # Get hazard based on type
+    if hazard_type == 'report':
+        hazard = Report.query.get_or_404(emergency_event_id)
+    else:
+        hazard = EmergencyEvent.query.get_or_404(emergency_event_id)
+    
+    print(f"[ASSIGN] Found hazard: {hazard.title} (type={hazard_type})")
+    
+    # Calculate distance
+    distance_km = calculate_distance(
+        hazard.latitude, hazard.longitude,
+        volunteer.latitude, volunteer.longitude
+    )
+    
+    print(f"[ASSIGN] Distance calculated: {distance_km:.2f}km")
+    
+    # Check if within 50km
+    if distance_km > 50:
+        return jsonify({'error': f'Volunteer is {distance_km:.1f}km away. Maximum distance is 50km'}), 400
+    
+    # Check if already assigned (check both ID and type)
+    existing = VolunteerAssignment.query.filter_by(
+        volunteer_id=volunteer_id,
+        emergency_event_id=emergency_event_id,
+        hazard_type=hazard_type
+    ).filter(VolunteerAssignment.status.in_(['pending', 'accepted', 'deployed'])).first()
+    
+    if existing:
+        print(f"[ASSIGN ERROR] Volunteer already has active assignment: id={existing.id}, status={existing.status}")
+        return jsonify({'error': f'Volunteer already has an active {existing.status} assignment for this hazard'}), 400
+    
+    # Create assignment
+    assignment = VolunteerAssignment(
+        volunteer_id=volunteer_id,
+        emergency_event_id=emergency_event_id,
+        hazard_type=hazard_type,  # Store the type!
+        assigned_by=current_user.id,
+        status='pending',
+        distance_km=distance_km
+    )
+    db.session.add(assignment)
+    db.session.flush()  # Get the assignment ID before commit
+    print(f"[ASSIGN] Created assignment: id={assignment.id}, status={assignment.status}, type={hazard_type}")
+    
+    # Send notification to volunteer
+    volunteer_user = volunteer.user
+    hazard_title = hazard.title
+    notification_message = f'You have been assigned to help with hazard: {hazard_title}. Please accept or decline the assignment.'
+    
+    print(f"[ASSIGN] Creating notification for user_id={volunteer_user.id}, username={volunteer_user.username}")
+    
+    notification = Notification(
+        user_id=volunteer_user.id,
+        message=notification_message,
+        assignment_id=assignment.id,
+        is_alert=True,
+        is_read=False
+    )
+    db.session.add(notification)
+    
+    # Send WhatsApp notification if volunteer user has linked their account
+    if volunteer_user.whatsapp_number:
+        whatsapp_body = f"🤝 *MaxAlert AI: VOLUNTEER ASSIGNMENT*\n\n{notification_message}\n\n📍 *Hazard:* {hazard_title}\n📏 *Distance:* {distance_km:.1f}km\n\n*Reply:*\n1️⃣ to *Accept*\n2️⃣ to *Reject*"
+        send_whatsapp_message(volunteer_user.whatsapp_number, whatsapp_body)
+    
+    db.session.commit()
+    
+    print(f"[ASSIGN] ✓ Notification created and message sent for user={volunteer_user.username}")
+    print(f"[ASSIGN] ✓ Assignment complete! Notification sent to {volunteer_user.username}")
+    
+    return jsonify({
+        'success': True,
+        'message': 'Volunteer assigned successfully',
+        'assignment_id': assignment.id,
+        'distance_km': distance_km,
+        'notification_id': notification.id,
+        'volunteer_username': volunteer_user.username
+    })
+
+@app.route("/api/coordination/assignment/<int:assignment_id>", methods=['GET'])
+@login_required
+def get_assignment_details(assignment_id):
+    """Get assignment details for rescue completion form"""
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Check authorization
+    if assignment.volunteer.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Get hazard details based on type
+    h_type = getattr(assignment, 'hazard_type', 'emergency')
+    if h_type == 'report':
+        hazard = Report.query.get(assignment.emergency_event_id)
+    else:
+        hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
+    
+    if not hazard:
+        # Debug: Return detailed error info
+        return jsonify({
+            'error': f'Hazard ({h_type}) not found',
+            'debug': {
+                'assignment_id': assignment.id,
+                'emergency_event_id': assignment.emergency_event_id,
+                'hazard_type': h_type,
+                'volunteer_id': assignment.volunteer_id,
+                'status': assignment.status
+            }
+        }), 404
+    
+    return jsonify({
+        'id': assignment.id,
+        'hazard_title': hazard.title or (f"Report #{hazard.id}" if h_type == 'report' else 'Emergency Event'),
+        'hazard_description': hazard.description or '',
+        'hazard_latitude': hazard.latitude,
+        'hazard_longitude': hazard.longitude,
+        'assigned_at': assignment.assigned_at.isoformat(),
+        'status': assignment.status,
+        'experience_level': assignment.volunteer.experience_level or 'beginner'
+    })
+
+@app.route("/api/upload", methods=['POST'])
+@login_required
+def upload_file():
+    """API endpoint for file uploads"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Allowed file extensions
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    
+    if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS):
+        return jsonify({'error': 'Only image files (JPG, PNG, GIF, WebP) are allowed'}), 400
+    
+    # Save file using the utility function
+    try:
+        filename = save_file(file)
+        file_url = f'/uploads/{filename}'
+        return jsonify({
+            'success': True,
+            'file_url': file_url,
+            'url': file_url,
+            'filename': filename
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+@app.route("/api/coordination/assignment/respond", methods=['POST'])
+@login_required
+def respond_to_assignment():
+    """Accept or decline a volunteer assignment"""
+    data = request.get_json()
+    notification_id = data.get('notification_id')
+    action = data.get('action')  # 'accept' or 'decline'
+    
+    if not notification_id or action not in ['accept', 'decline']:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    notification = Notification.query.get_or_404(notification_id)
+    
+    # Check that the current user is the recipient of the notification
+    if notification.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Try to get assignment from notification first
+    assignment = None
+    if notification.assignment_id:
+        assignment = VolunteerAssignment.query.get(notification.assignment_id)
+    
+    if not assignment:
+        # Fallback to old behavior if no assignment_id on notification (for older data)
+        volunteer = Volunteer.query.filter_by(user_id=current_user.id).first()
+        if not volunteer:
+            return jsonify({'error': 'Volunteer profile not found'}), 404
+        
+        assignment = VolunteerAssignment.query.filter_by(
+            volunteer_id=volunteer.id,
+            status='pending'
+        ).order_by(VolunteerAssignment.assigned_at.desc()).first()
+    
+    if not assignment:
+        return jsonify({'error': 'No pending assignment found'}), 404
+    
+    # Check if assignment is already processed
+    if assignment.status != 'pending':
+        return jsonify({'error': f'Assignment is already {assignment.status}'}), 400
+    
+    # Get the volunteer object
+    volunteer = assignment.volunteer
+    if not volunteer:
+        return jsonify({'error': 'Volunteer profile not found'}), 404
+        
+    # Update assignment status
+    if action == 'accept':
+        assignment.status = 'accepted'
+        assignment.accepted_at = datetime.utcnow()
+        # Set volunteer to busy on acceptance
+        volunteer.availability = 'busy'
+        message = f'{current_user.username} has accepted the assignment'
+    else:  # decline
+        assignment.status = 'declined'
+        message = f'{current_user.username} has declined the assignment'
+    
+    db.session.commit()
+    
+    # Send notification to the person who assigned this volunteer
+    assigner = User.query.get(assignment.assigned_by)
+    if assigner:
+        notification_msg = Notification(
+            user_id=assigner.id,
+            message=message,
+            is_alert=True
+        )
+        db.session.add(notification_msg)
+        db.session.commit()
+    
+    # Mark the original notification as read
+    notification.is_read = True
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Assignment {action}ed successfully',
+        'assignment_id': assignment.id,
+        'new_status': assignment.status
+    })
+
+@app.route("/api/coordination/assignment/<int:assignment_id>/complete", methods=['POST'])
+@login_required
+def complete_rescue_assignment(assignment_id):
+    """Mark a rescue as complete with photo proof and location verification"""
+    data = request.get_json()
+    photo_url = data.get('photo_url')
+    notes = data.get('notes', '')
+    volunteer_latitude = data.get('latitude')
+    volunteer_longitude = data.get('longitude')
+    
+    if not photo_url:
+        return jsonify({'error': 'Photo proof is required'}), 400
+    
+    if volunteer_latitude is None or volunteer_longitude is None:
+        return jsonify({'error': 'Location coordinates required'}), 400
+    
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Check that current user is the volunteer
+    if assignment.volunteer.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check that assignment is accepted
+    if assignment.status != 'accepted':
+        return jsonify({'error': 'Only accepted assignments can be completed'}), 400
+    
+    # Get the hazard location (from EmergencyEvent or Report)
+    h_type = getattr(assignment, 'hazard_type', 'emergency')
+    print(f"[COMPLETE] Completing assignment {assignment_id} for hazard type: {h_type}")
+    
+    if h_type == 'report':
+        hazard = Report.query.get(assignment.emergency_event_id)
+    else:
+        hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
+    
+    if not hazard:
+        print(f"[COMPLETE ERROR] Hazard with ID {assignment.emergency_event_id} and type {h_type} not found")
+        return jsonify({'error': 'Hazard not found'}), 404
+    
+    # Calculate distance from volunteer to hazard
+    distance_at_completion = calculate_distance(
+        hazard.latitude, hazard.longitude,
+        volunteer_latitude, volunteer_longitude
+    )
+    print(f"[COMPLETE] Distance at completion: {distance_at_completion:.4f}km")
+    
+    # Check if volunteer is within 10km of hazard location (for proof of presence)
+    if distance_at_completion > 10.0:  # 10.0 km
+        print(f"[COMPLETE ERROR] Volunteer too far away: {distance_at_completion:.2f}km")
+        return jsonify({
+            'error': f'You are {distance_at_completion:.2f}km away from the hazard location. You must be within 10km to complete.',
+            'required_distance_km': 10.0,
+            'current_distance_km': distance_at_completion
+        }), 400
+    
+    # Update assignment status
+    assignment.status = 'completed'
+    assignment.completed_at = datetime.utcnow()
+    assignment.completion_photo = photo_url
+    assignment.completion_notes = notes
+    
+    # Award points based on volunteer experience level
+    volunteer = assignment.volunteer
+    base_points = 100
+    
+    if volunteer.experience_level == 'beginner':
+        points_earned = base_points
+    elif volunteer.experience_level == 'intermediate':
+        points_earned = int(base_points * 1.5)  # 150 points
+    else:  # expert
+        points_earned = int(base_points * 2)   # 200 points
+    
+    # Add bonus for quick completion (5 points per hour under 24 hours)
+    if assignment.accepted_at:
+        try:
+            time_taken = assignment.completed_at - assignment.accepted_at
+            hours_taken = time_taken.total_seconds() / 3600
+            if hours_taken < 24:
+                bonus_points = int((24 - hours_taken) / 4)  # Up to 30 bonus points
+                points_earned += bonus_points
+        except Exception as e:
+            print(f"[COMPLETE DEBUG] Error calculating bonus: {e}")
+    else:
+        print(f"[COMPLETE DEBUG] No accepted_at time for assignment {assignment_id}, skipping bonus")
+    
+    assignment.points_earned = points_earned
+    
+    # Update volunteer stats
+    volunteer.points += points_earned
+    volunteer.total_rescues += 1
+    
+    # Check if this volunteer has any other active accepted assignments
+    other_active = VolunteerAssignment.query.filter(
+        VolunteerAssignment.volunteer_id == volunteer.id,
+        VolunteerAssignment.id != assignment.id,
+        VolunteerAssignment.status == 'accepted'
+    ).first()
+    
+    # Only set back to available if no other active tasks
+    if not other_active:
+        volunteer.availability = 'available'
+        print(f"[COMPLETE] Volunteer {volunteer.id} is now available (no more tasks)")
+    else:
+        print(f"[COMPLETE] Volunteer {volunteer.id} remains busy with other tasks")
+    
+    db.session.commit()
+    print(f"[COMPLETE SUCCESS] Assignment {assignment_id} marked as completed for volunteer {volunteer.id}")
+    
+    # Send notification to assigner about completion
+    assigner = User.query.get(assignment.assigned_by)
+    if assigner:
+        notification = Notification(
+            user_id=assigner.id,
+            message=f'{current_user.username} has completed the rescue for {hazard.title}! Earned {points_earned} points.',
+            assignment_id=assignment.id,
+            is_alert=True
+        )
+        db.session.add(notification)
+        
+        # Send WhatsApp notification to assigner
+        if assigner.whatsapp_number:
+            whatsapp_body = f"✅ *RESCUE COMPLETED*\n\nVolunteer *{current_user.username}* has successfully completed the rescue operation for: *{hazard.title}*.\n\n🏆 Points Earned: {points_earned}"
+            
+            # Send photo proof if available
+            media_url = None
+            if photo_url:
+                # Use ngrok URL for public access
+                base_url = "https://adele-unfocused-scientistically.ngrok-free.dev"
+                if photo_url.startswith('http'):
+                    media_url = photo_url
+                else:
+                    # Check if it's a relative path
+                    if photo_url.startswith('/'):
+                        media_url = f"{base_url}{photo_url}"
+                    else:
+                        media_url = f"{base_url}/{photo_url}"
+            
+            send_whatsapp_message(assigner.whatsapp_number, whatsapp_body, media_url)
+            
+        # Send WhatsApp confirmation to the volunteer (current_user)
+        if current_user.whatsapp_number:
+            vol_body = f"🎉 *GREAT WORK!*\n\nYou have successfully marked the rescue as *completed*.\n\n📍 *Hazard:* {hazard.title}\n🏆 *Points Earned:* {points_earned}\n\nThank you for your service! Stay safe."
+            send_whatsapp_message(current_user.whatsapp_number, vol_body)
+            
+        db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Rescue completed successfully!',
+        'assignment_id': assignment.id,
+        'points_earned': points_earned,
+        'total_points': volunteer.points,
+        'total_rescues': volunteer.total_rescues
+    })
+
+@app.route("/api/coordination/assignment/<int:assignment_id>/cancel", methods=['POST'])
+@login_required
+def cancel_rescue_assignment(assignment_id):
+    """Cancel an active accepted assignment"""
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Check that current user is the volunteer
+    if assignment.volunteer.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check that assignment is accepted
+    if assignment.status != 'accepted':
+        return jsonify({'error': 'Only active accepted assignments can be cancelled'}), 400
+    
+    # Update status
+    assignment.status = 'cancelled'
+    
+    # Reset volunteer availability
+    assignment.volunteer.availability = 'available'
+    
+    # Notify coordinator
+    if assignment.assigned_by:
+        coordinator = User.query.get(assignment.assigned_by)
+        if coordinator:
+            coord_notif = Notification(
+                user_id=coordinator.id,
+                message=f"❌ Volunteer {current_user.username} has cancelled their assignment for {assignment.hazard_type} {assignment.emergency_event_id}.",
+                assignment_id=assignment.id,
+                is_alert=True
+            )
+            db.session.add(coord_notif)
+            
+            # WhatsApp to coordinator if available
+            if coordinator.whatsapp_number:
+                try:
+                    send_whatsapp_message(
+                        coordinator.whatsapp_number,
+                        f"❌ *ASSIGNMENT CANCELLED*\n\nVolunteer *{current_user.username}* has cancelled their accepted task.\n\nPlease assign another volunteer."
+                    )
+                except Exception as e:
+                    print(f"Error notifying coordinator via WhatsApp: {e}")
+    
+    db.session.commit()
+    print(f"[CANCEL SUCCESS] Assignment {assignment_id} marked as cancelled by volunteer {current_user.username}")
+    
+    return jsonify({
+        'success': True,
+        'message': 'Assignment cancelled successfully'
+    })
+
+@app.route("/api/coordination/volunteers/nearby", methods=['GET'])
+@login_required
+def get_nearby_volunteers():
+    """Get volunteers within 50km of a hazard (emergency event or report)"""
+    if current_user.role not in ['official', 'analyst', 'admin', 'coordinator']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    hazard_id = request.args.get('emergency_event_id', type=int)
+    hazard_type = request.args.get('hazard_type', 'emergency', type=str)
+    
+    if not hazard_id:
+        return jsonify({'error': 'Hazard ID required'}), 400
+    
+    # Get hazard details based on type
+    if hazard_type == 'report':
+        hazard = Report.query.get_or_404(hazard_id)
+    else:
+        hazard = EmergencyEvent.query.get_or_404(hazard_id)
+    
+    # Get all potential volunteers (including busy ones so they can get multiple requests)
+    volunteers = Volunteer.query.filter(
+        Volunteer.availability.in_(['available', 'busy', 'available_24_7', 'available_weekdays', 'available_weekends', 'available_evenings', 'available_limited']),
+        Volunteer.latitude.isnot(None),
+        Volunteer.longitude.isnot(None)
+    ).all()
+    
+    nearby_volunteers = []
+    for volunteer in volunteers:
+        distance = calculate_distance(
+            hazard.latitude, hazard.longitude,
+            volunteer.latitude, volunteer.longitude
+        )
+        
+        # Only include volunteers within 50km
+        if distance <= 50:
+            # Check if not already assigned to this specific hazard
+            existing = VolunteerAssignment.query.filter(
+                VolunteerAssignment.volunteer_id == volunteer.id,
+                VolunteerAssignment.emergency_event_id == hazard_id,
+                VolunteerAssignment.status.in_(['pending', 'accepted', 'deployed'])
+            ).first()
+            
+            if not existing:
+                nearby_volunteers.append({
+                    'id': volunteer.id,
+                    'name': volunteer.user.username,
+                    'user_id': volunteer.user_id,
+                    'skills': volunteer.skills,
+                    'experience_level': volunteer.experience_level,
+                    'availability': volunteer.availability,
+                    'certifications': volunteer.certifications,
+                    'location': volunteer.location,
+                    'distance_km': round(distance, 2),
+                    'is_verified': volunteer.is_verified
+                })
+    
+    # Sort by distance
+    nearby_volunteers.sort(key=lambda x: x['distance_km'])
+    
+    return jsonify({
+        'hazard': {
+            'id': hazard.id,
+            'title': hazard.title,
+            'latitude': hazard.latitude,
+            'longitude': hazard.longitude,
+            'location': hazard.location
+        },
+        'volunteers': nearby_volunteers
+    })
+
+@app.route("/api/coordination/assignment/<int:assignment_id>/accept", methods=['POST'])
+@login_required
+def accept_volunteer_assignment(assignment_id):
+    """Volunteer accepts an assignment"""
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Verify that the current user is the assigned volunteer
+    if assignment.volunteer.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    assignment.status = 'accepted'
+    assignment.accepted_at = datetime.utcnow()
+    db.session.commit()
+    
+    # Send notification to the assigner
+    if assignment.assigner:
+        notification = Notification(
+            user_id=assignment.assigner.id,
+            message=f'{current_user.username} has accepted assignment for {assignment.hazard_type.capitalize()}: {assignment.emergency_event_id}',
+            is_alert=True
+        )
+        db.session.add(notification)
+    
+    # Send WhatsApp location to volunteer if linked
+    if current_user.whatsapp_number:
+        # Get hazard location
+        hazard = None
+        if assignment.hazard_type == 'report':
+            hazard = Report.query.get(assignment.emergency_event_id)
+        else:
+            hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
+            
+        if hazard:
+            loc_msg = f"📍 *MaxAlert AI: Mission Location*\n\nYou've accepted the assignment for: *{hazard.title}*\n\n🗺️ *Google Maps:* https://www.google.com/maps/search/?api=1&query={hazard.latitude},{hazard.longitude}\n\nProceed with caution!"
+            send_whatsapp_message(current_user.whatsapp_number, loc_msg)
+            
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Assignment accepted',
+        'status': 'accepted'
+    })
+
+@app.route("/api/coordination/assignment/<int:assignment_id>/decline", methods=['POST'])
+@login_required
+def decline_volunteer_assignment(assignment_id):
+    """Volunteer declines an assignment"""
+    assignment = VolunteerAssignment.query.get_or_404(assignment_id)
+    
+    # Verify that the current user is the assigned volunteer
+    if assignment.volunteer.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    assignment.status = 'declined'
+    db.session.commit()
+    
+    # Send notification to the assigner
+    if assignment.assigner:
+        notification = Notification(
+            user_id=assignment.assigner.id,
+            message=f'{current_user.username} has declined assignment for {assignment.event.title}',
+            is_alert=True
+        )
+        db.session.add(notification)
+        db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Assignment declined',
+        'status': 'declined'
+    })
+
+@app.route("/api/coordination/emergency/<int:emergency_id>/volunteers-count")
+@login_required
+def get_emergency_volunteers_count(emergency_id):
+    """Get count of assigned volunteers for an emergency"""
+    emergency = EmergencyEvent.query.get_or_404(emergency_id)
+    
+    # Count accepted assignments
+    accepted_count = VolunteerAssignment.query.filter_by(
+        emergency_event_id=emergency_id,
+        status='accepted'
+    ).count()
+    
+    # Get assigned volunteers details
+    assignments = VolunteerAssignment.query.filter_by(
+        emergency_event_id=emergency_id,
+        status='accepted'
+    ).all()
+    
+    volunteers = []
+    for assignment in assignments:
+        volunteers.append({
+            'id': assignment.volunteer.id,
+            'name': assignment.volunteer.user.username,
+            'skills': assignment.volunteer.skills,
+            'distance_km': assignment.distance_km
+        })
+    
+    return jsonify({
+        'emergency_id': emergency_id,
+        'total_volunteers': accepted_count,
+        'volunteers': volunteers
+    })
+
+@app.route("/api/coordination/hazard/<string:hazard_type>/<int:hazard_id>/volunteers-count")
+@login_required
+def get_hazard_volunteers_count(hazard_type, hazard_id):
+    """Get count of assigned volunteers for a hazard (emergency event or report)"""
+    # Count accepted assignments (same for both emergency and report)
+    accepted_count = VolunteerAssignment.query.filter_by(
+        emergency_event_id=hazard_id,
+        status='accepted'
+    ).count()
+    
+    # Get assigned volunteers details
+    assignments = VolunteerAssignment.query.filter_by(
+        emergency_event_id=hazard_id,
+        status='accepted'
+    ).all()
+    
+    volunteers = []
+    for assignment in assignments:
+        volunteers.append({
+            'id': assignment.volunteer.id,
+            'name': assignment.volunteer.user.username,
+            'skills': assignment.volunteer.skills,
+            'distance_km': assignment.distance_km
+        })
+    
+    return jsonify({
+        'hazard_type': hazard_type,
+        'hazard_id': hazard_id,
+        'total_volunteers': accepted_count,
+        'volunteers': volunteers
+    })
+
+@app.route("/api/leaderboard", methods=['GET'])
+@login_required
+def get_leaderboard():
+    """Get volunteer leaderboard sorted by points"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    # Get all volunteers sorted by points descending
+    volunteers_query = Volunteer.query.order_by(
+        Volunteer.points.desc(),
+        Volunteer.total_rescues.desc(),
+        Volunteer.created_at.asc()
+    )
+    
+    paginated = volunteers_query.paginate(page=page, per_page=per_page)
+    
+    leaderboard = []
+    for idx, volunteer in enumerate(paginated.items, start=(page - 1) * per_page + 1):
+        leaderboard.append({
+            'rank': idx,
+            'user_id': volunteer.user.id,
+            'username': volunteer.user.username,
+            'points': volunteer.points,
+            'rescues': volunteer.total_rescues,
+            'experience': volunteer.experience_level,
+            'is_verified': volunteer.is_verified
+        })
+    
+    return jsonify({
+        'leaderboard': leaderboard,
+        'total': paginated.total,
+        'pages': paginated.pages,
+        'current_page': page
+    })
+
+@app.route("/api/leaderboard/user/<int:user_id>", methods=['GET'])
+@login_required
+def get_user_rank(user_id):
+    """Get a user's rank and stats on leaderboard"""
+    volunteer = Volunteer.query.filter_by(user_id=user_id).first()
+    
+    if not volunteer:
+        return jsonify({'error': 'Volunteer not found'}), 404
+    
+    # Count how many volunteers have more points
+    rank = Volunteer.query.filter(
+        Volunteer.points > volunteer.points
+    ).count() + 1
+    
+    return jsonify({
+        'user_id': user_id,
+        'username': volunteer.user.username,
+        'rank': rank,
+        'points': volunteer.points,
+        'rescues': volunteer.total_rescues,
+        'experience': volunteer.experience_level,
+        'is_verified': volunteer.is_verified
+    })
+
+@app.route("/api/community_leaderboard", methods=['GET'])
+@login_required
+def get_community_leaderboard():
+    """Get community leaderboard - All users ranked by total combined points"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    # Get all users with their combined points
+    # User.points (from reports, eco activities, etc.) + Volunteer.points (from rescues)
+    from sqlalchemy import func, case
+    
+    users_query = db.session.query(
+        User.id,
+        User.username,
+        User.profile_image,
+        User.role,
+        User.points.label('user_points'),
+        Volunteer.points.label('volunteer_points'),
+        Volunteer.experience_level,
+        Volunteer.is_verified,
+        Volunteer.total_rescues,
+        (User.points + func.coalesce(Volunteer.points, 0)).label('total_points')
+    ).outerjoin(Volunteer, User.id == Volunteer.user_id)\
+     .order_by((User.points + func.coalesce(Volunteer.points, 0)).desc())\
+     .filter(User.role != 'admin')
+    
+    paginated = users_query.paginate(page=page, per_page=per_page)
+    
+    leaderboard = []
+    for idx, result in enumerate(paginated.items, start=(page - 1) * per_page + 1):
+        total_pts = result.user_points + (result.volunteer_points or 0)
+        leaderboard.append({
+            'rank': idx,
+            'user_id': result.id,
+            'username': result.username,
+            'profile_image': result.profile_image,
+            'role': result.role,
+            'total_points': total_pts,
+            'user_points': result.user_points,
+            'rescue_points': result.volunteer_points or 0,
+            'rescues': result.total_rescues or 0,
+            'experience': result.experience_level or 'N/A',
+            'is_verified': result.is_verified or False
+        })
+    
+    return jsonify({
+        'leaderboard': leaderboard,
+        'total': paginated.total,
+        'pages': paginated.pages,
+        'current_page': page
+    })
+
+@app.route("/api/coordination/assignments/active", methods=['GET'])
+@login_required
+def get_active_assignment():
+    """Get the active accepted assignment for current volunteer"""
+    # Check if user is a volunteer
+    volunteer = Volunteer.query.filter_by(user_id=current_user.id).first()
+    if not volunteer:
+        return jsonify({'assignment_id': None})
+    
+    # Get the most recent accepted assignment
+    assignment = VolunteerAssignment.query.filter_by(
+        volunteer_id=volunteer.id,
+        status='accepted'
+    ).order_by(VolunteerAssignment.accepted_at.desc()).first()
+    
+    if assignment:
+        return jsonify({'assignment_id': assignment.id})
+    else:
+        return jsonify({'assignment_id': None})
 
 @app.route("/api/coordination/emergency-map")
 @login_required
@@ -3412,6 +4517,179 @@ def service_worker():
 def manifest():
     """Serve the manifest file"""
     return send_from_directory('static', 'manifest.json', mimetype='application/json')
+
+@app.route('/webhook/whatsapp', methods=['POST'])
+def whatsapp_webhook():
+    """Twilio WhatsApp Webhook: Authentication, Alerts, and Volunteer Coordination"""
+    incoming_msg = request.values.get('Body', '').lower().strip()
+    from_number = request.values.get('From', '') # Format: whatsapp:+123456789
+    
+    resp = MessagingResponse()
+    msg = resp.message()
+    
+    # Extract phone number and normalize
+    clean_number = from_number.replace('whatsapp:', '').strip()
+    # Normalize by removing common variations if needed
+    alt_number = clean_number.replace('+', '') if clean_number.startswith('+') else f"+{clean_number}"
+    
+    print(f"📱 WhatsApp Webhook from: {from_number} (Clean: {clean_number}) -> Msg: {incoming_msg}")
+    
+    # Check if user is already linked (try both variations)
+    user = User.query.filter((User.whatsapp_number == clean_number) | (User.whatsapp_number == alt_number)).first()
+    if user: print(f"👤 Linked User: {user.username}")
+    
+    if not user:
+        # Check for active auth sessions from this number
+        pending_user = User.query.filter(User.whatsapp_session.isnot(None)).filter(
+            User.whatsapp_session.like(f'%{from_number}%')
+        ).first()
+        
+        # If no user matches the number, and no session exists, initiate login
+        if incoming_msg == 'hi' or incoming_msg == 'hello' or incoming_msg == 'login':
+            msg.body("🛡️ Welcome to *MaxAlert AI*! \n\nPlease enter your *username* to link your account:")
+            # Create a generic entry or mark existing if needed? Actually, since many users might try,
+            # we need a way to track sessions by phone number. 
+            # I'll use a dedicated static dictionary for sessions if database is too slow/complex for multi-step.
+            # But the user asked to store it in the app. 
+            # Let's search for a user by username if they sent a name.
+            return str(resp)
+        
+        # Try to find a user who is currently in a session with this number
+        # Or better: search all users for this session marker
+        all_users = User.query.filter(User.whatsapp_session.isnot(None)).all()
+        active_session_user = None
+        for u in all_users:
+            try:
+                session_data = json.loads(u.whatsapp_session)
+                if session_data.get('phone') == from_number:
+                    active_session_user = u
+                    break
+            except: continue
+            
+        if not active_session_user:
+            # First response after 'hi': Treat msg as username
+            # Case-insensitive search for username
+            target_user = User.query.filter(func.lower(User.username) == incoming_msg.lower()).first()
+            if target_user:
+                target_user.whatsapp_session = json.dumps({'phone': from_number, 'step': 'awaiting_password'})
+                db.session.commit()
+                msg.body(f"Hello {target_user.username}! Please enter your *password* to confirm:")
+            else:
+                msg.body("❌ Username not found. Please try again or type 'hi' to restart.")
+            return str(resp)
+        else:
+            # Active session found: This must be the password
+            try:
+                session_data = json.loads(active_session_user.whatsapp_session)
+                if session_data.get('step') == 'awaiting_password':
+                    if check_password_hash(active_session_user.password, request.values.get('Body', '').strip()):
+                        # Success! Link number and clear session
+                        active_session_user.whatsapp_number = clean_number
+                        active_session_user.whatsapp_session = None
+                        db.session.commit()
+                        msg.body(f"✅ Success! Your WhatsApp is now linked to *{active_session_user.username}*.\n\nYou will receive real-time hazard alerts and assignment requests here.")
+                    else:
+                        msg.body("❌ Incorrect password. Please try again or type 'hi' to restart.")
+                return str(resp)
+            except Exception as e:
+                print(f"WS error: {e}")
+                msg.body("An error occurred. Please try again later.")
+                return str(resp)
+
+    # USER IS LINKED - Handle commands
+    if incoming_msg == 'hi' or incoming_msg == 'status':
+        msg.body(f"🛡️ *MaxAlert AI* (Tech Max)\nStatus: *Active*\nUser: *{user.username} (Level {user.level})*\n\nYou are monitoring hazards within 10km of your home location.")
+        return str(resp)
+
+    # Handle Volunteer Assignment Accept/Reject
+    if incoming_msg in ['1', 'accept', 'yes']:
+        print(f"🤝 Attempting ACCEPT for {user.username}")
+        assignment = VolunteerAssignment.query.join(Volunteer).filter(
+            Volunteer.user_id == user.id,
+            VolunteerAssignment.status == 'pending'
+        ).order_by(VolunteerAssignment.assigned_at.desc()).first()
+        
+        if assignment:
+            print(f"✅ Found assignment {assignment.id} for hazard {assignment.emergency_event_id}")
+            assignment.status = 'accepted'
+            db.session.commit()
+            
+            # Get hazard location for map
+            hazard = None
+            if assignment.hazard_type == 'report':
+                hazard = Report.query.get(assignment.emergency_event_id)
+            else:
+                hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
+            
+            if hazard:
+                print(f"📍 Hazard found: {hazard.title} at {hazard.latitude}, {hazard.longitude}")
+                loc_msg = f"✅ Assignment Accepted!\n\n📍 *Hazard Location:*\n{hazard.location}\nCoords: {hazard.latitude}, {hazard.longitude}\n\n🔗 *Navigation Map:*\nhttps://www.google.com/maps/search/?api=1&query={hazard.latitude},{hazard.longitude}"
+                msg.body(loc_msg)
+            else:
+                print("❌ Hazard not found in database")
+                msg.body("Hazard data not found.")
+        else:
+            print("❌ No pending assignment found")
+            msg.body("No pending assignments found.")
+        return str(resp)
+
+    if incoming_msg in ['2', 'reject', 'decline', 'no']:
+        assignment = VolunteerAssignment.query.join(Volunteer).filter(
+            Volunteer.user_id == user.id,
+            VolunteerAssignment.status == 'pending'
+        ).order_by(VolunteerAssignment.assigned_at.desc()).first()
+        
+        if assignment:
+            assignment.status = 'declined'
+            db.session.commit()
+            msg.body("❌ Assignment declined. We will notify other volunteers.")
+        else:
+            msg.body("No pending assignments found.")
+        return str(resp)
+
+    # Handle Cancellation of Accepted Assignments
+    if incoming_msg in ['cancel', 'abort']:
+        print(f"🚫 Attempting CANCEL for {user.username}")
+        # Find active accepted assignments
+        assignment = VolunteerAssignment.query.join(Volunteer).filter(
+            Volunteer.user_id == user.id,
+            VolunteerAssignment.status == 'accepted'
+        ).order_by(VolunteerAssignment.assigned_at.desc()).first()
+        
+        if assignment:
+            print(f"🛑 Found accepted assignment {assignment.id} to cancel")
+            assignment.status = 'cancelled'
+            
+            # Reset volunteer availability
+            assignment.volunteer.availability = 'available'
+            
+            # Notify coordinator
+            if assignment.assigned_by:
+                coordinator = User.query.get(assignment.assigned_by)
+                if coordinator:
+                    coord_notif = Notification(
+                        user_id=coordinator.id,
+                        message=f"❌ Volunteer {user.username} has cancelled their assignment for {assignment.hazard_type} {assignment.emergency_event_id}.",
+                        assignment_id=assignment.id,
+                        is_alert=True
+                    )
+                    db.session.add(coord_notif)
+                    
+                    # WhatsApp to coordinator if available
+                    if coordinator.whatsapp_number:
+                        send_whatsapp_message(
+                            coordinator.whatsapp_number,
+                            f"❌ *ASSIGNMENT CANCELLED*\n\nVolunteer *{user.username}* has cancelled their accepted task.\n\nPlease assign another volunteer."
+                        )
+            
+            db.session.commit()
+            msg.body("✅ Assignment cancelled successfully. You are now marked as available.")
+        else:
+            msg.body("No active accepted assignments to cancel.")
+        return str(resp)
+
+    msg.body("🤖 *MaxAlert AI Assistant*\n\nType 'status' to check your link.\nReply '1' to Accept or '2' to Reject pending assignments.")
+    return str(resp)
 
 @app.route('/offline.html')
 def offline():
