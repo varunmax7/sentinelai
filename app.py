@@ -1685,6 +1685,22 @@ def too_large(e):
     flash(translate('file_too_large'), 'danger')
     return redirect(request.url)
 
+@app.route('/repair-database-2026')
+def repair_database():
+    """Drops old tables and creates new ones with correct column lengths"""
+    try:
+        db.drop_all()
+        db.create_all()
+        return '''
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #4CAF50;">✅ Database Repaired!</h1>
+            <p>Old small tables deleted. New large tables created successfully.</p>
+            <p>Now go to: <a href="/create-official-account">Create Official Account</a></p>
+        </div>
+        '''
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 @app.route('/create-official-account')
 def create_official_account():
     existing_user = User.query.filter_by(email='varunmax9989@gmail.com').first()
