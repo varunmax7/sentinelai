@@ -1692,28 +1692,29 @@ def create_official_account():
         existing_user.role = 'official'
         existing_user.password = generate_password_hash('Rvarun9989@', method='pbkdf2:sha256')
         db.session.commit()
-        return f'''
-        <h2>Existing user updated to official role!</h2>
-        <p>Email: varunmax9989@gmail.com</p>
-        <p>Password: Rvarun9989@</p>
-        <p>Role: {existing_user.role}</p>
-        <p><a href="/logout">Click here to log out</a> and then log in with these credentials.</p>
-        '''
-    
-    official_user = User(
-        username='varunmax7',
-        email='varunmax9989@gmail.com',
-        password=generate_password_hash('Rvarun9989@', method='pbkdf2:sha256'),
-        role='official'
-    )
-    db.session.add(official_user)
-    db.session.commit()
-    return '''
-    <h2>Official account created successfully!</h2>
-    <p>Email: varunmax9989@gmail.com</p>
-    <p>Password: Rvarun9989@</p>
-    <p>Role: official</p>
-    <p><a href="/logout">Click here to log out</a> and then log in with these credentials.</p>
+        msg = "Existing account upgraded to Official."
+    else:
+        # Create new official user
+        new_user = User(
+            username='varunmax7', 
+            email='varunmax9989@gmail.com',
+            password=generate_password_hash('Rvarun9989@', method='pbkdf2:sha256'),
+            role='official'
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        msg = "New Official account created successfully."
+
+    return f'''
+    <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+        <h1 style="color: #2196F3;">🛡️ Official Account System</h1>
+        <p style="font-size: 18px;">{msg}</p>
+        <p>You can now login at <a href="{url_for('login')}">Login Page</a></p>
+        <div style="margin-top: 20px; color: #666;">
+            <strong>Email:</strong> varunmax9989@gmail.com<br>
+            <strong>Role:</strong> Official
+        </div>
+    </div>
     '''
 
 
