@@ -697,3 +697,182 @@ class UserBadge(db.Model):
     
     def __repr__(self):
         return f"UserBadge('{self.user_id}', '{self.badge_id}')"
+
+# =============================================================================
+# URBAN RESILIENCE INDEX (URI) MODELS
+# =============================================================================
+
+class ResilienceZone(db.Model):
+    """Defines geographic zones for resilience tracking"""
+    __tablename__ = 'resilience_zones'
+    id = db.Column(db.Integer, primary_key=True)
+    zone_identifier = db.Column(db.String(100), unique=True, nullable=False)  # e.g., "grid_17.5_78.5"
+    zone_type = db.Column(db.String(50), default='grid')  # grid, ward, city, coastal_segment
+    center_latitude = db.Column(db.Float, nullable=False)
+    center_longitude = db.Column(db.Float, nullable=False)
+    bounds_geojson = db.Column(db.Text, nullable=True)  # JSON polygon coordinates
+    display_name = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to scores
+    scores = db.relationship('ResilienceScore', backref='zone', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        """Convert zone object to dictionary for JSON serialization"""
+        latest_score = ResilienceScore.query.filter_by(
+            zone_id=self.id,
+            calculation_period='30d'
+        ).order_by(ResilienceScore.calculated_at.desc()).first()
+        
+        return {
+            'id': self.id,
+            'zone_identifier': self.zone_identifier,
+            'zone_type': self.zone_type,
+            'center_latitude': self.center_latitude,
+            'center_longitude': self.center_longitude,
+            'display_name': self.display_name,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'latest_score': latest_score.score if latest_score else None,
+            'trend': latest_score.trend if latest_score else 'stable',
+            'metrics': json.loads(latest_score.metrics_json) if latest_score and latest_score.metrics_json else {}
+        }
+    
+    def __repr__(self):
+        return f"ResilienceZone('{self.zone_identifier}', '{self.display_name}')"
+
+class ResilienceScore(db.Model):
+    """Stores historical URI scores for each zone"""
+    __tablename__ = 'resilience_scores'
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.Integer, db.ForeignKey('resilience_zones.id'), nullable=False)
+    score = db.Column(db.Float, nullable=False)  # 0-100
+    trend = db.Column(db.String(20), default='stable')  # improving, stable, declining
+    calculation_period = db.Column(db.String(20), default='30d')  # 30d, 90d
+    calculated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    metrics_json = db.Column(db.Text, nullable=True)  # JSON breakdown of contributing factors
+    
+    def to_dict(self):
+        """Convert score object to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'zone_id': self.zone_id,
+            'score': self.score,
+            'trend': self.trend,
+            'calculation_period': self.calculation_period,
+            'calculated_at': self.calculated_at.isoformat() if self.calculated_at else None,
+            'metrics': json.loads(self.metrics_json) if self.metrics_json else {}
+        }
+    
+    def __repr__(self):
+        return f"ResilienceScore(zone={self.zone_id}, score={self.score:.1f}, period={self.calculation_period})"
+# =============================================================================
+# COMMUNITY ACTION HUB MODELS
+# =============================================================================
+
+class CommunityEvent(db.Model):
+    __tablename__ = 'community_events'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    event_type = db.Column(db.String(50), nullable=False)  # disaster_prep, environment, social
+    location = db.Column(db.String(200), nullable=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    date_time = db.Column(db.DateTime, nullable=False)
+    organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='upcoming')  # upcoming, completed, cancelled
+    image_file = db.Column(db.String(100), nullable=True) # Optional event image
+    
+    # Relationships
+    organizer = db.relationship('User', backref='organized_events', foreign_keys=[organizer_id])
+    participants = db.relationship('EventParticipant', backref='event', lazy='dynamic', cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'event_type': self.event_type,
+            'location': self.location,
+            'date_time': self.date_time.isoformat(),
+            'organizer': self.organizer.username,
+            'status': self.status,
+            'participant_count': self.participants.count(),
+            'image_file': self.image_file
+        }
+
+class EventParticipant(db.Model):
+    __tablename__ = 'event_participants'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('community_events.id'), nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='registered')  # registered, attended
+    
+    user = db.relationship('User', backref='events_joined')
+
+# =============================================================================
+# LIFELINE: P2P RESOURCE MARKETPLACE MODELS
+# =============================================================================
+
+class ResourceListing(db.Model):
+    __tablename__ = 'resource_listings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    listing_type = db.Column(db.String(20), nullable=False)  # 'have' (donor) or 'need' (requester)
+    category = db.Column(db.String(50), nullable=False)  # medical, food, water, shelter, gear, transport
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    quantity = db.Column(db.String(50), nullable=True)
+    location = db.Column(db.String(200), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='open')  # open, matched, completed, cancelled
+    urgent = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('resource_listings', lazy=True))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else 'Unknown',
+            'listing_type': self.listing_type,
+            'category': self.category,
+            'title': self.title,
+            'description': self.description,
+            'quantity': self.quantity,
+            'location': self.location,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'status': self.status,
+            'urgent': self.urgent,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class ResourceMatch(db.Model):
+    __tablename__ = 'resource_matches'
+    id = db.Column(db.Integer, primary_key=True)
+    need_id = db.Column(db.Integer, db.ForeignKey('resource_listings.id'), nullable=False)
+    have_id = db.Column(db.Integer, db.ForeignKey('resource_listings.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, accepted, rejected, completed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    need_listing = db.relationship('ResourceListing', foreign_keys=[need_id], backref=db.backref('matches_as_need', lazy=True))
+    have_listing = db.relationship('ResourceListing', foreign_keys=[have_id], backref=db.backref('matches_as_have', lazy=True))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'need_id': self.need_id,
+            'have_id': self.have_id,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'need_title': self.need_listing.title,
+            'have_title': self.have_listing.title,
+            'requester': self.need_listing.user.username,
+            'donor': self.have_listing.user.username
+        }

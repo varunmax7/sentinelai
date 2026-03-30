@@ -3,14 +3,15 @@ from flask_login import LoginManager, login_user, current_user, logout_user, log
 from models import (
     db, User, Report, Badge, UserBadge, followers, Like, Comment, Notification,
     Agency, EmergencyEvent, ResourceAllocation, Volunteer, 
-    VolunteerAssignment, SituationReport, PlasticUsage, CarbonSavings, LocalApproval, ReportView
+    VolunteerAssignment, SituationReport, PlasticUsage, CarbonSavings, LocalApproval, ReportView,
+    CommunityEvent, EventParticipant, ResourceListing, ResourceMatch
 )
 from config import Config
 from forms import (
     RegistrationForm, LoginForm, ReportForm, ProfileForm, LocationForm, AlertPreferencesForm,
     AgencyForm, EmergencyEventForm, ResourceAllocationForm, VolunteerRegistrationForm,
     VolunteerAssignmentForm, SituationReportForm, CoordinationSettingsForm,
-    PlasticUsageForm, CarbonSavingsForm  # ADDED
+    PlasticUsageForm, CarbonSavingsForm, CommunityEventForm, ResourceListingForm
 )
 from utils import (
     save_file, calculate_distance, analyze_plastic_image, 
@@ -216,6 +217,7 @@ TRANSLATIONS = {
         'report': 'Report Hazard',
         'dashboard': 'Dashboard',
         'profile': 'Profile',
+        'community': 'Community',
         'leaderboard': 'Leaderboard',
         'login': 'Login',
         'register': 'Register',
@@ -225,6 +227,14 @@ TRANSLATIONS = {
         'reels': 'Hazard Feed',
         'share_app': 'Share App',
         'set_location': 'Set Location',
+        'my_location': 'My Location',
+        'use_current_location': 'Use Current Location',
+        'capture_photo': 'Capture Photo',
+        'start_recording': 'Start Recording',
+        'stop_recording': 'Stop Recording',
+        'settings': 'Settings',
+        'quick_access': 'Quick Access',
+        'all_leaderboards': 'All Leaderboards',
         'alert_preferences': 'Alert Preferences',
         
         # Common
@@ -253,7 +263,7 @@ TRANSLATIONS = {
         
         # Messages
         'report_submitted': 'Your report has been submitted! +10 points! AI Confidence: {confidence}%',
-        'login_success': 'Welcome back! Thank you for contributing to MaxAlert AI.',
+        'login_success': 'Welcome back! Thank you for contributing to Sentinel AI.',
         'official_login': 'Welcome back, Officer! Thank you for keeping our community safe.',
         'analyst_login': 'Welcome back, Analyst! Your insights help protect our community.',
         'registration_success': 'Your account has been created! You can now log in.',
@@ -284,6 +294,9 @@ TRANSLATIONS = {
         'remember_me': 'Remember Me',
         'title': 'Title',
         'description': 'Description',
+        'basic_information': 'Basic Information',
+        'location_details': 'Location Details',
+        'severity_assessment': 'Severity Assessment',
         'location': 'Location',
         'latitude': 'Latitude',
         'longitude': 'Longitude',
@@ -301,6 +314,33 @@ TRANSLATIONS = {
         'points': 'Points',
         'level': 'Level',
         
+        # Tools & Dashboards
+        'coordination_platform': 'Coordination Platform',
+        'basic_dashboard': 'Basic Dashboard',
+        'tools': 'Tools',
+        'analyst_dashboard': 'Analyst Dashboard',
+        'risk_simulator': 'Risk Simulator (PS-4.9)',
+        'emergency_management': 'Emergency Management',
+        'resource_management': 'Resource Management',
+        'volunteer_management': 'Volunteer Management',
+        'situation_reports': 'Situation Reports',
+        'user_analytics': 'User Analytics',
+        'ai_support_assistant': 'AI Support Assistant',
+        'ai_powered_analytics': 'AI-Powered Disaster Analytics',
+        'run_risk_simulation': 'Run Risk Simulation',
+        'global_alert': 'Global Alert',
+        'export_pdf': 'Export PDF',
+        'total_incidents': 'Total Incidents',
+        'verification_rate': 'Verification Rate',
+        'personnel': 'Personnel',
+        'pending': 'Pending',
+        'incident_hotspots': 'Incident Hotspots Heatmap',
+        'weather_warnings': 'Weather & Early Warnings',
+        'incident_velocity': 'Incident Velocity',
+        'network_participation': 'Network Participation',
+        'incident_intelligence_log': 'Incident Intelligence Log',
+        'load_more': 'Load More',
+        
         # Errors
         'required_field': 'This field is required.',
         'invalid_email': 'Invalid email address.',
@@ -310,10 +350,22 @@ TRANSLATIONS = {
         'user_not_found': 'User not found.',
 
         # Brand Keys
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
-        'coastal_safety_ai_assistant': 'MaxAlert AI Assistant',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'coastal_safety_ai_assistant': 'Sentinel AI Assistant',
         'protecting_coastal_communities': 'Protecting communities worldwide',
+        'maximum_intelligence': 'Maximum Intelligence, Maximum Safety',
+        'active': 'ACTIVE',
+        'quick_search': 'Quick Search',
+        'report_hazard_description': 'Spotted a hazard? Report it now and help protect your community.',
+        'submit_report': 'Submit Report',
+        'register_to_report': 'Register to Report',
+        'analytics_description': 'View real-time disaster insights and data visualizations.',
+        'view_dashboard': 'View Dashboard',
+        'your_contribution': 'Your Contribution',
+        'community_activity': 'Community Activity',
+        'reports_submitted': 'Reports Submitted',
+        'view_leaderboard': 'View Leaderboard',
     },
     
     'ta': {  # Tamil
@@ -329,23 +381,69 @@ TRANSLATIONS = {
         'search': 'தேடுக',
         'notifications': 'அறிவிப்புகள்',
         'reels': 'அபாய ஊட்டம்',
+        'community_hub': 'சமூக மையம்',
+        'lifeline': 'லைஃப்லைன் P2P',
+        
+        'submit': 'சமர்ப்பி',
+        'save': 'சேமி',
+        'cancel': 'ரத்து செய்',
         
         'tsunami': 'ஆழிப்பேரலை',
         'storm_surge': 'புயல் அலை',
         'high_waves': 'உயர் அலைகள்',
         'coastal_flooding': 'கடற்கரை வெள்ளம்',
         
+        'username': 'பயனர் பெயர்',
+        'email': 'மின்னஞ்சல்',
+        'password': 'கடவுச்சொல்',
+        'confirm_password': 'கடவுச்சொல்லை உறுதிப்படுத்து',
+        'remember_me': 'என்னை நினைவில் கொள்',
+        'title': 'தலைப்பு',
+        'description': 'விளக்கம்',
+        'location': 'இடம்',
+        'latitude': 'அட்சரேகை',
+        'longitude': 'தீர்க்கரேகை',
+        'hazard_type': 'அபாய வகை',
+        'photo': 'புகைப்படத்தைப் பதிவேற்று',
+        'video': 'வீடியோவைப் பதிவேற்று',
+        'bio': 'சுயசரிதை',
+        
+        'points': 'புள்ளிகள்',
+        'level': 'நிலை',
+        
         'report_submitted': 'உங்கள் புகாரை சமர்ப்பித்துள்ளோம்! +10 புள்ளிகள்! AI நம்பகத்தன்மை: {confidence}%',
-        'login_success': 'மீண்டும் வரவேற்கிறோம்! MaxAlert AI-க்கு பங்களித்தமைக்கு நன்றி.',
+        'login_success': 'மீண்டும் வரவேற்கிறோம்! Sentinel AI-க்கு பங்களித்தமைக்கு நன்றி.',
         'registration_success': 'உங்கள் கணக்கு உருவாக்கப்பட்டது! இப்போது நீங்கள் உள்நுழையலாம்.',
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
-        'coastal_safety_ai_assistant': 'MaxAlert AI உதவியாளர்',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'coastal_safety_ai_assistant': 'Sentinel AI உதவியாளர்',
+        'maximum_intelligence': 'அதிகபட்ச அறிவுத்திறன், அதிகபட்ச பாதுகாப்பு',
+        'search_placeholder': 'தேடுக...',
+        'active': 'செயலில்',
+        'quick_search': 'விரைவான தேடல்',
+        'report_hazard_description': 'ஒரு ஆபத்தைக் கண்டீர்களா? இப்போதே அதைப் புகாரளிப்பதன் மூலம் உங்கள் சமூகத்தைப் பாதுகாக்கவும்.',
+        'submit_report': 'புகாரைச் சமர்ப்பிக்கவும்',
+        'register_to_report': 'புகார் அளிக்கப் பதிவு செய்யவும்',
+        'analytics_description': 'நிஜ நேர பேரிடர் நுண்ணறிவுகள் மற்றும் தரவு காட்சிப்படுத்தல்களைக் காணுங்கள்.',
+        'view_dashboard': 'டாஷ்போர்டைப் பார்',
+        'your_contribution': 'உங்கள் பங்களிப்பு',
+        'community_activity': 'சமூக செயல்பாடு',
+        'reports_submitted': 'சமர்ப்பிக்கப்பட்ட அறிக்கைகள்',
+        'view_leaderboard': 'முன்னணி வாரியத்தைப் பார்',
+        'coordination_platform': 'ஒருங்கிணைப்பு தளம்',
+        'basic_dashboard': 'அடிப்படை டாஷ்போர்டு',
+        'analyst_dashboard': 'ஆய்வாளர் டாஷ்போர்டு',
+        'risk_simulator': 'இடர் சிமுலேட்டர் (PS-4.9)',
+        'emergency_management': 'அவசரகால மேலாண்மை',
+        'resource_management': 'வள மேலாண்மை',
+        'volunteer_management': 'தன்னார்வலர் மேலாண்மை',
+        'situation_reports': 'நிலைமை அறிக்கைகள்',
+        'ai_support_assistant': 'AI ஆதரவு உதவியாளர்',
     },
     
     'hi': {  # Hindi
         'home': 'होम',
-        'about': 'के बारे में',
+        'about': 'बारे में',
         'report': 'खतरा रिपोर्ट करें',
         'dashboard': 'डैशबोर्ड',
         'profile': 'प्रोफाइल',
@@ -356,18 +454,71 @@ TRANSLATIONS = {
         'search': 'खोजें',
         'notifications': 'सूचनाएं',
         'reels': 'खतरा फ़ीड',
+        'community_hub': 'सामुदायिक केंद्र',
+        'lifeline': 'लाइफलाइन P2P',
+        
+        'submit': 'जमा करें',
+        'save': 'सहेजें',
+        'cancel': 'रद्द करें',
+        'edit': 'संपादित करें',
+        'delete': 'मिटाएं',
         
         'tsunami': 'सुनामी',
         'storm_surge': 'तूफान की लहर',
         'high_waves': 'उच्च लहरें',
         'coastal_flooding': 'तटीय बाढ़',
         
+        'username': 'उपयोगकर्ता नाम',
+        'email': 'ईमेल',
+        'password': 'पासवर्ड',
+        'confirm_password': 'पासवर्ड की पुष्टि करें',
+        'remember_me': 'मुझे याद रखें',
+        'title': 'शीर्षक',
+        'description': 'विवरण',
+        'basic_information': 'बुनियादी जानकारी',
+        'location_details': 'स्थान का विवरण',
+        'severity_assessment': 'गंभीरता का आकलन',
+        'location': 'स्थान',
+        'latitude': 'अक्षांश',
+        'longitude': 'देशांतर',
+        'hazard_type': 'खतरे का प्रकार',
+        'photo': 'फोटो अपलोड करें',
+        'video': 'वीडियो अपलोड करें',
+        'bio': 'परिचय',
+        
+        'points': 'अंक',
+        'level': 'स्तर',
+        'total_reports': 'कुल रिपोर्ट',
+        
         'report_submitted': 'आपकी रिपोर्ट सबमिट कर दी गई है! +10 अंक! AI विश्वास: {confidence}%',
-        'login_success': 'वापसी पर स्वागत है! MaxAlert AI में योगदान देने के लिए धन्यवाद।',
+        'login_success': 'वापसी पर स्वागत है! Sentinel AI में योगदान देने के लिए धन्यवाद।',
         'registration_success': 'आपका खाता बन गया है! अब आप लॉगिन कर सकते हैं।',
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
-        'coastal_safety_ai_assistant': 'MaxAlert AI सहायक',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'coastal_safety_ai_assistant': 'Sentinel AI सहायक',
+        'maximum_intelligence': 'अधिकतम इंटेलिजेंस, अधिकतम सुरक्षा',
+        'search_placeholder': 'उपयोगकर्ता, रिपोर्ट, स्थान खोजें...',
+        'active': 'सक्रिय',
+        'quick_search': 'त्वरित खोज',
+        'report_hazard_description': 'कोई खतरा दिखा? अभी रिपोर्ट करें और अपने समुदाय की रक्षा करें।',
+        'submit_report': 'रिपोर्ट सबमिट करें',
+        'register_to_report': 'रिपोर्ट करने के लिए पंजीकरण करें',
+        'analytics_description': 'वास्तविक समय के आपदा अंतर्दृष्टि और डेटा विज़ुअलाइज़ेशन देखें।',
+        'view_dashboard': 'डैशबोर्ड देखें',
+        'your_contribution': 'आपका योगदान',
+        'community_activity': 'सामुदायिक गतिविधि',
+        'reports_submitted': 'रिपोर्ट सबमिट की गई',
+        'view_leaderboard': 'लीडरबोर्ड देखें',
+        'coordination_platform': 'समन्वय मंच',
+        'basic_dashboard': 'बुनियादी डैशबोर्ड',
+        'analyst_dashboard': 'विश्लेषक डैशबोर्ड',
+        'risk_simulator': 'जोखिम सिम्युलेटर (PS-4.9)',
+        'emergency_management': 'आपातकालीन प्रबंधन',
+        'resource_management': 'संसाधन प्रबंधन',
+        'volunteer_management': 'स्वयंसेवक प्रबंधन',
+        'situation_reports': 'स्थिति रिपोर्ट',
+        'user_analytics': 'उपयोगकर्ता विश्लेषण',
+        'ai_support_assistant': 'AI सहायता सहायक',
     },
     
     'te': {  # Telugu
@@ -383,18 +534,64 @@ TRANSLATIONS = {
         'search': 'శోధించు',
         'notifications': 'నోటిఫికేషన్లు',
         'reels': 'హాజర్డ్ ఫీడ్',
+        'community_hub': 'కమ్యూనిటీ హబ్',
+        'lifeline': 'లైఫ్‌లైన్ P2P',
         
-        'tsunami': 'సునామి',
+        'submit': 'సమర్పించు',
+        'save': 'సేవ్ చేయండి',
+        'cancel': 'రద్దు చేయండి',
+        
+        'tsunami': 'సునామీ',
         'storm_surge': 'స్టార్మ్ సర్జ్',
         'high_waves': 'అధిక అలలు',
         'coastal_flooding': 'తీర ప్రాంతం వరద',
         
+        'username': 'వినియోగదారు పేరు',
+        'email': 'ఈమెయిల్',
+        'password': 'పాస్వర్డ్',
+        'confirm_password': 'పాస్వర్డ్ ధృవీకరించండి',
+        'remember_me': 'నన్ను గుర్తుంచుకో',
+        'title': 'శీర్షిక',
+        'description': 'వివరణ',
+        'location': 'స్థానం',
+        'latitude': 'అక్షాంశం',
+        'longitude': 'రేఖాంశం',
+        'hazard_type': 'ప్రమాద రకం',
+        'photo': 'ఫోటో అప్‌లోడ్',
+        'video': 'వీడియో అప్‌లోడ్',
+        'bio': 'బయో',
+        
+        'points': 'పాయింట్లు',
+        'level': 'స్థాయి',
+        
         'report_submitted': 'మీ నివేదిక సమర్పించబడింది! +10 పాయింట్లు! AI నమ్మకం: {confidence}%',
-        'login_success': 'మళ్లీ స్వాగతం! MaxAlert AI పట్ల మీ కృషికి ధన్యవాదాలు.',
+        'login_success': 'మళ్లీ స్వాగతం! Sentinel AI పట్ల మీ కృషికి ధన్యవాదాలు.',
         'registration_success': 'మీ ఖాతా సృష్టించబడింది! మీరు ఇప్పుడు లాగిన్ చేయవచ్చు.',
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
-        'coastal_safety_ai_assistant': 'MaxAlert AI అసిస్టెంట్',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'coastal_safety_ai_assistant': 'Sentinel AI అసిస్టెంట్',
+        'maximum_intelligence': 'గరిష్ట మేధస్సు, గరిష్ట భద్రత',
+        'search_placeholder': 'శోధించండి...',
+        'active': 'క్రియాశీలకంగా ఉంది',
+        'quick_search': 'త్వరిత శోధన',
+        'report_hazard_description': 'ప్రమాదాన్ని గుర్తించారా? ఇప్పుడే నివేదించండి మరియు మీ కమ్యూనిటీని రక్షించండి.',
+        'submit_report': 'నివేదికను సమర్పించండి',
+        'register_to_report': 'నివేదించడానికి నమోదు చేసుకోండి',
+        'analytics_description': 'నిజ-సమయ విపత్తు అంతర్దృష్టులు మరియు డేటా విజువలైజేషన్లను చూడండి.',
+        'view_dashboard': 'డాష్‌బోర్డ్ చూడండి',
+        'your_contribution': 'మీ సహకారం',
+        'community_activity': 'కమ్యూనిటీ కార్యాచరణ',
+        'reports_submitted': 'నివేదికలు సమర్పించబడ్డాయి',
+        'view_leaderboard': 'లీడర్‌బోర్డ్ చూడండి',
+        'coordination_platform': 'సమన్వయ వేదిక',
+        'basic_dashboard': 'ప్రాథమిక డాష్‌బోర్డ్',
+        'analyst_dashboard': 'అనలిస్ట్ డాష్‌బోర్డ్',
+        'risk_simulator': 'రిస్క్ సిమ్యులేటర్ (PS-4.9)',
+        'emergency_management': 'అత్యవసర నిర్వహణ',
+        'resource_management': 'వనరుల నిర్వహణ',
+        'volunteer_management': 'వాలంటీర్ నిర్వహణ',
+        'situation_reports': 'పరిస్థితి నివేదికలు',
+        'ai_support_assistant': 'AI మద్దతు అసిస్టెంట్',
     },
     
     'ml': {  # Malayalam
@@ -408,15 +605,44 @@ TRANSLATIONS = {
         'register': 'രജിസ്റ്റർ',
         'logout': 'ലോഗൗട്ട്',
         'search': 'തിരയുക',
+        'notifications': 'അറിയിപ്പുകൾ',
+        'reels': 'ഹാസാർഡ് ഫീഡ്',
+        'community_hub': 'കമ്മ്യൂണിറ്റി ഹബ്',
+        'lifeline': 'ലൈഫ്‌ലൈൻ P2P',
+        
+        'submit': 'സമർപ്പിക്കുക',
+        'save': 'സേവ് ചെയ്യുക',
+        'cancel': 'റദ്ദാക്കുക',
         
         'tsunami': 'സുനാമി',
         'storm_surge': 'കൊടുങ്കാറ്റ് തിര',
-        'high_waves': 'ഉയർന്ന അലകൾ',
+        'high_waves': 'ഉയർന്ന തിരമാലകൾ',
+        
+        'username': 'യൂസർനെയിം',
+        'email': 'ഇമെയിൽ',
+        'password': 'പാസ്‌വേഡ്',
+        'confirm_password': 'പാസ്‌വേഡ് ഉറപ്പിക്കുക',
+        'remember_me': 'എന്നെ ഓർമ്മിക്കുക',
+        
+        'points': 'പോയിന്റുകൾ',
+        'level': 'ലെവൽ',
         
         'report_submitted': 'നിങ്ങളുടെ റിപ്പോർട്ട് സമർപ്പിച്ചു! +10 പോയിന്റുകൾ! AI ആത്മവിശ്വാസം: {confidence}%',
-        'login_success': 'വീണ്ടും സ്വാഗതം! MaxAlert AI-ലേക്ക് സംഭാവന ചെയ്തതിന് നന്ദി.',
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
+        'login_success': 'വീണ്ടും സ്വാഗതം! Sentinel AI-ലേക്ക് സംഭാവന ചെയ്തതിന് നന്ദി.',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'maximum_intelligence': 'പരമാവധി ഇന്റലിജൻസ്, പരമാവധി സുരക്ഷ',
+        'active': 'സജീവം',
+        'quick_search': '്രുത തിരയൽ',
+        'coordination_platform': 'കോർഡിനേഷൻ പ്ലാറ്റ്ഫോം',
+        'basic_dashboard': 'ബേസിക് ഡാഷ്ബോർഡ്',
+        'analyst_dashboard': 'അനലിസ്റ്റ് ഡാഷ്ബോർഡ്',
+        'risk_simulator': 'റിസ്ക് സിമുലേറ്റർ (PS-4.9)',
+        'emergency_management': 'അടിയന്തര മാനേജ്‌മെന്റ്',
+        'resource_management': 'വിഭവ മാനേജ്‌മെന്റ്',
+        'volunteer_management': 'വളണ്ടിയർ മാനേജ്‌മെന്റ്',
+        'situation_reports': 'സിറ്റുവേഷൻ റിപ്പോർട്ടുകൾ',
+        'ai_support_assistant': 'AI സപ്പോർട്ട് അസിസ്റ്റന്റ്',
     },
     
     'kn': {  # Kannada
@@ -430,17 +656,46 @@ TRANSLATIONS = {
         'register': 'ನೋಂದಾಯಿಸಿ',
         'logout': 'ಲಾಗ್‌ಔಟ್',
         'search': 'ಹುಡುಕು',
+        'notifications': 'ಅಧಿಸೂಚನೆಗಳು',
+        'reels': 'ಹಜಾರ್ಡ್ ಫೀಡ್',
+        'community_hub': 'ಕಮ್ಯುನಿಟಿ ಹಬ್',
+        'lifeline': 'ಲೈಫ್‌ಲೈನ್ P2P',
+        
+        'submit': 'ಸಲ್ಲಿಸು',
+        'save': 'ಉಳಿಸು',
+        'cancel': 'ರದ್ದುಮಾಡು',
         
         'tsunami': 'ಸುನಾಮಿ',
         'storm_surge': 'ಬಿರುಗಾಳಿ ಅಲೆ',
         'high_waves': 'ಎತ್ತರದ ಅಲೆಗಳು',
         
+        'username': 'ಬಳಕೆದಾರಹೆಸರು',
+        'email': 'ಇಮೇಲ್',
+        'password': 'ಪಾಸ್ವರ್ಡ್',
+        'confirm_password': 'ಪಾಸ್ವರ್ಡ್ ದೃಢೀಕರಿಸಿ',
+        'remember_me': 'ನನ್ನನ್ನು ನೆನಪಿಡಿ',
+        
+        'points': 'ಪಾಯಿಂಟ್ಗಳು',
+        'level': 'ಹಂತ',
+        
         'report_submitted': 'ನಿಮ್ಮ ವರದಿಯನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ! +10 ಅಂಕಗಳು! AI ವಿಶ್ವಾಸ: {confidence}%',
-        'login_success': 'ಮತ್ತೆ ಸ್ವಾಗತ! MaxAlert AI ಗೆ ಕೊಡುಗೆ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು.',
-        'coastal_alert': 'MaxAlert AI',
-        'coastal_safety_network': 'MaxAlert AI',
-        'coastal_safety_ai_assistant': 'MaxAlert AI Assistant',
+        'login_success': 'ಮತ್ತೆ ಸ್ವಾಗತ! Sentinel AI ಗೆ ಕೊಡುಗೆ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು.',
+        'coastal_alert': 'Sentinel AI',
+        'coastal_safety_network': 'Sentinel AI',
+        'coastal_safety_ai_assistant': 'Sentinel AI Assistant',
         'protecting_coastal_communities': 'Protecting communities worldwide',
+        'maximum_intelligence': 'ಗರಿಷ್ಠ ಬುದ್ಧಿವಂತಿಕೆ, ಗರಿಷ್ಠ ಸುರಕ್ಷತೆ',
+        'active': 'ಸಕ್ರಿಯ',
+        'quick_search': 'ತ್ವರಿತ ಹುಡುಕಾಟ',
+        'coordination_platform': 'ಸಮನ್ವಯ ವೇದಿಕೆ',
+        'basic_dashboard': 'ಮೂಲ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        'analyst_dashboard': 'ವಿಶ್ಲೇಷಕ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        'risk_simulator': 'ರಿಸ್ಕ್ ಸಿಮ್ಯುಲೇಟರ್ (PS-4.9)',
+        'emergency_management': 'ತುರ್ತು ನಿರ್ವಹಣೆ',
+        'resource_management': 'ಸಂಪನ್ಮೂಲ ನಿರ್ವಹಣೆ',
+        'volunteer_management': 'ಸ್ವಯಂಸೇವಕ ನಿರ್ವಹಣೆ',
+        'situation_reports': 'ಪರಿಸ್ಥಿತಿ ವರದಿಗಳು',
+        'ai_support_assistant': 'AI ಬೆಂಬಲ ಸಹಾಯಕ',
     }
 }
 
@@ -983,7 +1238,7 @@ def register():
         
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
         user = User(
-            username=form.username.data, 
+            username=form.username.data.strip(), 
             email=form.email.data, 
             password=hashed_password,
             role='citizen',
@@ -1146,6 +1401,22 @@ def unfollow(username):
     db.session.commit()
     flash(translate('unfollow_success', username=username), 'success')
     return redirect(url_for('profile', username=username))
+
+@app.route("/user_followers/<username>")
+@login_required
+def user_followers(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    followers_list = user.followers.paginate(page=page, per_page=20, error_out=False)
+    return render_template('user_followers.html', user=user, followers=followers_list)
+
+@app.route("/user_following/<username>")
+@login_required
+def user_following(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    following_list = user.followed.paginate(page=page, per_page=20, error_out=False)
+    return render_template('user_following.html', user=user, following=following_list)
 
 @app.route("/rescue-complete")
 @login_required
@@ -1335,12 +1606,10 @@ def api_reports():
 @app.route("/view_report/<int:report_id>")
 @login_required
 def view_report(report_id):
-    if current_user.role not in ['official', 'analyst']:
-        flash('You need elevated privileges to view detailed reports.', 'warning')
-        return redirect(url_for('home'))
-    
     report = Report.query.get_or_404(report_id)
-    return render_template('view_report.html', title='Report Details', report=report)
+    return render_template('view_report.html', 
+                         title='Report Details', 
+                         report=report)
 
 # Hazard type alert radii (in kilometers)
 HAZARD_ALERT_RADII = {
@@ -1396,93 +1665,24 @@ def verify_report(report_id):
         
         flash(f'Report "{report.title}" has been approved successfully!', 'success')
         
-        # --- AUTOMATION: Assign nearby volunteers automatically ---
-        print(f"[AUTO-ASSIGN] Searching for volunteers within 10km of '{report.title}'...")
+        # --- UNIFIED ALERTING & AUTOMATION ---
+        # This sends alerts to all users in the radius and auto-assigns nearby volunteers
+        print(f"🚀 Triggering unified alerts and assignments for report: {report.title}")
         try:
-            # Find all potential volunteers
-            volunteers = Volunteer.query.filter(
-                Volunteer.latitude.isnot(None),
-                Volunteer.longitude.isnot(None)
-            ).all()
+            users_alerted = send_hazard_alerts(report, auto_assign_volunteers=True, assigner_id=current_user.id)
+            print(f"✅ Unified alerting completed. Total users reached: {users_alerted}")
             
-            autassigned_count = 0
-            for volunteer in volunteers:
-                distance = calculate_distance(
-                    report.latitude, report.longitude,
-                    volunteer.latitude, volunteer.longitude
-                )
-                
-                # Check if within 10km
-                if distance <= 10.0:
-                    # Check if not already assigned to this report (to avoid duplicates)
-                    existing = VolunteerAssignment.query.filter_by(
-                        volunteer_id=volunteer.id,
-                        emergency_event_id=report.id,
-                        hazard_type='report'
-                    ).filter(VolunteerAssignment.status.in_(['pending', 'accepted', 'deployed'])).first()
-                    
-                    if not existing:
-                        # Create auto-assignment
-                        assignment = VolunteerAssignment(
-                            volunteer_id=volunteer.id,
-                            emergency_event_id=report.id,
-                            hazard_type='report',
-                            assigned_by=current_user.id,
-                            status='pending',
-                            distance_km=distance
-                        )
-                        db.session.add(assignment)
-                        db.session.flush() # Get ID
-                        
-                        # Send notification to volunteer
-                        notification = Notification(
-                            user_id=volunteer.user_id,
-                            message=f'🤝 HELP REQUEST: You have been assigned to assist with a verified hazard "{report.title}" reported within {distance:.1f}km of you. Would you like to respond?',
-                            assignment_id=assignment.id,
-                            is_alert=True,
-                            is_read=False
-                        )
-                        db.session.add(notification)
-                        
-                        # Send WhatsApp notification if linked
-                        if volunteer.user and volunteer.user.whatsapp_number:
-                            # 1. Send Alert Message with Image
-                            alert_body = f"🚨 *MaxAlert AI: HAZARD ALERT*\n\n*Title:* {report.title}\n*Description:* {report.description}\n*Location:* {report.location}"
-                            
-                            media_url = None
-                            if report.image_file:
-                                # Use ngrok URL for public access
-                                base_url = "https://adele-unfocused-scientistically.ngrok-free.dev"
-                                media_url = f"{base_url}/static/uploads/{report.image_file}"
-                                
-                            send_whatsapp_message(volunteer.user.whatsapp_number, alert_body, media_url)
-                            
-                            # Small delay to ensure order
-                            time.sleep(1)
-                            
-                            # 2. Send Assignment Request
-                            assign_body = f"🤝 *MaxAlert AI: AUTO-ASSIGNMENT*\n\nHelp Requested! You are within {distance:.1f}km of this verified hazard.\n\n*Reply:*\n1️⃣ to *Accept*\n2️⃣ to *Reject*"
-                            send_whatsapp_message(volunteer.user.whatsapp_number, assign_body)
-                            
-                        autassigned_count += 1
-                        print(f"[AUTO-ASSIGN] Assigned {volunteer.user.username} ({distance:.2f}km)")
-            
-            if autassigned_count > 0:
-                db.session.commit()
-                print(f"[AUTO-ASSIGN] Successfully assigned {autassigned_count} nearby volunteers")
-                flash(f'Automatically requested help from {autassigned_count} nearby volunteers.', 'info')
+            # Flash status message based on results
+            if users_alerted > 0:
+                flash(f'✅ Report verified! Alerts sent to {users_alerted} users via WhatsApp.', 'success')
             else:
-                print("[AUTO-ASSIGN] No volunteers within 5km found")
-                
+                flash(f'⚠️ Report verified, but no WhatsApp alerts could be delivered. Ensure users have active sessions by messaging "hi" to the bot.', 'warning')
+            
         except Exception as e:
             db.session.rollback()
-            print(f"[AUTO-ASSIGN ERROR] Failed to automate assignments: {e}")
-        # --- END AUTOMATION ---
-        
-        # Send alerts to users in the danger zone
-        print("🚨 Starting to send hazard alerts...")
-        users_alerted = send_hazard_alerts(report)
-        print(f"✅ Hazard alerts completed. Users alerted: {users_alerted}")
+            print(f"[ALERT ERROR] Failed to complete unified alerting: {e}")
+            flash('Verification successful, but there was an error sending automated alerts.', 'warning')
+        # --- END UNIFIED ALERTING ---
         
         db.session.commit()
         print("💾 Database changes committed and alerts sent")
@@ -1561,62 +1761,177 @@ def verify_report(report_id):
     
     return redirect(url_for('view_report', report_id=report_id))
 
-def send_hazard_alerts(report):
-    """Send hazard alerts to all users within the danger radius"""
-    alert_radius = HAZARD_ALERT_RADII.get(report.hazard_type, 5.0)
-    print(f"🔔 Checking alerts for {report.hazard_type} with radius {alert_radius}km at location ({report.latitude}, {report.longitude})")
+def send_hazard_alerts(report, auto_assign_volunteers=False, assigner_id=None):
+    """
+    Unified pass to alert citizens and assign nearby volunteers.
+    """
+    # ALERT RADIUS UPDATE: Set to 5000km to effectively broadcast to ALL users for the demo
+    # This ensures "all users should get the alert message" as requested
+    hazard_radius = HAZARD_ALERT_RADII.get(report.hazard_type, 10.0)
+    alert_radius = 5000.0 
     
-    # Get users with locations and matching alert preferences
-    users = User.query.filter(
-        User.home_latitude.isnot(None),
-        User.home_longitude.isnot(None)
-    ).all()
+    # The volunteer assignment radius is also 5000km for the demo
+    max_radius = 5000.0
     
-    print(f"📋 Found {len(users)} users with location data")
+    print(f"🔔 BROADCAST: Hazard '{report.title}' ({report.hazard_type})")
+    print(f"📏 Radii: Citizen={alert_radius}km, Volunteer=50.0km")
     
+    # Get all users (we'll filter in Python to handle the complex fallback logic)
+    users = User.query.all()
+    
+    # Setup media URL
+    base_url = None
+    try: base_url = request.url_root.rstrip('/')
+    except: base_url = "http://localhost:5001"
+    
+    # Fallback for local testing to ensure WhatsApp links work
+    is_local = any(x in base_url for x in ['localhost', '127.0.0.1', '192.168.'])
+    if is_local:
+        # Known public ngrok URL from NGROK_PUBLIC_ACCESS.md
+        base_url = "https://adele-unfocused-scientistically.ngrok-free.dev"
+        is_public_url = True
+    else:
+        is_public_url = True
+    
+    media_url = f"{base_url}/static/uploads/{report.image_file}" if report.image_file else None
+
     users_alerted = 0
+    volunteers_assigned = 0
     
     for user in users:
-        # Check if user has alerts enabled for this hazard type
-        user_prefs = user.get_alert_preferences()
-        if not user_prefs.get(report.hazard_type, True):
-            print(f"🔇 User {user.username} has {report.hazard_type} alerts disabled")
+        # Determine best location for this user
+        u_lat, u_lon = user.home_latitude, user.home_longitude
+        
+        # Fallback to volunteer location if user location is missing
+        volunteer = Volunteer.query.filter_by(user_id=user.id).first()
+        if (u_lat is None or u_lon is None) and volunteer:
+            u_lat, u_lon = volunteer.latitude, volunteer.longitude
+            
+        if u_lat is None or u_lon is None:
+            # Only log for users with WhatsApp numbers to keep it clean
+            if user.whatsapp_number:
+                print(f"⏭️ Skipping {user.username} (missing coordinates)")
             continue
             
-        # Calculate distance between report and user
-        distance = calculate_distance(
-            report.latitude, report.longitude,
-            user.home_latitude, user.home_longitude
-        )
+        distance = calculate_distance(report.latitude, report.longitude, u_lat, u_lon)
         
-        print(f"📍 User {user.username} at ({user.home_latitude}, {user.home_longitude}) is {distance:.1f}km away")
+        # Check if user is in any zone of interest
+        is_in_citizen_zone = distance <= alert_radius
+        is_in_volunteer_zone = distance <= max_radius and volunteer is not None
         
-        if distance <= alert_radius:
-            # Create notification for the user
-            alert_message = f"⚠️ {get_translation(user.language or 'en', report.hazard_type + '_alert', 'Hazard alert near you!')} - {distance:.1f}km away"
-            print(f"🚨 ALERT SENT to {user.username}: {alert_message}")
-            
-            alert_notification = Notification(
-                user_id=user.id,
-                message=alert_message,
-                report_id=report.id,
-                is_alert=True
-            )
-            db.session.add(alert_notification)
-            
-            # Send WhatsApp alert if user has linked their account
+        if not is_in_citizen_zone and not is_in_volunteer_zone:
             if user.whatsapp_number:
-                whatsapp_body = f"🚨 *MaxAlert AI: HAZARD ALERT*\n\n{alert_message}\n\n📍 *Location:* {report.location}\n📝 *Description:* {report.description[:100]}...\n\nStay alert and follow official safety guidelines."
-                send_whatsapp_message(user.whatsapp_number, whatsapp_body)
+                print(f"📏 User {user.username} is too far ({distance:.1f}km)")
+            continue
+            
+        print(f"🎯 User {user.username} is in range ({distance:.1f}km)!")
+            
+        is_nearby_volunteer = False
+        assignment_id = None
+        message_sid = None
+        
+        if auto_assign_volunteers and is_in_volunteer_zone:
+            # Check for existing assignment
+            existing = VolunteerAssignment.query.filter_by(
+                volunteer_id=volunteer.id,
+                emergency_event_id=report.id,
+                hazard_type='report'
+            ).filter(VolunteerAssignment.status.in_(['pending', 'accepted', 'deployed'])).first()
+            
+            if not existing:
+                assignment = VolunteerAssignment(
+                    volunteer_id=volunteer.id,
+                    emergency_event_id=report.id,
+                    hazard_type='report',
+                    assigned_by=assigner_id,
+                    status='pending',
+                    distance_km=distance
+                )
+                db.session.add(assignment)
+                db.session.flush()
+                assignment_id = assignment.id
+                is_nearby_volunteer = True
+                volunteers_assigned += 1
+
+        # We only send citizen alerts if they are in the zone AND have preferences enabled
+        send_citizen_alert = is_in_citizen_zone
+        if send_citizen_alert:
+            user_prefs = user.get_alert_preferences()
+            if not user_prefs.get(report.hazard_type, True):
+                send_citizen_alert = False
+        
+        # If not volunteer and citizen alert disabled, skip
+        if not is_nearby_volunteer and not send_citizen_alert:
+            continue
+
+        # 5. Construct Notification
+        notif_msg = f"⚠️ Hazard alert near you! - {distance:.1f}km away"
+        if is_nearby_volunteer:
+            notif_msg = f"🤝 HELP REQUEST: You have been assigned to assist with verified hazard \"{report.title}\" ({distance:.1f}km away)."
+            
+        alert_notification = Notification(
+            user_id=user.id,
+            message=notif_msg,
+            report_id=report.id,
+            assignment_id=assignment_id,
+            is_alert=True
+        )
+        db.session.add(alert_notification)
+
+        # 6. Send WhatsApp
+        # 6. Send WhatsApp
+        if user.whatsapp_number:
+            # We send the full hazard details (text + picture) to both citizens AND volunteers
+            # so volunteers have full context (photo + details) before they accept the mission.
+            should_send_details = send_citizen_alert or is_nearby_volunteer
+            
+            main_sid = None
+            if should_send_details:
+                alert_body = (
+                    f"🚨 *Sentinel AI: HAZARD ALERT*\n\n"
+                    f"⚠️ *{report.hazard_type.upper().replace('_', ' ')} ALERT*\n"
+                    f"A hazard has been verified {distance:.1f}km from your location.\n\n"
+                    f"📝 *Title:* {report.title}\n"
+                    f"ℹ️ *Details:* {report.description[:400] + '...' if len(report.description) > 400 else report.description}\n"
+                    f"📍 *Location:* {report.location}\n\n"
+                    f"🔗 *Dashboard:* {base_url}/dashboard\n\n"
+                    f"Stay safe! 🛡️"
+                )
+                # NEW: Combined message (Image + Text) for better UX and reliability
+                # Add ngrok bypass to ensure Twilio can fetch the image through the tunnel
+                bypass = "?ngrok-skip-browser-warning=true"
+                media_link = f"{base_url}/static/uploads/{report.image_file}{bypass}" if report.image_file else None
                 
-            users_alerted += 1
-        else:
-            print(f"📏 User {user.username} is outside alert radius ({distance:.1f}km > {alert_radius}km)")
-    
+                # Send the alert with image attached
+                main_sid = send_whatsapp_message(user.whatsapp_number, alert_body, media_url=media_link)
+                
+                if not main_sid:
+                    # Fallback: try sending without image if combined message fails
+                    print("⚠️ Combined message failed, trying text-only fallback...")
+                    main_sid = send_whatsapp_message(user.whatsapp_number, alert_body)
+
+            # Send the Volunteer Mission / Help Request
+            if is_nearby_volunteer:
+                mission_body = (
+                    f"🤝 *Sentinel AI: HELP REQUEST*\n\n"
+                    f"You have been assigned to assist with this hazard ({distance:.1f}km away).\n"
+                    f"Your help is vital! Please review the details above.\n\n"
+                    f"*Action REQUIRED:* Reply with:\n"
+                    f"1️⃣ to *Accept & Get Location*\n"
+                    f"2️⃣ to *Reject*"
+                )
+                v_sid = send_whatsapp_message(user.whatsapp_number, mission_body)
+                if not main_sid: main_sid = v_sid
+                
+            if main_sid:
+                users_alerted += 1
+                print(f"📤 Notified {user.username} ({distance:.1f}km) {'(Citizen + Volunteer)' if (send_citizen_alert and is_nearby_volunteer) else '(Alert Only)' if send_citizen_alert else '(Mission Only)'}")
+            else:
+                print(f"❌ Failed to notify {user.username}. They may need to restart their sandbox session (send 'hi').")
+
     report.alert_sent = True
     report.alert_sent_at = datetime.utcnow()
-    
-    print(f"✅ Total alerts sent: {users_alerted}")
+    db.session.commit()
     return users_alerted
 
 @app.route('/delete_report/<int:report_id>', methods=['POST'])
@@ -2275,6 +2590,109 @@ def analyst_dashboard():
                          timeline_labels=timeline_labels,
                          timeline_data=timeline_data)
 
+@app.route("/simulation")
+@login_required
+def simulation():
+    """Climate Risk & Disaster Impact Simulation Dashboard (PS-4.9)"""
+    if current_user.role not in ['official', 'analyst']:
+        flash('You need elevated privileges to access the Simulation Dashboard.', 'warning')
+        return redirect(url_for('home'))
+        
+    reports = Report.query.all()
+    return render_template('simulation.html', title='Disaster Simulation', reports=reports)
+
+@app.route("/api/simulate_impact", methods=['POST'])
+@login_required
+def simulate_impact():
+    """Predictive AI simulation logic based on climate parameters (PS-4.9)"""
+    if current_user.role not in ['official', 'analyst']:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    data = request.get_json()
+    rainfall = float(data.get('rainfall', 0)) # mm/h
+    sea_level = float(data.get('sea_level', 0)) # meters
+    
+    # SIMULATION LOGIC: 
+    # Use existing historical hazard nodes as "vulnerable points"
+    reports = Report.query.all()
+    impact_zones = []
+    
+    # Deterministic but parameter-driven simulation
+    import random
+    random.seed(42) # For consistent simulation visuals
+    
+    for r in reports:
+        # Base vulnerability varies by hazard history
+        hazard_weight = {
+            'tsunami': 0.8,
+            'storm_surge': 0.7,
+            'coastal_flooding': 0.6,
+            'high_waves': 0.4,
+            'other': 0.3
+        }.get(r.hazard_type, 0.3)
+        
+        # Calculate risk based on input parameters
+        rain_impact = (rainfall / 100.0) * 0.4
+        sl_impact = (sea_level / 5.0) * 0.6
+        
+        risk_score = (hazard_weight * 0.3) + rain_impact + sl_impact
+        # Add slight randomness for realism
+        risk_score += random.uniform(-0.05, 0.05)
+        risk_score = max(0, min(1, risk_score))
+        
+        # Determine if this area is "affected" in this scenario
+        if risk_score > 0.4:
+            # Radius grows with severity
+            radius = 200 + (rainfall * 5) + (sea_level * 100)
+            
+            impact_zones.append({
+                'lat': float(r.latitude),
+                'lng': float(r.longitude),
+                'risk': round(risk_score, 2),
+                'radius': radius,
+                'hazard_type': r.hazard_type,
+                'location': r.location
+            })
+            
+    # Calculate Impact Assessment Metrics with Sectoral Breakdown
+    affected_count = len(impact_zones)
+    
+    # Time Horizon Multiplier (simulating climate trend escalation)
+    time_horizon = data.get('time_horizon', 'Current')
+    horizon_mult = 1.0 if time_horizon == 'Current' else 1.25 if time_horizon == '2030' else 1.6
+    
+    # Sectoral Damage Estimation (%)
+    sector_damage = {
+        'power_grid': min(100, int((rainfall * 0.3) + (sea_level * 10) * horizon_mult)),
+        'water_supply': min(100, int((rainfall * 0.4) + (sea_level * 5) * horizon_mult)),
+        'telecom': min(100, int((rainfall * 0.1) + (sea_level * 15) * horizon_mult)),
+        'housing': min(100, int((rainfall * 0.2) + (sea_level * 20) * horizon_mult))
+    }
+    
+    stats = {
+        'people_affected': int((affected_count * 150 + int(rainfall * 20)) * horizon_mult),
+        'infra_count': int((int(affected_count * 0.4) + int(sea_level * 5)) * horizon_mult),
+        'financial_risk': round((affected_count * 0.12 + (rainfall * 0.05)) * horizon_mult, 2),
+        'evacuation_priority': 'Critical' if risk_score > 0.8 else 'High' if risk_score > 0.6 else 'Moderate',
+        'sector_damage': sector_damage
+    }
+    
+    # AI Summary Generation
+    ai_summary = f"SCENARIO ANALYSIS ({time_horizon}): "
+    if stats['evacuation_priority'] == 'Critical':
+        ai_summary += "Severe systemic failure predicted. Power and Housing sectors show critical vulnerability. Immediate relocation of coastal populations recommended."
+    elif stats['evacuation_priority'] == 'High':
+        ai_summary += "Significant infrastructure stress detected. Water supply contamination risk is elevated. Activate secondary levee reinforcements."
+    else:
+        ai_summary += "Localized impact expected. Standard drainage protocols sufficient for current parameters."
+    
+    return jsonify({
+        'success': True,
+        'zones': impact_zones,
+        'stats': stats,
+        'ai_summary': ai_summary
+    })
+
 @app.route("/chart/hazard_distribution")
 @login_required
 def hazard_distribution_chart():
@@ -2750,7 +3168,7 @@ def send_early_warning_alerts(warning):
             
             # Send WhatsApp Alert if linked
             if user.whatsapp_number:
-                whatsapp_body = f"🛡️ *MaxAlert AI: EARLY WARNING*\n\n{alert_message}\n\n📍 *Area:* {warning.get('location', 'Your Region')}\n\nFollow safety protocols immediately."
+                whatsapp_body = f"🛡️ *Sentinel AI: EARLY WARNING*\n\n{alert_message}\n\n📍 *Area:* {warning.get('location', 'Your Region')}\n\n🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard\n\nFollow safety protocols immediately."
                 send_whatsapp_message(user.whatsapp_number, whatsapp_body)
                 
             users_alerted += 1
@@ -2833,7 +3251,34 @@ def send_global_alert():
             
             # Send WhatsApp Alert if linked
             if user.whatsapp_number:
-                whatsapp_body = f"⚡ *MaxAlert AI: GLOBAL BROADCAST*\n\n{message}\n\nBroadcast for {len(affected_locations)} affected area(s).\n\nCheck dashboard for full details."
+                # Build detailed hazard information
+                hazard_details = []
+                for idx, location in enumerate(affected_locations[:3], 1):  # Show up to 3 locations
+                    loc_name = location.get('name', 'Unknown Location')
+                    loc_type = location.get('type', 'Alert')
+                    loc_desc = location.get('description', 'No description available')
+                    hazard_details.append(f"{idx}. *{loc_name}* ({loc_type})\n   _{loc_desc[:100]}_")
+                
+                # Create comprehensive WhatsApp message
+                whatsapp_body = f"""⚡ *Sentinel AI: GLOBAL BROADCAST*
+
+🚨 *EMERGENCY ALERT*
+
+{message}
+
+📍 *Affected Areas ({len(affected_locations)}):*
+{chr(10).join(hazard_details)}
+{f'...and {len(affected_locations) - 3} more areas' if len(affected_locations) > 3 else ''}
+
+⚠️ *Action Required:*
+• Follow safety protocols immediately
+• Check dashboard for full details
+• Stay alert for updates
+
+🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard
+
+Stay safe! 🛡️"""
+                
                 send_whatsapp_message(user.whatsapp_number, whatsapp_body)
                 
             notification_count += 1
@@ -3493,7 +3938,7 @@ def assign_volunteer_to_hazard():
     
     # Send WhatsApp notification if volunteer user has linked their account
     if volunteer_user.whatsapp_number:
-        whatsapp_body = f"🤝 *MaxAlert AI: VOLUNTEER ASSIGNMENT*\n\n{notification_message}\n\n📍 *Hazard:* {hazard_title}\n📏 *Distance:* {distance_km:.1f}km\n\n*Reply:*\n1️⃣ to *Accept*\n2️⃣ to *Reject*"
+        whatsapp_body = f"🤝 *Sentinel AI: VOLUNTEER ASSIGNMENT*\n\n{notification_message}\n\n📍 *Hazard:* {hazard_title}\n📏 *Distance:* {distance_km:.1f}km\n\n🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard\n\n*Reply:*\n1️⃣ to *Accept*\n2️⃣ to *Reject*"
         send_whatsapp_message(volunteer_user.whatsapp_number, whatsapp_body)
     
     db.session.commit()
@@ -3788,8 +4233,8 @@ def complete_rescue_assignment(assignment_id):
             # Send photo proof if available
             media_url = None
             if photo_url:
-                # Use ngrok URL for public access
-                base_url = "https://adele-unfocused-scientistically.ngrok-free.dev"
+                # Use current request URL root as base URL
+                base_url = request.url_root.rstrip('/')
                 if photo_url.startswith('http'):
                     media_url = photo_url
                 else:
@@ -3803,7 +4248,7 @@ def complete_rescue_assignment(assignment_id):
             
         # Send WhatsApp confirmation to the volunteer (current_user)
         if current_user.whatsapp_number:
-            vol_body = f"🎉 *GREAT WORK!*\n\nYou have successfully marked the rescue as *completed*.\n\n📍 *Hazard:* {hazard.title}\n🏆 *Points Earned:* {points_earned}\n\nThank you for your service! Stay safe."
+            vol_body = f"🎉 *GREAT WORK!*\n\nYou have successfully marked the rescue as *completed*.\n\n📍 *Hazard:* {hazard.title}\n🏆 *Points Earned:* {points_earned}\n\n🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard\n\nThank you for your service! Stay safe."
             send_whatsapp_message(current_user.whatsapp_number, vol_body)
             
         db.session.commit()
@@ -3970,7 +4415,7 @@ def accept_volunteer_assignment(assignment_id):
             hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
             
         if hazard:
-            loc_msg = f"📍 *MaxAlert AI: Mission Location*\n\nYou've accepted the assignment for: *{hazard.title}*\n\n🗺️ *Google Maps:* https://www.google.com/maps/search/?api=1&query={hazard.latitude},{hazard.longitude}\n\nProceed with caution!"
+            loc_msg = f"📍 *Sentinel AI: Mission Location*\n\nYou've accepted the assignment for: *{hazard.title}*\n\n🗺️ *Google Maps:* https://www.google.com/maps/search/?api=1&query={hazard.latitude},{hazard.longitude}\n\nProceed with caution!"
             send_whatsapp_message(current_user.whatsapp_number, loc_msg)
             
     db.session.commit()
@@ -4567,8 +5012,8 @@ def whatsapp_webhook():
         ).first()
         
         # If no user matches the number, and no session exists, initiate login
-        if incoming_msg == 'hi' or incoming_msg == 'hello' or incoming_msg == 'login':
-            msg.body("🛡️ Welcome to *MaxAlert AI*! \n\nPlease enter your *username* to link your account:")
+        if incoming_msg in ['hi', 'hello', 'hey', 'ji', 'start', 'login']:
+            msg.body("🛡️ Welcome to *Sentinel AI*! \n\nPlease enter your *username* to link your account:")
             # Create a generic entry or mark existing if needed? Actually, since many users might try,
             # we need a way to track sessions by phone number. 
             # I'll use a dedicated static dictionary for sessions if database is too slow/complex for multi-step.
@@ -4590,8 +5035,8 @@ def whatsapp_webhook():
             
         if not active_session_user:
             # First response after 'hi': Treat msg as username
-            # Case-insensitive search for username
-            target_user = User.query.filter(func.lower(User.username) == incoming_msg.lower()).first()
+            # Case-insensitive search for username with trimming to handle accidentally saved spaces
+            target_user = User.query.filter(func.lower(func.trim(User.username)) == incoming_msg.lower()).first()
             if target_user:
                 target_user.whatsapp_session = json.dumps({'phone': from_number, 'step': 'awaiting_password'})
                 db.session.commit()
@@ -4619,43 +5064,97 @@ def whatsapp_webhook():
                 return str(resp)
 
     # USER IS LINKED - Handle commands
-    if incoming_msg == 'hi' or incoming_msg == 'status':
-        msg.body(f"🛡️ *MaxAlert AI* (Tech Max)\nStatus: *Active*\nUser: *{user.username} (Level {user.level})*\n\nYou are monitoring hazards within 10km of your home location.")
+    if incoming_msg in ['hi', 'hello', 'hey', 'ji', 'status', 'start']:
+        msg.body(
+            f"🛡️ *SENTINEL AI ASSISTANT*\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"👤 *User:* {user.username}\n"
+            f"✅ *Status:* Monitoring Active\n"
+            f"📍 *Zone:* Within 50km radius\n\n"
+            f"You will receive verified hazard alerts and assignments automatically.\n\n"
+            f"💡 *Commands:*\n"
+            f"• Reply *1* to Accept assignments\n"
+            f"• Reply *2* to Reject assignments\n\n"
+            f"🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard"
+        )
         return str(resp)
 
     # Handle Volunteer Assignment Accept/Reject
-    if incoming_msg in ['1', 'accept', 'yes']:
+    if incoming_msg in ['1', 'accept', 'yes', '1️⃣']:
         print(f"🤝 Attempting ACCEPT for {user.username}")
+        # Find the latest assignment (either pending or already accepted)
         assignment = VolunteerAssignment.query.join(Volunteer).filter(
             Volunteer.user_id == user.id,
-            VolunteerAssignment.status == 'pending'
+            VolunteerAssignment.status.in_(['pending', 'accepted'])
         ).order_by(VolunteerAssignment.assigned_at.desc()).first()
         
         if assignment:
-            print(f"✅ Found assignment {assignment.id} for hazard {assignment.emergency_event_id}")
-            assignment.status = 'accepted'
-            db.session.commit()
+            print(f"✅ Found assignment {assignment.id} (Status: {assignment.status}) for hazard {assignment.emergency_event_id}")
             
-            # Get hazard location for map
+            # If it was pending, mark it accepted
+            if assignment.status == 'pending':
+                assignment.status = 'accepted'
+                assignment.accepted_at = datetime.utcnow()
+                db.session.commit()
+                print(f"📝 Assignment {assignment.id} marked as ACCEPTED")
+            
+            # Get hazard details based on type
+            # Using db.session.get for better compatibility with newer SQLAlchemy
             hazard = None
             if assignment.hazard_type == 'report':
-                hazard = Report.query.get(assignment.emergency_event_id)
+                hazard = db.session.get(Report, assignment.emergency_event_id)
             else:
-                hazard = EmergencyEvent.query.get(assignment.emergency_event_id)
+                hazard = db.session.get(EmergencyEvent, assignment.emergency_event_id)
             
             if hazard:
-                print(f"📍 Hazard found: {hazard.title} at {hazard.latitude}, {hazard.longitude}")
-                loc_msg = f"✅ Assignment Accepted!\n\n📍 *Hazard Location:*\n{hazard.location}\nCoords: {hazard.latitude}, {hazard.longitude}\n\n🔗 *Navigation Map:*\nhttps://www.google.com/maps/search/?api=1&query={hazard.latitude},{hazard.longitude}"
+                # Create a very clear rescue instruction message
+                desc_snippet = (hazard.description or "No description provided")[:100]
+                loc_msg = (
+                    f"✅ *MISSION ASSIGNED*\n\n"
+                    f"🚀 *Title:* {hazard.title}\n"
+                    f"📝 *Info:* {desc_snippet}...\n"
+                    f"📍 *Location:* {hazard.location}\n"
+                    f"🌐 *Coords:* `{hazard.latitude}, {hazard.longitude}`\n\n"
+                    f"🏁 *START NAVIGATION:*\n"
+                    f"https://www.google.com/maps/dir/?api=1&destination={hazard.latitude},{hazard.longitude}\n\n"
+                    f"⚠️ *Stay Alert:* Report status via dashboard."
+                )
+                
+                # Use the existing msg object created at the start of the webhook
                 msg.body(loc_msg)
+                
+                # Also attach the image if it exists for the hazard
+                if hasattr(hazard, 'image_file') and hazard.image_file:
+                    bypass = "?ngrok-skip-browser-warning=true"
+                    try: current_base = request.url_root.rstrip('/')
+                    except: current_base = "https://adele-unfocused-scientistically.ngrok-free.dev"
+                    
+                    if any(x in current_base for x in ['localhost', '127.0.0.1', '192.168.']):
+                        current_base = "https://adele-unfocused-scientistically.ngrok-free.dev"
+                        
+                    img_url = f"{current_base}/static/uploads/{hazard.image_file}{bypass}"
+                    # Add media to the SAME message object
+                    msg.media(img_url)
+                
+                print(f"📡 Sent location message back to {user.username}")
             else:
-                print("❌ Hazard not found in database")
-                msg.body("Hazard data not found.")
+                print(f"❌ Hazard not found (ID: {assignment.emergency_event_id}, Type: {assignment.hazard_type})")
+                msg.body("⚠️ Error: Mission details could not be retrieved from the database. Please check your dashboard.")
         else:
-            print("❌ No pending assignment found")
-            msg.body("No pending assignments found.")
+            # Debugging: Why was no assignment found?
+            all_v_assignments = VolunteerAssignment.query.join(Volunteer).filter(
+                Volunteer.user_id == user.id
+            ).order_by(VolunteerAssignment.assigned_at.desc()).limit(3).all()
+            
+            print(f"DEBUG: No pending/accepted assignment found for user {user.username}. Recent assignments: {[a.status for a in all_v_assignments]}")
+            
+            if all_v_assignments:
+                msg.body(f"ℹ️ Your latest assignment (Status: {all_v_assignments[0].status}) is not in a state where I can show the location. Please check your dashboard.")
+            else:
+                msg.body("ℹ️ No assignments found for your account. Please check your dashboard for active missions.")
         return str(resp)
 
-    if incoming_msg in ['2', 'reject', 'decline', 'no']:
+    if incoming_msg in ['2', 'reject', 'decline', 'no', '2️⃣']:
         assignment = VolunteerAssignment.query.join(Volunteer).filter(
             Volunteer.user_id == user.id,
             VolunteerAssignment.status == 'pending'
@@ -4666,7 +5165,7 @@ def whatsapp_webhook():
             db.session.commit()
             msg.body("❌ Assignment declined. We will notify other volunteers.")
         else:
-            msg.body("No pending assignments found.")
+            msg.body("ℹ️ No pending assignments found.")
         return str(resp)
 
     # Handle Cancellation of Accepted Assignments
@@ -4699,9 +5198,10 @@ def whatsapp_webhook():
                     
                     # WhatsApp to coordinator if available
                     if coordinator.whatsapp_number:
+                        cancel_body = f"❌ *ASSIGNMENT CANCELLED*\n\nVolunteer *{user.username}* has cancelled their accepted task.\n\n🔗 *Dashboard:* {request.url_root.rstrip('/')}/dashboard\n\nPlease assign another volunteer."
                         send_whatsapp_message(
                             coordinator.whatsapp_number,
-                            f"❌ *ASSIGNMENT CANCELLED*\n\nVolunteer *{user.username}* has cancelled their accepted task.\n\nPlease assign another volunteer."
+                            cancel_body
                         )
             
             db.session.commit()
@@ -4710,8 +5210,13 @@ def whatsapp_webhook():
             msg.body("No active accepted assignments to cancel.")
         return str(resp)
 
-    msg.body("🤖 *MaxAlert AI Assistant*\n\nType 'status' to check your link.\nReply '1' to Accept or '2' to Reject pending assignments.")
+    msg.body("🤖 *Sentinel AI Assistant*\n\nType 'status' to check your link.\nReply '1' to Accept or '2' to Reject pending assignments.")
     return str(resp)
+
+@app.route('/whatsapp-setup')
+def whatsapp_setup():
+    """WhatsApp Integration Setup Guide"""
+    return render_template('whatsapp_setup.html', title='WhatsApp Setup')
 
 @app.route('/offline.html')
 def offline():
@@ -4720,9 +5225,379 @@ def offline():
 
         
 
+
+@app.route('/api/submit_sos', methods=['POST'])
+@login_required
+def submit_sos():
+    try:
+        data = request.get_json()
+        print(f"🎤 SOS Received: {data}")
+        
+        transcript = data.get('transcript', '').strip()
+        
+        # Get coordinates from request or fallback to user's home location
+        latitude = data.get('latitude')
+        if latitude is None and hasattr(current_user, 'home_latitude'):
+            latitude = current_user.home_latitude
+            
+        longitude = data.get('longitude')
+        if longitude is None and hasattr(current_user, 'home_longitude'):
+            longitude = current_user.home_longitude
+            
+        if not transcript:
+            return jsonify({'success': False, 'error': 'No audio transcript provided'}), 400
+
+        # If still None, we cannot save the report due to DB constraints
+        if latitude is None or longitude is None:
+            return jsonify({
+                'success': False, 
+                'error': 'Location coordinates are required. Please enable location services or set a home location in your profile.'
+            }), 400
+
+        timestamp_str = data.get('timestamp') # ISO string
+        
+        # 1. Determine Hazard Type from Keywords
+        text_lower = transcript.lower()
+        hazard_type = 'other' 
+        
+        # Extended Keyword Mapping
+        keywords = {
+            'tsunami': ['tsunami', 'wave', 'sea', 'ocean', 'tide', 'harbor'],
+            'storm_surge': ['surge', 'water rise', 'flood', 'overflow', 'inundation'],
+            'high_waves': ['wave', 'swell', 'rough sea', 'high water'],
+            'coastal_flooding': ['flood', 'water', 'rain', 'drowning', 'stuck', 'entering'],
+            'cyclone': ['cyclone', 'storm', 'wind', 'hurricane', 'typhoon'],
+            'fire': ['fire', 'smoke', 'burn', 'flame'],
+            'medical': ['injured', 'blood', 'ambulance', 'hurt', 'pain', 'doctor', 'unconscious'],
+            'accident': ['crash', 'accident', 'collision', 'hit'],
+            'abnormal_tide': ['tide', 'low water', 'high water']
+        }
+        
+        for h_type, keys in keywords.items():
+            if any(k in text_lower for k in keys):
+                hazard_type = h_type
+                break
+        
+        # 2. Parse Timestamp
+        try:
+            if timestamp_str:
+                if timestamp_str.endswith('Z'):
+                    timestamp_str = timestamp_str[:-1]
+                timestamp = datetime.fromisoformat(timestamp_str)
+            else:
+                timestamp = datetime.utcnow()
+        except:
+            timestamp = datetime.utcnow()
+
+        # 3. Create Report
+        report = Report(
+            title=f"SOS: {transcript[:20]}..." if len(transcript) > 20 else f"SOS: {transcript}",
+            description=f"[VOICE REPORT] {transcript}",
+            hazard_type=hazard_type,
+            latitude=latitude,
+            longitude=longitude,
+            location=f"SOS Coordinate ({float(latitude):.4f}, {float(longitude):.4f})",
+            author=current_user,
+            timestamp=timestamp,
+            status='active',
+            verification_status='pending',
+            priority='critical' # Elevate priority for SOS
+        )
+        
+        # 4. Run Advanced AI Analysis (3-Parameter Validation)
+        ai_result = analyze_report_with_ai(report)
+        report.confidence_score = ai_result['confidence_score']
+        report.ai_analysis = ai_result['analysis']
+        
+        db.session.add(report)
+        db.session.commit()
+        
+        print(f"✅ SOS Report Created: ID {report.id}")
+        
+        return jsonify({'success': True, 'report_id': report.id})
+
+    except Exception as e:
+        print(f"❌ SOS Error: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# =============================================================================
+# COMMUNITY ACTION HUB ROUTES
+# =============================================================================
+
+@app.route("/community_hub")
+@login_required
+def community_hub():
+    """Main community action hub dashboard"""
+    # Get all upcoming events
+    events = CommunityEvent.query.filter(CommunityEvent.date_time >= datetime.utcnow())\
+        .order_by(CommunityEvent.date_time.asc()).all()
+    
+    # Categorize events
+    disaster_prep_events = [e for e in events if e.event_type == 'disaster_prep']
+    environment_events = [e for e in events if e.event_type == 'environment']
+    social_events = [e for e in events if e.event_type == 'social']
+    
+    # Get user's joined events
+    my_events_ids = [p.event_id for p in current_user.events_joined]
+    
+    return render_template('community_hub.html',
+                         title='Community Action Hub',
+                         disaster_prep_events=disaster_prep_events,
+                         environment_events=environment_events,
+                         social_events=social_events,
+                         my_events_ids=my_events_ids)
+
+@app.route("/community/create", methods=['GET', 'POST'])
+@login_required
+def create_community_event():
+    form = CommunityEventForm()
+    if form.validate_on_submit():
+        image_file = None
+        # Check for captured image first, then uploaded image
+        captured_image = request.files.get('image_captured')
+        if captured_image:
+            image_file = save_file(captured_image)
+        elif form.image.data:
+            image_file = save_file(form.image.data)
+            
+        event = CommunityEvent(
+            title=form.title.data,
+            description=form.description.data,
+            event_type=form.event_type.data,
+            location=form.location.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            date_time=form.date_time.data,
+            image_file=image_file,
+            organizer=current_user
+        )
+        db.session.add(event)
+        db.session.commit()
+        flash('Community event created successfully!', 'success')
+        return redirect(url_for('community_hub'))
+        
+    return render_template('create_community_event.html', title='Create Event', form=form)
+
+@app.route("/community/join/<int:event_id>")
+@login_required
+def join_community_event(event_id):
+    event = CommunityEvent.query.get_or_404(event_id)
+    
+    # Check if already joined
+    participant = EventParticipant.query.filter_by(
+        user_id=current_user.id,
+        event_id=event.id
+    ).first()
+    
+    if participant:
+        flash('You have already joined this event.', 'info')
+    else:
+        participant = EventParticipant(user=current_user, event=event)
+        db.session.add(participant)
+        
+        # Award points for joining (gamification)
+        current_user.points += 5
+        check_and_award_badges(current_user)
+        
+        db.session.commit()
+        flash('You have successfully joined the event! +5 Points', 'success')
+
+        # Send WhatsApp Notification
+        if current_user.whatsapp_number:
+            try:
+                import urllib.parse
+                event_date = event.date_time.strftime('%b %d, %Y at %I:%M %p')
+                
+                # Generate Google Maps link
+                if event.latitude and event.longitude:
+                    maps_url = f"https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}"
+                else:
+                    # Fallback to location search if coordinates aren't set
+                    location_encoded = urllib.parse.quote(event.location)
+                    maps_url = f"https://www.google.com/maps/search/?api=1&query={location_encoded}"
+
+                message = (
+                    f"🌟 *Community Action Hub: Registration Confirmed!*\n\n"
+                    f"Hi {current_user.username},\n"
+                    f"You have successfully joined the event: *{event.title}*\n\n"
+                    f"📍 *Location:* {event.location}\n"
+                    f"🕒 *Date & Time:* {event_date}\n\n"
+                    f"🗺️ *Navigate with Google Maps:*\n{maps_url}\n\n"
+                    f"Thank you for being an active part of our community. Together we make a difference! 🛡️🍃"
+                )
+                
+                # Attempt to send with event image if it exists
+                media_url = None
+                # ... media_url logic if needed ...
+                
+                send_whatsapp_message(current_user.whatsapp_number, message, media_url)
+                print(f"✅ WhatsApp confirmation sent to {current_user.whatsapp_number} with map link for event '{event.title}'")
+            except Exception as e:
+                print(f"⚠️ Failed to send WhatsApp confirmation: {e}")
+        
+    return redirect(url_for('community_hub'))
+
+@app.route("/community/leave/<int:event_id>")
+@login_required
+def leave_community_event(event_id):
+    event = CommunityEvent.query.get_or_404(event_id)
+    
+    participant = EventParticipant.query.filter_by(
+        user_id=current_user.id,
+        event_id=event.id
+    ).first()
+    
+    if participant:
+        db.session.delete(participant)
+        db.session.commit()
+        flash('You have left the event.', 'info')
+    
+    return redirect(url_for('community_hub'))
+# =============================================================================
+# LIFELINE: P2P RESOURCE MARKETPLACE ROUTES
+# =============================================================================
+
+@app.route("/lifeline")
+@login_required
+def lifeline():
+    """LifeLine P2P Marketplace Dashboard"""
+    # Get all open listings
+    haves = ResourceListing.query.filter_by(listing_type='have', status='open').order_by(ResourceListing.created_at.desc()).all()
+    needs = ResourceListing.query.filter_by(listing_type='need', status='open').order_by(ResourceListing.created_at.desc()).all()
+    
+    # Get user's active matches
+    # Find matches where EITHER the need or have listing belongs to current user
+    my_matches = ResourceMatch.query.join(ResourceListing, (ResourceMatch.need_id == ResourceListing.id) | (ResourceMatch.have_id == ResourceListing.id))\
+        .filter(ResourceListing.user_id == current_user.id).order_by(ResourceMatch.created_at.desc()).all()
+        
+    return render_template('lifeline.html', 
+                         title='LifeLine - P2P Marketplace',
+                         haves=haves, 
+                         needs=needs,
+                         my_matches=my_matches)
+
+@app.route("/lifeline/create", methods=['GET', 'POST'])
+@login_required
+def create_resource_listing():
+    form = ResourceListingForm()
+    if form.validate_on_submit():
+        listing = ResourceListing(
+            user_id=current_user.id,
+            listing_type=form.listing_type.data,
+            category=form.category.data,
+            title=form.title.data,
+            description=form.description.data,
+            quantity=form.quantity.data,
+            location=form.location.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            urgent=form.urgent.data
+        )
+        db.session.add(listing)
+        db.session.commit()
+        
+        # Trigger Smart Matching
+        match_found = find_best_matches(listing)
+        
+        if match_found:
+            flash(f'Listing created! We found potential matches for you nearby! Check the Map.', 'success')
+        else:
+            flash('Resource listed successfully on LifeLine.', 'success')
+            
+        return redirect(url_for('lifeline'))
+        
+    return render_template('create_listing.html', title='Post to LifeLine', form=form)
+
+def find_best_matches(new_listing):
+    """
+    Search for nearby listings of opposite type in the same category.
+    Returns True if matches are found.
+    """
+    # Look for opposites (Have vs Need) in the same category
+    target_type = 'need' if new_listing.listing_type == 'have' else 'have'
+    
+    potential_matches = ResourceListing.query.filter_by(
+        listing_type=target_type,
+        category=new_listing.category,
+        status='open'
+    ).all()
+    
+    matches_found = False
+    for potential in potential_matches:
+        # Simple distance check (within 10km)
+        dist = calculate_distance(new_listing.latitude, new_listing.longitude, 
+                                potential.latitude, potential.longitude)
+        
+        if dist <= 10.0:  # 10km radius
+            # Create a match entry
+            match = ResourceMatch(
+                need_id=new_listing.id if new_listing.listing_type == 'need' else potential.id,
+                have_id=new_listing.id if new_listing.listing_type == 'have' else potential.id
+            )
+            db.session.add(match)
+            matches_found = True
+            
+            # Create notifications for both
+            notify_match(new_listing.user, new_listing, potential)
+            notify_match(potential.user, potential, new_listing)
+            
+    if matches_found:
+        db.session.commit()
+        
+    return matches_found
+
+def notify_match(user, my_listing, match_listing):
+    """Send Notification and WhatsApp about match"""
+    msg = f"LifeLine Match Found! Someone nearby {match_listing.listing_type}s {match_listing.title}."
+    notif = Notification(user_id=user.id, message=msg)
+    db.session.add(notif)
+    
+    # WhatsApp if available
+    if user.whatsapp_number:
+        wa_msg = (
+            f"🎁 *LifeLine Match Found!* 🤝\n\n"
+            f"Good news! We found a nearby match for your resource: *{my_listing.title}*\n\n"
+            f"*{match_listing.user.username}* is offering/requesting: *{match_listing.title}*\n"
+            f"📍 Location: {match_listing.location}\n\n"
+            f"Check the LifeLine Map to connect and coordinate delivery. Together, we save lives! 🛡️"
+        )
+        send_whatsapp_message(user.whatsapp_number, wa_msg)
+
+@app.route("/lifeline/map")
+@login_required
+def lifeline_map():
+    """Visual map show matching connections"""
+    listings = ResourceListing.query.filter_by(status='open').all()
+    # Also get matches to draw lines between them
+    matches = ResourceMatch.query.filter_by(status='pending').all()
+    
+    return render_template('lifeline_map.html', 
+                         title='LifeLine Connections Map',
+                         listings=[l.to_dict() for l in listings],
+                         matches=[m.to_dict() for m in matches])
+
+@app.route("/lifeline/complete_match/<int:match_id>")
+@login_required
+def complete_resource_match(match_id):
+    match = ResourceMatch.query.get_or_404(match_id)
+    match.status = 'completed'
+    match.need_listing.status = 'completed'
+    match.have_listing.status = 'completed'
+    
+    # Award points to both!
+    match.need_listing.user.points += 10
+    match.have_listing.user.points += 20  # Donors get more
+    
+    db.session.commit()
+    flash('Resource match completed! Thank you for supporting the community +20 Points.', 'success')
+    return redirect(url_for('lifeline'))
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         init_badges()  # Initialize badges
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True, host='0.0.0.0', port=5001)
+

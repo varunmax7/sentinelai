@@ -1,6 +1,6 @@
 {
-  "name": "MaxAlert AI - Disaster Management",
-  "short_name": "MaxAlert AI",
+  "name": "Sentinel AI - Disaster Management",
+  "short_name": "Sentinel AI",
   "description": "AI-Powered Emergency Response & Incident Management System",
   "start_url": "/",
   "display": "standalone",

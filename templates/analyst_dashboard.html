@@ -64,8 +64,15 @@
     }
 
     @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.4;
+        }
     }
 
     .weather-legend {
@@ -258,12 +265,15 @@
 <div class="main-content-container" id="dashboardContent">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
-            <h2 class="fw-bold mb-0">🧠 Analyst Dashboard</h2>
-            <p class="text-white-50 small mb-0">AI-Powered Disaster Analytics</p>
+            <h2 class="fw-bold mb-0">🧠 {{ translate('analyst_dashboard') }}</h2>
+            <p class="text-white-50 small mb-0">{{ translate('ai_powered_analytics') }}</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-warning btn-sm fw-bold" onclick="sendTestWarning()">Global Alert</button>
-            <button class="btn btn-primary btn-sm fw-bold" id="exportBtn">Export PDF</button>
+            <a href="{{ url_for('simulation') }}" class="btn btn-info btn-sm fw-bold">{{
+                translate('run_risk_simulation') }}</a>
+            <button class="btn btn-warning btn-sm fw-bold" onclick="sendTestWarning()">{{ translate('global_alert')
+                }}</button>
+            <button class="btn btn-primary btn-sm fw-bold" id="exportBtn">{{ translate('export_pdf') }}</button>
         </div>
     </div>
 
@@ -271,26 +281,26 @@
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card stat-card h-100" style="border-color: #0ea5e9;">
-                <label class="text-white-50 small text-uppercase fw-bold">Total Incidents</label>
+                <label class="text-white-50 small text-uppercase fw-bold">{{ translate('total_incidents') }}</label>
                 <div class="h3 fw-bold">{{ total_reports }}</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card stat-card h-100" style="border-color: #10b981;">
-                <label class="text-white-50 small text-uppercase fw-bold">Verification Rate</label>
+                <label class="text-white-50 small text-uppercase fw-bold">{{ translate('verification_rate') }}</label>
                 <div class="h3 fw-bold">{{ "%.1f"|format((approved_reports/total_reports*100) if total_reports > 0 else
                     0) }}%</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card stat-card h-100" style="border-color: #06b6d4;">
-                <label class="text-white-50 small text-uppercase fw-bold">Personnel</label>
+                <label class="text-white-50 small text-uppercase fw-bold">{{ translate('personnel') }}</label>
                 <div class="h3 fw-bold">{{ active_users }}</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card stat-card h-100" style="border-color: #f59e0b;">
-                <label class="text-white-50 small text-uppercase fw-bold">Pending</label>
+                <label class="text-white-50 small text-uppercase fw-bold">{{ translate('pending') }}</label>
                 <div class="h3 fw-bold">{{ pending_reports }}</div>
             </div>
         </div>
@@ -301,7 +311,7 @@
         <div class="col-lg-6">
             <div class="card h-100 overflow-hidden">
                 <div class="card-header border-bottom border-white border-opacity-10 py-2">
-                    <h6 class="m-0 fw-bold">Incident Hotspots Heatmap</h6>
+                    <h6 class="m-0 fw-bold">{{ translate('incident_hotspots') }}</h6>
                 </div>
                 <div class="card-body p-0">
                     <div id="heatmapMap" class="dashboard-map"></div>
@@ -311,7 +321,7 @@
         <div class="col-lg-6">
             <div class="card h-100 overflow-hidden">
                 <div class="card-header border-bottom border-white border-opacity-10 py-2">
-                    <h6 class="m-0 fw-bold">Weather & Early Warnings</h6>
+                    <h6 class="m-0 fw-bold">{{ translate('weather_warnings') }}</h6>
                 </div>
                 <div class="card-body p-0">
                     <div id="warningMap" class="dashboard-map"></div>
@@ -324,7 +334,8 @@
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
             <div class="card p-3 h-100">
-                <h6 class="fw-bold mb-3">Hazard Distribution</h6>
+                <h6 class="fw-bold mb-3">{{ translate('hazard_distribution') if translate('hazard_distribution') !=
+                    'Hazard Distribution' else 'Hazard Distribution' }}</h6>
                 <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
                     <canvas id="hazardDistributionChart"></canvas>
                 </div>
@@ -332,7 +343,7 @@
         </div>
         <div class="col-lg-4">
             <div class="card p-3 h-100">
-                <h6 class="fw-bold mb-3">Incident Velocity</h6>
+                <h6 class="fw-bold mb-3">{{ translate('incident_velocity') }}</h6>
                 <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
                     <canvas id="reportsTimelineChart"></canvas>
                 </div>
@@ -340,7 +351,7 @@
         </div>
         <div class="col-lg-4">
             <div class="card p-3 h-100">
-                <h6 class="fw-bold mb-3">Network Participation</h6>
+                <h6 class="fw-bold mb-3">{{ translate('network_participation') }}</h6>
                 <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
                     <canvas id="userEngagementChart"></canvas>
                 </div>
@@ -350,7 +361,8 @@
 
     <!-- Detail Table -->
     <div class="card p-3 mb-4">
-        <h6 class="fw-bold mb-3 border-bottom border-white border-opacity-10 pb-2">Incident Intelligence Log</h6>
+        <h6 class="fw-bold mb-3 border-bottom border-white border-opacity-10 pb-2">{{
+            translate('incident_intelligence_log') }}</h6>
         <div class="table-responsive">
             <table class="table text-white table-hover small">
                 <thead class="text-white-50">
@@ -382,8 +394,8 @@
         </div>
         {% if reports|length > 10 %}
         <button class="btn btn-outline-info btn-sm mt-2"
-            onclick="document.querySelectorAll('.hidden-reports').forEach(r => r.classList.remove('hidden-reports')); this.remove()">Load
-            More</button>
+            onclick="document.querySelectorAll('.hidden-reports').forEach(r => r.classList.remove('hidden-reports')); this.remove()">{{
+            translate('load_more') }}</button>
         {% endif %}
     </div>
 
@@ -391,25 +403,29 @@
     <div id="globalAlertModal" class="global-alert-modal">
         <div class="global-alert-content">
             <div class="global-alert-header">
-                <h2>🚨 Send Global Alert</h2>
+                <h2>🚨 {{ translate('send_global_alert') if translate('send_global_alert') != 'Send Global Alert' else
+                    'Send Global Alert' }}</h2>
                 <button class="close-btn" onclick="closeAlertModal()">&times;</button>
             </div>
 
             <div class="alert-stats">
                 <div class="alert-stat">
                     <div class="alert-stat-value" id="totalLocations">0</div>
-                    <div class="alert-stat-label">Total Affected Areas</div>
+                    <div class="alert-stat-label">{{ translate('total_affected_areas') if
+                        translate('total_affected_areas') != 'Total Affected Areas' else 'Total Affected Areas' }}</div>
                 </div>
                 <div class="alert-stat">
                     <div class="alert-stat-value" id="selectedLocations">0</div>
-                    <div class="alert-stat-label">Selected Areas</div>
+                    <div class="alert-stat-label">{{ translate('selected_areas') if translate('selected_areas') !=
+                        'Selected Areas' else 'Selected Areas' }}</div>
                 </div>
             </div>
 
             <div class="alert-select-all">
                 <label>
                     <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll()">
-                    Select All Locations
+                    {{ translate('select_all_locations') if translate('select_all_locations') != 'Select All Locations'
+                    else 'Select All Locations' }}
                 </label>
             </div>
 
@@ -418,8 +434,9 @@
             </div>
 
             <div class="alert-actions">
-                <button class="btn-cancel-alert" onclick="closeAlertModal()">Cancel</button>
-                <button class="btn-send-alert" id="sendAlertBtn" onclick="sendSelectedAlert()" disabled>Send Alert</button>
+                <button class="btn-cancel-alert" onclick="closeAlertModal()">{{ translate('cancel') }}</button>
+                <button class="btn-send-alert" id="sendAlertBtn" onclick="sendSelectedAlert()" disabled>{{
+                    translate('send_alert') if translate('send_alert') != 'Send Alert' else 'Send Alert' }}</button>
             </div>
         </div>
     </div>
@@ -428,16 +445,16 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Load Leaflet with multiple fallbacks -->
+<!-- Load Leaflet (single source) -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<!-- Load Plugins -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-    // CRITICAL: Force no-space syntax for template variables
+    // Dashboard data from backend
     const DASHBOARD_DATA = {
         reports: {{ reports | tojson | safe }},
     hazards: {{ hazard_counts | tojson | safe }},
@@ -448,44 +465,76 @@
     users: {
         total: {{ total_users }},
         active: {{ active_users }}
-    }};
+    }
+    };
+
 
     let hMap, wMap;
 
     document.addEventListener('DOMContentLoaded', () => {
-        window.initCharts();
-        setTimeout(window.initMaps, 500);
+        console.log('🚀 Dashboard initializing...');
+        console.log('📊 DASHBOARD_DATA:', DASHBOARD_DATA);
+        console.log('🗺️ Leaflet available:', typeof L !== 'undefined');
+        console.log('📈 Chart.js available:', typeof Chart !== 'undefined');
+
+        try {
+            window.initCharts();
+            console.log('✅ Charts initialized');
+        } catch (error) {
+            console.error('❌ Chart initialization failed:', error);
+        }
+
+        setTimeout(() => {
+            try {
+                window.initMaps();
+                console.log('✅ Maps initialized');
+            } catch (error) {
+                console.error('❌ Map initialization failed:', error);
+            }
+        }, 500);
+
         document.getElementById('exportBtn').onclick = exportDashboard;
     });
 
     window.initMaps = function () {
-        if (!document.getElementById('heatmapMap')) return;
+        console.log('🗺️ initMaps called');
 
-        // Destroy existing if any
-        if (hMap) hMap.remove();
-        if (wMap) wMap.remove();
-
-        hMap = L.map('heatmapMap').setView([20.5, 78.9], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(hMap);
-
-        if (DASHBOARD_DATA.reports && DASHBOARD_DATA.reports.length > 0) {
-            const pts = DASHBOARD_DATA.reports.map(r => [r.latitude, r.longitude, 1.0]);
-            L.heatLayer(pts, { radius: 35, blur: 15, maxOpacity: 0.8 }).addTo(hMap);
-            hMap.fitBounds(L.latLngBounds(pts.map(p => [p[0], p[1]])).pad(0.2));
+        if (!document.getElementById('heatmapMap')) {
+            console.error('❌ heatmapMap element not found');
+            return;
         }
 
-        wMap = L.map('warningMap').setView([20.5, 78.9], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(wMap);
+        if (typeof L === 'undefined') {
+            console.error('❌ Leaflet (L) is not defined - library failed to load');
+            return;
+        }
 
-        // Add live hazard legend
-        const weatherLegend = L.control({ position: 'bottomright' });
-        weatherLegend.onAdd = function() {
-            const div = L.DomUtil.create('div', 'weather-legend');
-            div.innerHTML = `
+        try {
+            if (hMap) hMap.remove();
+            if (wMap) wMap.remove();
+
+            console.log('📍 Creating heatmap...');
+            hMap = L.map('heatmapMap').setView([20.5, 78.9], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(hMap);
+            console.log('✅ Heatmap base created');
+
+            if (DASHBOARD_DATA.reports && DASHBOARD_DATA.reports.length > 0) {
+                const pts = DASHBOARD_DATA.reports.map(r => [r.latitude, r.longitude, 1.0]);
+                L.heatLayer(pts, { radius: 35, blur: 15, maxOpacity: 0.8 }).addTo(hMap);
+                hMap.fitBounds(L.latLngBounds(pts.map(p => [p[0], p[1]])).pad(0.2));
+            }
+
+            wMap = L.map('warningMap').setView([20.5, 78.9], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(wMap);
+
+            const weatherLegend = L.control({ position: 'bottomright' });
+            weatherLegend.onAdd = function () {
+                const div = L.DomUtil.create('div', 'weather-legend');
+                div.innerHTML = `
                 <div style="text-align: center; padding: 8px 12px;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #4ade80;">
                         <div class="live-indicator" style="margin: 0;"></div>
@@ -493,130 +542,115 @@
                     </div>
                 </div>
             `;
-            return div;
-        };
-        weatherLegend.addTo(wMap);
+                return div;
+            };
+            weatherLegend.addTo(wMap);
 
-        // Live hazard data (incidents + weather + govt alerts) update function
-        async function updateLiveWeather() {
-            try {
-                // Clear all existing live markers
-                if (window.weatherMarkers) {
-                    window.weatherMarkers.forEach(marker => wMap.removeLayer(marker));
-                }
-                if (window.hazardHeatLayer) {
-                    wMap.removeLayer(window.hazardHeatLayer);
-                }
-                if (window.hazardMarkers) {
-                    window.hazardMarkers.forEach(marker => wMap.removeLayer(marker));
-                }
-                window.weatherMarkers = [];
-                window.hazardMarkers = [];
-                
-                // Fetch all three data sources in parallel
-                const [weatherResponse, incidentsResponse, govtHazardsResponse] = await Promise.all([
-                    fetch('/api/weather_data'),
-                    fetch('/api/live_hazard_incidents'),
-                    fetch('/api/live_govt_hazards')
-                ]);
-                
-                const weatherData = await weatherResponse.json();
-                const incidentsData = await incidentsResponse.json();
-                const govtHazardsData = await govtHazardsResponse.json();
-                
-                // ===== LAYER 1: Live Incident Heatmap =====
-                if (incidentsData.incidents && incidentsData.incidents.length > 0) {
-                    const heatPoints = incidentsData.incidents.map(incident => {
-                        // Use confidence score as intensity, default to 0.5
-                        const intensity = incident.confidence_score || 0.5;
-                        return [incident.latitude, incident.longitude, intensity];
-                    });
-                    
-                    window.hazardHeatLayer = L.heatLayer(heatPoints, {
-                        radius: 35,
-                        blur: 20,
-                        maxOpacity: 0.8,
-                        maxZoom: 18,
-                        minOpacity: 0.2,
-                        gradient: {
-                            0.0: '#3b82f6',   // Blue - low
-                            0.25: '#06b6d4',  // Cyan
-                            0.5: '#eab308',   // Yellow
-                            0.75: '#f59e0b',  // Orange
-                            1.0: '#ef4444'    // Red - high hotspots
-                        }
-                    });
-                    window.hazardHeatLayer.addTo(wMap);
-                    
-                    // Console log for live updates
-                    console.log(`🔥 Incident Heatmap: ${incidentsData.count} active incidents | Hotspot intensity 0-1`);
-                }
-                
-                // ===== LAYER 2: Weather Data (Temperature & Wind) =====
-                if (weatherData.alerts && weatherData.alerts.length > 0) {
-                    weatherData.alerts.forEach(alert => {
-                        // Temperature circle
-                        const tempColor = alert.temperature > 35 ? '#ef4444' : 
-                                        alert.temperature > 28 ? '#f59e0b' : 
-                                        alert.temperature > 20 ? '#eab308' : '#06b6d4';
-                        const tempRadius = Math.min((alert.temperature / 10), 15);
-                        
-                        const tempMarker = L.circle([alert.latitude, alert.longitude], {
-                            radius: tempRadius * 2000,
-                            color: tempColor,
-                            fillColor: tempColor,
-                            fillOpacity: 0.3,
-                            weight: 2,
-                            className: 'weather-circle'
-                        }).bindPopup(`
+            async function updateLiveWeather() {
+                try {
+                    if (window.weatherMarkers) {
+                        window.weatherMarkers.forEach(marker => wMap.removeLayer(marker));
+                    }
+                    if (window.hazardHeatLayer) {
+                        wMap.removeLayer(window.hazardHeatLayer);
+                    }
+                    if (window.hazardMarkers) {
+                        window.hazardMarkers.forEach(marker => wMap.removeLayer(marker));
+                    }
+                    window.weatherMarkers = [];
+                    window.hazardMarkers = [];
+
+                    const [weatherResponse, incidentsResponse, govtHazardsResponse] = await Promise.all([
+                        fetch('/api/weather_data'),
+                        fetch('/api/live_hazard_incidents'),
+                        fetch('/api/live_govt_hazards')
+                    ]);
+
+                    const weatherData = await weatherResponse.json();
+                    const incidentsData = await incidentsResponse.json();
+                    const govtHazardsData = await govtHazardsResponse.json();
+
+                    if (incidentsData.incidents && incidentsData.incidents.length > 0) {
+                        const heatPoints = incidentsData.incidents.map(incident => {
+                            const intensity = incident.confidence_score || 0.5;
+                            return [incident.latitude, incident.longitude, intensity];
+                        });
+
+                        window.hazardHeatLayer = L.heatLayer(heatPoints, {
+                            radius: 35,
+                            blur: 20,
+                            maxOpacity: 0.8,
+                            maxZoom: 18,
+                            minOpacity: 0.2,
+                            gradient: {
+                                0.0: '#3b82f6',
+                                0.25: '#06b6d4',
+                                0.5: '#eab308',
+                                0.75: '#f59e0b',
+                                1.0: '#ef4444'
+                            }
+                        });
+                        window.hazardHeatLayer.addTo(wMap);
+                    }
+
+                    if (weatherData.alerts && weatherData.alerts.length > 0) {
+                        weatherData.alerts.forEach(alert => {
+                            const tempColor = alert.temperature > 35 ? '#ef4444' :
+                                alert.temperature > 28 ? '#f59e0b' :
+                                    alert.temperature > 20 ? '#eab308' : '#06b6d4';
+                            const tempRadius = Math.min((alert.temperature / 10), 15);
+
+                            const tempMarker = L.circle([alert.latitude, alert.longitude], {
+                                radius: tempRadius * 2000,
+                                color: tempColor,
+                                fillColor: tempColor,
+                                fillOpacity: 0.3,
+                                weight: 2
+                            }).bindPopup(`
                             <b>🌡️ ${alert.city}</b><br>
                             Temperature: ${alert.temperature}°C<br>
                             Humidity: ${alert.humidity}%<br>
                             <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
                         `);
-                        tempMarker.addTo(wMap);
-                        window.weatherMarkers.push(tempMarker);
-                        
-                        // Wind speed circle (dashed)
-                        const windColor = alert.wind_speed > 40 ? '#ef4444' : 
-                                        alert.wind_speed > 25 ? '#f59e0b' : '#10b981';
-                        const windRadius = Math.min((alert.wind_speed / 5), 12);
-                        
-                        const windMarker = L.circle([alert.latitude, alert.longitude], {
-                            radius: windRadius * 2000,
-                            color: windColor,
-                            fillColor: windColor,
-                            fillOpacity: 0.15,
-                            weight: 2,
-                            dashArray: '5, 5',
-                            className: 'wind-circle'
-                        }).bindPopup(`
+                            tempMarker.addTo(wMap);
+                            window.weatherMarkers.push(tempMarker);
+
+                            const windColor = alert.wind_speed > 40 ? '#ef4444' :
+                                alert.wind_speed > 25 ? '#f59e0b' : '#10b981';
+                            const windRadius = Math.min((alert.wind_speed / 5), 12);
+
+                            const windMarker = L.circle([alert.latitude, alert.longitude], {
+                                radius: windRadius * 2000,
+                                color: windColor,
+                                fillColor: windColor,
+                                fillOpacity: 0.15,
+                                weight: 2,
+                                dashArray: '5, 5'
+                            }).bindPopup(`
                             <b>💨 ${alert.city} - Wind</b><br>
                             Speed: ${alert.wind_speed} km/h<br>
                             Direction: ${alert.wind_direction}°<br>
                             <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
                         `);
-                        windMarker.addTo(wMap);
-                        window.weatherMarkers.push(windMarker);
-                    });
-                }
-                
-                // ===== LAYER 3: Government Hazard Alerts =====
-                if (govtHazardsData.hazards && govtHazardsData.hazards.length > 0) {
-                    govtHazardsData.hazards.forEach(hazard => {
-                        const hazardColor = hazard.severity === 'critical' ? '#dc2626' : 
-                                          hazard.severity === 'high' ? '#ea580c' : 
-                                          hazard.severity === 'medium' ? '#f59e0b' : '#06b6d4';
-                        
-                        const hazardMarker = L.circle([hazard.latitude, hazard.longitude], {
-                            radius: hazard.radius * 1000,
-                            color: hazardColor,
-                            fillColor: hazardColor,
-                            fillOpacity: 0.15,
-                            weight: 3,
-                            dashArray: '10, 5',
-                            className: 'govt-hazard-circle'
-                        }).bindPopup(`
+                            windMarker.addTo(wMap);
+                            window.weatherMarkers.push(windMarker);
+                        });
+                    }
+
+                    if (govtHazardsData.hazards && govtHazardsData.hazards.length > 0) {
+                        govtHazardsData.hazards.forEach(hazard => {
+                            const hazardColor = hazard.severity === 'critical' ? '#dc2626' :
+                                hazard.severity === 'high' ? '#ea580c' :
+                                    hazard.severity === 'medium' ? '#f59e0b' : '#06b6d4';
+
+                            const hazardMarker = L.circle([hazard.latitude, hazard.longitude], {
+                                radius: hazard.radius * 1000,
+                                color: hazardColor,
+                                fillColor: hazardColor,
+                                fillOpacity: 0.15,
+                                weight: 3,
+                                dashArray: '10, 5'
+                            }).bindPopup(`
                             <b>⚠️ ${hazard.type}</b><br>
                             Severity: <strong>${hazard.severity.toUpperCase()}</strong><br>
                             Alert Level: ${hazard.alert_level}<br>
@@ -624,94 +658,108 @@
                             Source: ${hazard.source}<br>
                             <small>Updated: ${new Date(hazard.timestamp).toLocaleTimeString()}</small>
                         `);
-                        hazardMarker.addTo(wMap);
-                        window.hazardMarkers.push(hazardMarker);
-                    });
+                            hazardMarker.addTo(wMap);
+                            window.hazardMarkers.push(hazardMarker);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching live hazard data:', error);
                 }
-                
-                // Log update status
-                const totalIncidents = incidentsData.count || 0;
-                const totalHazards = govtHazardsData.count || 0;
-                const weatherCount = weatherData.count || 0;
-                console.log(`📊 Live Hazard Map Updated: ${totalIncidents} incidents | ${weatherCount} weather stations | ${totalHazards} govt hazards | ${new Date().toLocaleTimeString()}`);
-                
-            } catch (error) {
-                console.error('Error fetching live hazard data:', error);
             }
+
+            updateLiveWeather();
+            window.weatherUpdateInterval = setInterval(updateLiveWeather, 1000);
+
+            fetch('/api/weather_warnings')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const circles = data.map(w => L.circle([w.latitude, w.longitude], {
+                            radius: w.radius * 1000,
+                            color: w.severity === 'high' ? '#ef4444' : '#f59e0b',
+                            fillOpacity: 0.2
+                        }).bindPopup(`<b>${w.type} Alert</b>`));
+                        const group = L.featureGroup(circles).addTo(wMap);
+                        wMap.fitBounds(group.getBounds().pad(0.2));
+                    }
+                });
+
+            setTimeout(() => {
+                if (hMap) hMap.invalidateSize();
+                if (wMap) wMap.invalidateSize();
+            }, 1000);
+        } catch (error) {
+            console.error('❌ Map initialization error:', error);
         }
-
-        // Initial update and then every second
-        updateLiveWeather();
-        window.weatherUpdateInterval = setInterval(updateLiveWeather, 1000);
-
-        // Add weather warnings
-        fetch('/api/weather_warnings')
-            .then(r => r.json())
-            .then(data => {
-                if (data && data.length > 0) {
-                    const circles = data.map(w => L.circle([w.latitude, w.longitude], {
-                        radius: w.radius * 1000,
-                        color: w.severity === 'high' ? '#ef4444' : '#f59e0b',
-                        fillOpacity: 0.2
-                    }).bindPopup(`<b>${w.type} Alert</b>`));
-                    const group = L.featureGroup(circles).addTo(wMap);
-                    wMap.fitBounds(group.getBounds().pad(0.2));
-                }});
-
-        setTimeout(() => {
-            hMap.invalidateSize();
-            wMap.invalidateSize();
-        }, 300);
     };
 
     window.initCharts = function () {
-        const cfg = (type, labels, data, colors) => ({
-            type: type,
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'rgba(255,255,255,0.1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: '#fff', font: { size: 10 }} }},
-                scales: type === 'line' || type === 'bar' ? {
-                    x: { ticks: { color: '#fff' }, grid: { display: false }},
-                    y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.05)' }}
-                } : {}}
-        });
+        console.log('📈 initCharts called');
 
-        if (document.getElementById('hazardDistributionChart')) {
-            new Chart(document.getElementById('hazardDistributionChart'), cfg('pie',
-                Object.keys(DASHBOARD_DATA.hazards),
-                Object.values(DASHBOARD_DATA.hazards),
-                ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
-            ));
+        if (typeof Chart === 'undefined') {
+            console.error('❌ Chart.js is not defined - library failed to load');
+            return;
         }
 
-        if (document.getElementById('reportsTimelineChart')) {
-            const chart = new Chart(document.getElementById('reportsTimelineChart'), cfg('line',
-                DASHBOARD_DATA.timeline.labels,
-                DASHBOARD_DATA.timeline.data,
-                'rgba(14, 165, 233, 0.2)'
-            ));
-            chart.data.datasets[0].borderColor = '#0ea5e9';
-            chart.data.datasets[0].fill = true;
-            chart.update();
-        }
+        try {
+            const cfg = (type, labels, data, colors) => ({
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff', font: { size: 10 }} }},
+                    scales: type === 'line' || type === 'bar' ? {
+                        x: { ticks: { color: '#fff' }, grid: { display: false }},
+                        y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.05)' }}
+                    } : {}
+                }
+            });
 
-        if (document.getElementById('userEngagementChart')) {
-            new Chart(document.getElementById('userEngagementChart'), cfg('bar',
-                ['Total Users', 'Active Users'],
-                [DASHBOARD_DATA.users.total, DASHBOARD_DATA.users.active],
-                ['#0ea5e9', '#10b981']
-            ));
-        }};
+            if (document.getElementById('hazardDistributionChart')) {
+                console.log('📊 Creating hazard distribution chart...');
+                new Chart(document.getElementById('hazardDistributionChart'), cfg('pie',
+                    Object.keys(DASHBOARD_DATA.hazards),
+                    Object.values(DASHBOARD_DATA.hazards),
+                    ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                ));
+                console.log('✅ Hazard distribution chart created');
+            }
+
+            if (document.getElementById('reportsTimelineChart')) {
+                console.log('📊 Creating reports timeline chart...');
+                const chart = new Chart(document.getElementById('reportsTimelineChart'), cfg('line',
+                    DASHBOARD_DATA.timeline.labels,
+                    DASHBOARD_DATA.timeline.data,
+                    'rgba(14, 165, 233, 0.2)'
+                ));
+                chart.data.datasets[0].borderColor = '#0ea5e9';
+                chart.data.datasets[0].fill = true;
+                chart.update();
+                console.log('✅ Reports timeline chart created');
+            }
+
+            if (document.getElementById('userEngagementChart')) {
+                console.log('📊 Creating user engagement chart...');
+                new Chart(document.getElementById('userEngagementChart'), cfg('bar',
+                    ['Total Users', 'Active Users'],
+                    [DASHBOARD_DATA.users.total, DASHBOARD_DATA.users.active],
+                    ['#0ea5e9', '#10b981']
+                ));
+                console.log('✅ User engagement chart created');
+            }
+        } catch (error) {
+            console.error('❌ Chart initialization error:', error);
+        }
+    };
 
     function exportDashboard() {
         html2canvas(document.getElementById('dashboardContent'), { scale: 1 }).then(canvas => {
@@ -722,14 +770,12 @@
     }
 
     function sendTestWarning() {
-        // Fetch live incident data to show affected areas
         Promise.all([
             fetch('/api/live_hazard_incidents').then(r => r.json()),
             fetch('/api/live_govt_hazards').then(r => r.json())
         ]).then(([incidents, hazards]) => {
             const allAffectedAreas = [];
-            
-            // Add incidents
+
             if (incidents.incidents && incidents.incidents.length > 0) {
                 incidents.incidents.forEach(incident => {
                     allAffectedAreas.push({
@@ -741,12 +787,12 @@
                         longitude: incident.longitude,
                         author: incident.author,
                         priority: incident.priority,
+                        description: incident.description || 'No description provided',
                         icon: '🔴'
                     });
                 });
             }
-            
-            // Add government hazards
+
             if (hazards.hazards && hazards.hazards.length > 0) {
                 hazards.hazards.forEach(hazard => {
                     allAffectedAreas.push({
@@ -762,32 +808,25 @@
                     });
                 });
             }
-            
-            // Populate modal with areas
+
             populateAlertLocations(allAffectedAreas);
-            
-            // Open modal
             document.getElementById('globalAlertModal').style.display = 'flex';
         });
     }
-    
+
     function populateAlertLocations(locations) {
         const listContainer = document.getElementById('alertLocationsList');
         const totalLocationsEl = document.getElementById('totalLocations');
         const selectedLocationsEl = document.getElementById('selectedLocations');
-        
-        // Store locations for later use
+
         window.availableLocations = locations;
         window.selectedLocationIds = new Set();
-        
-        // Update total count
+
         totalLocationsEl.textContent = locations.length;
         selectedLocationsEl.textContent = '0';
-        
-        // Clear existing items
+
         listContainer.innerHTML = '';
-        
-        // Add location items
+
         locations.forEach((location, index) => {
             const item = document.createElement('div');
             item.className = 'alert-location-item';
@@ -813,29 +852,29 @@
             listContainer.appendChild(item);
         });
     }
-    
+
     function updateLocationSelection(checkbox, locationId) {
         const selectedLocationsEl = document.getElementById('selectedLocations');
         const sendBtn = document.getElementById('sendAlertBtn');
-        
+
         if (checkbox.checked) {
             window.selectedLocationIds.add(locationId);
         } else {
             window.selectedLocationIds.delete(locationId);
         }
-        
+
         selectedLocationsEl.textContent = window.selectedLocationIds.size;
         sendBtn.disabled = window.selectedLocationIds.size === 0;
     }
-    
+
     function toggleSelectAll() {
         const checkboxes = document.querySelectorAll('#alertLocationsList input[type="checkbox"]');
         const selectAllChk = document.getElementById('selectAllChk');
         const selectedLocationsEl = document.getElementById('selectedLocations');
         const sendBtn = document.getElementById('sendAlertBtn');
-        
+
         window.selectedLocationIds.clear();
-        
+
         checkboxes.forEach(chk => {
             chk.checked = selectAllChk.checked;
             if (selectAllChk.checked && window.availableLocations) {
@@ -843,24 +882,23 @@
                 window.selectedLocationIds.add(locationId);
             }
         });
-        
+
         selectedLocationsEl.textContent = window.selectedLocationIds.size;
         sendBtn.disabled = window.selectedLocationIds.size === 0;
     }
-    
+
     function closeAlertModal() {
         document.getElementById('globalAlertModal').style.display = 'none';
         document.getElementById('selectAllChk').checked = false;
         window.selectedLocationIds.clear();
     }
-    
+
     function sendSelectedAlert() {
         if (window.selectedLocationIds.size === 0) {
             alert('Please select at least one location');
             return;
         }
-        
-        // Prepare affected locations
+
         const affectedLocations = Array.from(window.selectedLocationIds)
             .map(id => window.availableLocations.find(loc => loc.id === id))
             .filter(loc => loc)
@@ -868,28 +906,34 @@
                 latitude: loc.latitude,
                 longitude: loc.longitude,
                 name: loc.name,
-                type: loc.type
+                type: loc.type,
+                hazard_type: loc.hazard_type || loc.type,
+                severity: loc.severity || loc.priority || 'medium',
+                radius: loc.radius || 5,
+                description: loc.description || 'No description available'
             }));
-        
-        // Send alert
+
+        const hazardTypes = [...new Set(affectedLocations.map(l => l.hazard_type))];
+        const detailedMessage = `URGENT: ${hazardTypes.join(', ')} alert for ${affectedLocations.length} affected area(s)`;
+
         fetch('/send_global_alert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 affected_locations: affectedLocations,
-                message: `Alert broadcast for ${affectedLocations.length} affected area(s)`
+                message: detailedMessage
             })
         })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(`✅ Global Alert Sent!\n• Affected Areas: ${data.locations_count}\n• Users Alerted: ${data.users_alerted}`);
-                closeAlertModal();
-            } else {
-                alert(`❌ Error: ${data.error}`);
-            }
-        })
-        .catch(err => alert(`Error: ${err.message}`));
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ Global Alert Sent!\n• Affected Areas: ${data.locations_count}\n• Users Alerted: ${data.users_alerted}`);
+                    closeAlertModal();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            })
+            .catch(err => alert(`Error: ${err.message}`));
     }
 </script>
 

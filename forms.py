@@ -708,3 +708,41 @@ class EmergencyExportForm(MultilingualForm):
             ]
         except ImportError:
             pass
+class CommunityEventForm(FlaskForm):
+    title = StringField('Event Title', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    event_type = SelectField('Event Type', choices=[
+        ('disaster_prep', 'Disaster Prep (e.g., Sandbag filling)'),
+        ('environment', 'Environment (e.g., Beach cleanup)'),
+        ('social', 'Social (e.g., Food distribution)')
+    ], validators=[DataRequired()])
+    location = StringField('Location', validators=[DataRequired()])
+    latitude = FloatField('Latitude', validators=[Optional()])
+    longitude = FloatField('Longitude', validators=[Optional()])
+    # HTML5 datetime-local returns YYYY-MM-DDTHH:MM
+    date_time = DateTimeField('Date & Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    image = FileField('Event Image', validators=[FileAllowed(['jpg', 'jpeg', 'png'])])
+    submit = SubmitField('Create Event')
+
+class ResourceListingForm(FlaskForm):
+    listing_type = SelectField('Listing Type', choices=[
+        ('have', 'Donor (I Have Spare Resources)'),
+        ('need', 'Requester (I Need Help/Resources)')
+    ], validators=[DataRequired()])
+    category = SelectField('Category', choices=[
+        ('medical', 'Medical (Medicine, First Aid, Insulin)'),
+        ('food', 'Food (Meals, Baby Formula, Dry Fruits)'),
+        ('water', 'Water (Drinking Water, Filtration)'),
+        ('shelter', 'Shelter (Blankets, Tents, Sleeping Bags)'),
+        ('gear', 'Gear (Generator, Flashlights, Batteries)'),
+        ('transport', 'Transport (Boat, 4x4 Vehicle, Drone)'),
+        ('other', 'Other')
+    ], validators=[DataRequired()])
+    title = StringField('Resource Title', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    quantity = StringField('Quantity', validators=[Optional()])
+    location = StringField('Location', validators=[DataRequired()])
+    latitude = FloatField('Latitude', validators=[DataRequired()])
+    longitude = FloatField('Longitude', validators=[DataRequired()])
+    urgent = BooleanField('Critical / Urgent')
+    submit = SubmitField('Post to LifeLine')

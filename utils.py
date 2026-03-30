@@ -52,9 +52,11 @@ def send_whatsapp_message(to_number, message_body, media_url=None):
         
         if media_url:
             message_args['media_url'] = [media_url]
+            print(f"🖼️ Attached media URL: {media_url}")
             
+        print(f"📤 Attempting to send WhatsApp to {to_number}...")
         message = client.messages.create(**message_args)
-        print(f"✅ WhatsApp message sent to {to_number}: SID {message.sid}")
+        print(f"✅ WhatsApp message sent to {to_number}: SID {message.sid}, Status: {message.status}")
         return message.sid
     except Exception as e:
         print(f"❌ WhatsApp message failed to {to_number}: {e}")
@@ -544,6 +546,9 @@ def _validate_heatmap_match(report, heatmap_data=None):
         time_window = timedelta(hours=24)
         location_threshold = 0.05  # ~5.5 km
         
+        if report.latitude is None or report.longitude is None:
+            return {'score': 0.50, 'analysis': 'Heatmap unavailable: No coordinates provided'}
+        
         similar_hazards = Report.query.filter(
             Report.id != report.id,
             Report.hazard_type == report.hazard_type,
@@ -585,6 +590,9 @@ def _validate_climate_alignment(report, weather_data=None):
         # Get live weather data from Open-Meteo API for report location
         lat, lon = report.latitude, report.longitude
         
+        if lat is None or lon is None:
+            return {'score': 0.50, 'analysis': 'Climate data unavailable: No coordinates provided'}
+            
         weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m"
         
         try:

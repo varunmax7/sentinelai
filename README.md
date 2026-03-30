@@ -1,844 +1,627 @@
-# 🛡️ MaxAlert AI - Next-Gen Disaster Management Platform
+# 🛡️ Sentinel AI — Intelligent Disaster Management Platform
 
 <div align="center">
 
-![MaxAlert AI Banner](https://img.shields.io/badge/MaxAlert_AI-Protecting_Communities-2196F3?style=for-the-badge&logo=shield&logoColor=white)
-<br>
-![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-2.3.5-000000?style=for-the-badge&logo=flask&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![Mapbox](https://img.shields.io/badge/Mapbox-Integration-4264fb?style=for-the-badge&logo=mapbox&logoColor=white)
-![Twilio](https://img.shields.io/badge/Twilio-WhatsApp_API-F22F46?style=for-the-badge&logo=twilio&logoColor=white)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-2.3+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![SQLite](https://img.shields.io/badge/SQLite%20%2F%20PostgreSQL-Ready-003B57?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Twilio](https://img.shields.io/badge/Twilio-WhatsApp_API-F22F46?style=for-the-badge&logo=twilio&logoColor=white)](https://twilio.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-**A comprehensive, AI-powered disaster management system designed to protect coastal communities through real-time reporting, automated coordination, and intelligent analysis.**
+**An enterprise-grade, AI-powered disaster response platform built for India's coastal communities.**  
+*Turning fragmented, reactive crisis management into a proactive, automated, and intelligent command system.*
 
-[Features](#-features) • [Architecture](#%EF%B8%8F-system-architecture) • [Getting Started](#-getting-started) • [WhatsApp Bot](#-whatsapp-integration) • [Impact](#-project-impact)
+[Problem Statement](#-the-problem) • [Why Sentinel AI?](#-why-this-stands-out-vs-existing-platforms) • [Features](#-features) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [API Reference](#-api-reference) • [WhatsApp Bot](#-whatsapp-bot) • [Database Schema](#-database-schema)
 
 </div>
 
 ---
 
-## 📖 Overview
+## 🌊 The Problem
 
-**MaxAlert AI** is an enterprise-grade disaster response platform that bridges the gap between citizens, volunteers, and official coordinators. It replaces manual, fragmented communication with an automated, AI-driven command center.
+India has **7,516 km of coastline** with over **170 million people** living in low-lying areas vulnerable to cyclones, floods, storm surges, and tsunamis. Traditional disaster response in these regions suffers from systemic failures:
 
-### 🎯 Core Mission
-To reduce response times during coastal hazards (cyclones, floods, tsunamis) from hours to minutes by automating the flow of information between those in danger and those who can help.
+- **Fragmented communication** — citizens call helplines, officials check social media, volunteers wait for orders. There is no unified channel.
+- **Slow verification** — a field report of rising floodwater takes hours to be manually confirmed by authorities, delaying response.
+- **Inefficient volunteer dispatch** — coordinators manually phone or message volunteers one by one, losing precious minutes.
+- **Language barriers** — critical alerts reaching local fishermen or coastal residents in non-native languages are often ignored.
+- **Zero predictive capabilities** — agencies react to disasters rather than simulating impacts ahead of time based on climate data.
+
+**The result:** Response times measured in hours. Lives and resources lost that could have been saved.
+
+---
+
+## ⚡ Why This Stands Out vs Existing Platforms
+
+Most existing disaster management systems (like standard NDMA portals or generic SOS apps) act merely as static information boards or one-way alert broadcasters. **Sentinel AI** acts as an autonomous nervous system for crisis management.
+
+| Feature Area | Traditional Platforms | 🛡️ Sentinel AI |
+|--------------|-----------------------|----------------|
+| **Response Speed** | Manual verification (takes hours) | **Sub-second AI Validation** (3-parameter checking algorithm) |
+| **Accessibility** | Requires app downloads, English-first | **No-install PWA + WhatsApp integration + Voice SOS.** Auto-translates to 6 regional languages via GPS. |
+| **Volunteer Logistics** | Manual phone trees, chaotic WhatsApp groups | **"Uber-style" Auto-Dispatch.** Finds available responders within a 10km radius dynamically matching skills via WhatsApp bot. |
+| **Alerting Precision** | Mass SMS blasts (causes panic & alert fatigue) | **Smart Geo-Fencing**. Alerts only hit users strictly within the hazard's specific impact radius based on severity. |
+| **Resource Supply Chain**| Top-down government handouts only | **LifeLine P2P Marketplace.** Decentralized local networking to match resource Donors with Requesters in real time. |
+| **Predictive Power** | Reactive (post-disaster mapping) | **PS-4.9 Risk Simulator.** Simulates localized climate hazards based on live metrics, predicting infrastructural stress before it happens. |
+
+By collapsing reporting, verification, dispatch, and resource matching into a single autonomous pipeline, a process that used to take dozens of phone calls now takes **minutes**.
 
 ---
 
 ## ✨ Features
 
-### 🚨 1. Crowdsourced Intelligence & AI Verification
-- **Reporting System**: Citizens can report hazards (floods, storm surges) with geotagged photos/videos.
-- **3-Parameter Accuracy System™**: Every report is automatically validated using:
-    1.  **Heatmap Density**: Checks for corroborating reports in the same radius.
-    2.  **Live Weather Data**: Cross-references with real-time Open-Meteo API data (wind speed, rain, pressure).
-    3.  **User Quality Score**: Weighs report credibility based on user's history and role (Official/Volunteer/New User).
-- **Auto-Verification**: High-confidence reports (>85%) are automatically verified and trigger alerts immediately.
+### 🚨 1. Voice SOS & Crowdsourced Reporting
+* **One-Tap Audio SOS**: Citizens can simply speak into their phones. The system uses natural language processing (NLP) to extract transcripts, identify keywords (e.g., "stuck," "water rising"), automatically categorize the hazard, and elevate priority to 'Critical'.
+* **Standard Reporting**: Fast manual reporting via PWA.
+* **AI Verification Engine**: Every report is instantly scored by the **3-Parameter Accuracy System™**:
+  - **Heatmap Match (33%)**: Cross-references spatial density of similar reports in a 5.5km radius over 24 hours.
+  - **Climate Alignment (33%)**: Queries Open-Meteo API to ensure live weather conditions (wind speed, humidity, etc.) mathematically support the claimed hazard.
+  - **User Quality Score (34%)**: Evaluates the historical credibility of the reporter based on past approval rates and account tier.
+* **Auto-Approval**: Reports scoring **≥ 85%** bypass human review, instantly triggering downstream alerts and volunteer dispatches.
 
-### 🤝 2. Automated Volunteer Dispatch (Uber-like for Rescue)
-- **Smart Assignment**: Automatically identifies volunteers within **10km** of a verified hazard.
-- **WhatsApp Integration**: Sends instant deployment requests to volunteers via WhatsApp.
-    - **Alert**: Sends hazard details + photo first.
-    - **Action**: Follows up with "Reply 1 to Accept, 2 to Reject".
-- **Live Tracking**: Volunteers accept missions, and coordinators track their status (Accepted -> En Route -> Completed).
-- **Rescue Completion**: Volunteers upload proof-of-work photos to close tickets and earn points.
+### 🤝 2. Automated Volunteer Dispatch (Uber-Style Rescue)
+Once a hazard is verified, the system's logistics engine takes over:
+1. Queries database for registered, available volunteers strictly within a **10 km radius**.
+2. Fires a **WhatsApp interactive message** (via Twilio) detailing hazard severity, coordinates, and photo evidence.
+3. Volunteers reply "1" to Accept or "2" to Decline directly within WhatsApp.
+4. Dashboard updates live for officials (Pending → Accepted → En Route → Completed).
+5. Post-rescue, volunteers upload photographic proof to close the ticket and receive gamified rank points.
 
-### 🌍 3. Live Hazard Mapping & Analytics
-- **Dynamic Heatmaps**: Visualizes danger zones using interactive Leaflet.js maps.
-- **Weather Overlays**: Integrates live precipitation and wind layers from RainViewer.
-- **Trend Analysis**: Dashboards for analysts to view reporting trends over time (Last 24h, 7 Days, Month).
+### 🌍 3. Live Hazard Map, Simulator & Analytics
+- **Live Spatial Dashboards**: Leaflet.js heatmaps overlaid with real-time RainViewer weather radar layers.
+- **PS-4.9 Risk Simulator**: A deterministic modeling tool for analysts. Input impending rainfall (mm) and sea-level anomalies; the AI predicts sectoral infrastructure damage (Power, Water, Telecom, Housing) and outputs an actionable evacuation priority.
+- **Urban Resilience Index (URI)**: A dynamic, rolling score per geographic zone calculated from response times, hazard frequency, and community eco-activity density.
 
-### ♻️ 4. Eco-Sustainability Tracker
-- **Gamification**: Users earn points for plastic reduction and carbon-saving activities.
-- **AI Validation**: Uploaded eco-activity photos are analyzed by AI to verify authenticity before awarding points.
-- **Leaderboards**: Monthly rankings to incentivize community participation in sustainability.
+### 📢 4. Smart Geo-fenced Multi-channel Alerts
+Prevents alert fatigue. If a Storm Surge is detected, the system sends push notifications and WhatsApp alerts strictly to users whose saved Home Locations fall within a scaled radius (e.g., 15km for storm surge, 2km for swell surge) rather than spamming entire states.
 
-### 📢 5. Multi-Channel Alerting
-- **Geo-Fenced Alerts**: Push notifications sent ONLY to users within the affected radius of a hazard.
-- **Multilingual Support**: Full UI available in **6 Indian Languages** (English, Tamil, Hindi, Telugu, Malayalam, Kannada), auto-detected by user location.
+### 🌐 5. Auto-detected Multilingual Interface
+Using an algorithmic map of Indian coastal linguistic boundaries, the PWA auto-loads the correct language (English, Tamil, Malayalam, Telugu, Kannada, Hindi) based on the user's GPS coordinates upon first load. Supports manual toggling as well.
+
+### 🛰️ 6. LifeLine — P2P Emergency Resource Marketplace
+When supply chains break down, communities survive together.
+- **SafeLink™ Matching Engine**: Users list what they need (insulin, boats, blankets) or what they have. The algorithm auto-pairs Donors with Requesters based on proximity.
+- **Visual Mapping**: Glowing connection lines appear on the LifeLine map to visualize successful supply handoffs natively.
+
+### ♻️ 7. Eco-Sustainability Tracker (Mitigation & Gamification)
+Building resilience before disaster strikes. Users log eco-friendly behaviors (plastic reduction, public transit, tree planting) to earn points and level up (Eco Beginner → Climate Hero). Activities are optionally photo-verified by AI, converting efforts into estimated kilograms of CO2 saved. Includes leaderboards and badges.
+
+### 🏛️ 8. Government-NGO Coordination Platform
+A centralized command sector restricted to `official` and `agency` roles:
+- **Agency Registry**: Register specific government departments and NGOs.
+- **Resource Allocation Ledger**: Track exact quantities of medical/food supplies sent from distinct agencies to specific emergency checkpoints (Allocated → Deployed → Used → Returned).
+- **SITREPs**: Formal situation reports mapped against ongoing emergency events.
 
 ---
 
-## 🛠️ System Architecture
+## 🏗️ System Architecture
 
-### Backend
-- **Framework**: Flask (Python) factory pattern application.
-- **Database**: SQLAlchemy ORM (SQLite for Dev, PostgreSQL ready for Prod).
-- **Task Queue**: APScheduler for background jobs (weather fetching, cleanup).
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      BROWSER / PWA CLIENT                       │
+│                                                                 │
+│  Bootstrap 5 · Vanilla CSS (Glassmorphism) · Leaflet.js         │
+│  Service Worker · Web App Manifest (Add-to-Homescreen)          │
+│  Language: Auto-detected by GPS · Polling every 5s              │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS
+                           │
+┌──────────────────────────▼──────────────────────────────────────┐
+│                     FLASK APPLICATION                           │
+│                  (Factory Pattern · Port 5001)                  │
+│                                                                 │
+│  ┌───────────────┐ ┌────────────────┐ ┌─────────────────────┐  │
+│  │ Report Engine │ │Volunteer Engine│ │  WhatsApp Handler   │  │
+│  │ 3-Param AI    │ │ Auto-Dispatch  │ │  Twilio Webhooks    │  │
+│  │ Geo-Alerts    │ │ 10km Geo-Query │ │  Multi-step Session │  │
+│  └───────┬───────┘ └───────┬────────┘ └──────────┬──────────┘  │
+│          │                 │                     │             │
+│  ┌───────▼─────────────────▼─────────────────────▼──────────┐  │
+│  │                SQLAlchemy ORM                             │  │
+│  │                                                           │  │
+│  │  sqlite:///site.db  (dev)                                 │  │
+│  │  postgresql://...   (production)                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              APScheduler Background Jobs                 │   │
+│  │  • Scheduled DB cleanup                                  │   │
+│  │  • Weather data pre-fetching                             │   │
+│  │  • Alert expiry processing                               │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└────────────────────┬─────────────────────────────────────────── ┘
+                     │
+         ┌───────────┴────────────┐
+         │                        │
+┌────────▼──────────┐  ┌──────────▼─────────────────────────────┐
+│   Twilio API      │  │         Open-Meteo API (Free)           │
+│                   │  │                                         │
+│ WhatsApp messages │  │ GET /v1/forecast?latitude=...           │
+│ Inbound webhooks  │  │ temperature_2m · humidity_2m            │
+│ Media attachments │  │ wind_speed_10m · weather_code           │
+└───────────────────┘  └─────────────────────────────────────────┘
+```
 
-### Integrations
-- **Twilio**: WhatsApp Business API for bi-directional communication.
-- **Open-Meteo**: Hyper-local historical and forecast weather data.
-- **RainViewer**: Satellite/Radar map layers.
-- **Ngrok**: Secure entry point for public webhooks and mobile access.
+---
 
-### Frontend
-- **Design**: Bootstrap 5 + Custom CSS (Glassmorphism UI).
-- **Maps**: Leaflet.js with custom marker clustering.
-- **PWA**: Progressive Web App manifest for "Add to Home Screen" capability on mobile.
+## 📁 Project Structure
+
+```
+disaster_management/
+│
+├── app.py              # Main Flask application — all routes, business logic,
+│                       # WhatsApp bot handler, background scheduler jobs,
+│                       # multilingual translation tables, and AI analytics
+│
+├── models.py           # SQLAlchemy ORM models (15 tables — see schema below)
+│
+├── forms.py            # WTForms definitions for all user-facing forms
+│                       # (registration, reporting, coordination, eco-tracking, etc.)
+│
+├── utils.py            # Core utility library:
+│                       # - 3-Parameter AI validation engine
+│                       # - Haversine distance calculator
+│                       # - WhatsApp/Twilio message sender
+│                       # - Geo-fenced alert logic
+│                       # - Carbon savings calculator
+│                       # - Eco-activity point system
+│
+├── translations.py     # Extended multilingual string tables (6 languages)
+│
+├── config.py           # Environment-aware Flask configuration
+│
+├── requirements.txt    # Python dependencies
+├── Procfile            # Heroku/Render deployment entry point
+├── start_system.sh     # Helper script to start app + tunnel
+├── setup_whatsapp.sh   # WhatsApp Twilio sandbox setup helper
+│
+├── static/
+│   ├── css/style.css   # Global stylesheet (glassmorphism, animations)
+│   ├── js/script.js    # Core frontend JS (maps, notifications, polling)
+│   ├── js/pwa.js       # Progressive Web App registration
+│   ├── sw.js           # Service Worker (offline caching)
+│   ├── manifest.json   # PWA manifest (icons, display mode)
+│   ├── icons/          # PWA app icons (various sizes)
+│   └── uploads/        # User-uploaded photos and videos
+│
+├── templates/          # Jinja2 HTML templates
+│   ├── base.html           # Global layout: navbar, notification bell,
+│   │                       # real-time polling JS, toast notifications
+│   ├── home.html           # Landing page + live report feed
+│   ├── report.html         # Hazard submission form
+│   ├── dashboard.html      # Analytics dashboard
+│   ├── lifeline_map.html   # LifeLine P2P resource map
+│   ├── coordination.html   # Coordinator command center
+│   ├── volunteer_management.html
+│   ├── situation_reports.html
+│   ├── notifications.html
+│   └── ...                 # 30+ additional templates
+│
+├── migrations/         # Flask-Migrate Alembic database migrations
+└── instance/           # SQLite database file (gitignored)
+```
+
+---
+
+## 🗄️ Database Schema
+
+The application uses **15 database tables** managed via SQLAlchemy + Flask-Migrate:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         CORE MODELS                                 │
+├──────────────────┬──────────────────────────────────────────────────┤
+│ User             │ id · username · email · password_hash · role      │
+│                  │ points · level · language · home_lat/lon          │
+│                  │ whatsapp_number · whatsapp_session (multi-step)   │
+│                  │ alert_preferences (JSON) · push_token             │
+├──────────────────┼──────────────────────────────────────────────────┤
+│ Report           │ id · title · description · hazard_type · location │
+│                  │ latitude · longitude · image_file · video_file    │
+│                  │ confidence_score · ai_analysis                    │
+│                  │ verification_status (pending/approved/rejected)   │
+│                  │ priority · status · alert_radius · alert_sent     │
+│                  │ likes_count · comments_count · views_count        │
+├──────────────────┼──────────────────────────────────────────────────┤
+│ Notification     │ id · user_id · message · report_id · assignment_id│
+│                  │ is_read · is_alert · created_at · expires_at      │
+├──────────────────┼──────────────────────────────────────────────────┤
+│ Like             │ id · user_id · report_id (unique constraint)      │
+│ Comment          │ id · user_id · report_id · text · timestamp       │
+│ LocalApproval    │ id · user_id · report_id (crowd-verification)     │
+│ ReportView       │ id · user_id · report_id (unique view tracking)   │
+│ Badge / UserBadge│ Achievement system                                │
+│ followers        │ Association table (follower_id · followed_id)     │
+└──────────────────┴──────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                    COORDINATION MODELS                              │
+├──────────────────┬──────────────────────────────────────────────────┤
+│ Agency           │ Government / NGO registry                        │
+│ EmergencyEvent   │ Formal incident creation by officials            │
+│ ResourceAlloc.   │ Agency resource → event allocation tracking      │
+│ Volunteer        │ Volunteer profile (skills, availability, location)│
+│ VolunteerAssign. │ Assignment lifecycle: pending→accepted→completed  │
+│                  │ + completion_photo + points_earned               │
+│ SituationReport  │ Structured field reports (SITREPs) by officials  │
+└──────────────────┴──────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│               SUSTAINABILITY & COMMUNITY MODELS                     │
+├──────────────────┬──────────────────────────────────────────────────┤
+│ PlasticUsage     │ Plastic reduction log with AI verification score  │
+│ CarbonSavings    │ General eco-activity carbon offset records        │
+│ CommunityEvent   │ Disaster-prep / environmental meetups            │
+│ EventParticipant │ User ↔ CommunityEvent participation tracking     │
+└──────────────────┴──────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                    LIFELINE P2P MODELS                              │
+├──────────────────┬──────────────────────────────────────────────────┤
+│ ResourceListing  │ Have / Need listings (food, water, medical, etc.) │
+│ ResourceMatch    │ SafeLink™ — matching a "need" to a "have"        │
+└──────────────────┴──────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│              URBAN RESILIENCE INDEX (URI) MODELS                    │
+├──────────────────┬──────────────────────────────────────────────────┤
+│ ResilienceZone   │ Geographic grid zones for scoring                │
+│ ResilienceScore  │ Historical 0–100 URI scores per zone+period      │
+└──────────────────┴──────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.9+
-- Twilio Account (for WhatsApp)
-- Ngrok (for local development)
 
-### Installation
+| Requirement | Notes |
+|-------------|-------|
+| **Python 3.9+** | Tested on 3.11 |
+| **Twilio Account** | Free trial works; needs WhatsApp Sandbox enabled |
+| **Ngrok / tunnel** | Required for local WhatsApp webhook testing only |
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/varunmax7/MaxAlert-AI.git
-   cd disaster_management
-   ```
+### 1. Clone & Set Up Environment
 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   ```
+```bash
+git clone https://github.com/varunmax7/MaxAlert-AI.git
+cd MaxAlert-AI
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
-4. **Environment Configuration**
-   Create a `.env` file:
-   ```env
-   SECRET_KEY=your_secret_key
-   DATABASE_URL=sqlite:///site.db
-   TWILIO_ACCOUNT_SID=your_sid
-   TWILIO_AUTH_TOKEN=your_token
-   TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
-   ```
+pip install -r requirements.txt
+```
 
-5. **Initialize Database**
-   ```bash
-   flask db upgrade
-   ```
+### 2. Configure Environment Variables
 
-6. **Run the Application**
-   ```bash
-   python app.py
-   ```
+Create a `.env` file in the project root:
+
+```env
+# --- Core ---
+SECRET_KEY=replace-with-a-long-random-string
+DATABASE_URL=sqlite:///site.db       # For production: postgresql://user:pass@host/db
+
+# --- Twilio WhatsApp ---
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886   # Twilio Sandbox number
+
+# --- Optional: Public base URL (needed for WhatsApp media attachments) ---
+BASE_URL=https://your-ngrok-subdomain.ngrok-free.app
+```
+
+> **Note:** `DATABASE_URL` starting with `postgres://` is automatically rewritten to `postgresql://` (Heroku compatibility).
+
+### 3. Initialise the Database
+
+```bash
+flask db upgrade
+```
+
+This runs all Alembic migration scripts and creates the database schema. For a fresh SQLite database, this also runs `db.create_all()` automatically on app start.
+
+### 4. Run the Application
+
+```bash
+python app.py
+# Server starts on http://0.0.0.0:5001
+# Access locally: http://localhost:5001
+# Access on LAN:  http://192.168.x.x:5001
+```
+
+### 5. Expose to Internet (For WhatsApp & Mobile Testing)
+
+```bash
+# Option A: ngrok (recommended for development)
+ngrok http 5001
+# Copy the https://xxxxx.ngrok-free.app URL
+
+# Option B: Cloudflare Tunnel (no account needed for quick test)
+cloudflared tunnel --url http://localhost:5001
+```
+
+Then in **Twilio Console → Messaging → Try it out → Send a WhatsApp message**, set your webhook URL to:
+```
+https://YOUR-TUNNEL-URL/whatsapp/webhook
+```
 
 ---
 
-## 📱 WhatsApp Integration
+## 📡 API Reference
 
-The platform features a sophisticated WhatsApp bot that handles:
+All JSON endpoints require authentication unless noted otherwise.
 
-1.  **Authentication**: Users link their web account to WhatsApp by sending `Hi` -> `Username` -> `Password`.
-2.  **Deployment**:
-    *   **Bot**: "🚨 *Alert: Flash Flood in your area! 10km away.*"
-    *   **Bot**: "🤝 *Requesting Assistance. Reply 1 to Accept.*"
-    *   **User**: "1"
-    *   **Bot**: "✅ *Mission Confirmed. Hazard Location sent.*"
-3.  **Cancellation**: Volunteers can reply `cancel` to abort a mission if they can no longer attend.
+### Reports
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/reports` | ✅ | Paginated list of all reports |
+| `GET` | `/api/reports/active` | ✅ | Active (non-resolved) reports |
+| `GET` | `/api/hazards/map` | ✅ | GeoJSON FeatureCollection for Leaflet map |
+| `GET` | `/api/report/<id>/accuracy_3param` | ✅ | Full 3-parameter AI accuracy breakdown |
+| `POST` | `/report` (form) | ✅ | Submit a new hazard report |
+| `POST` | `/approve_report/<id>` | 🔐 Official | Manually approve a pending report |
+| `POST` | `/reject_report/<id>` | 🔐 Official | Reject a report with reason |
+
+### Notifications
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/notifications/unread-count` | ✅ | Returns `{"count": N}` — polled every 5 s |
+| `POST` | `/api/notification/<id>/read` | ✅ | Mark a notification as read |
+| `POST` | `/api/notifications/mark-all-read` | ✅ | Mark all notifications as read |
+
+### Coordination
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/coordination/assignments/active` | 🔐 Official | Active volunteer assignments |
+| `POST` | `/api/volunteer/assign` | 🔐 Official | Assign a volunteer to a hazard |
+| `POST` | `/api/volunteer/<id>/complete` | ✅ Volunteer | Submit rescue completion + proof photo |
+| `GET` | `/api/lifeline/listings` | ✅ | All open resource listings |
+| `POST` | `/api/lifeline/match` | ✅ | Create a SafeLink match between listings |
+
+### WhatsApp
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/whatsapp/webhook` | (Twilio sig) | Inbound message handler (Twilio callback) |
+
+### Example Response: 3-Parameter Accuracy
+
+```http
+GET /api/report/42/accuracy_3param
+Authorization: (session cookie)
+```
+
+```json
+{
+  "report_id": 42,
+  "title": "Storm Surge at Marina Beach",
+  "hazard_type": "storm_surge",
+  "overall_accuracy_percent": 83,
+
+  "parameter_1_heatmap": {
+    "name": "Heatmap Match",
+    "score_percent": 85,
+    "analysis": "Moderate heatmap confirmation: 3 similar reports detected in area",
+    "weight": "33%"
+  },
+
+  "parameter_2_climate": {
+    "name": "Climate Alignment",
+    "score_percent": 90,
+    "analysis": "Storm conditions confirmed: High winds 31km/h detected",
+    "weight": "33%"
+  },
+
+  "parameter_3_user_quality": {
+    "name": "User Quality Score",
+    "score_percent": 74,
+    "analysis": "Good track record: 7/10 reports approved (70%)",
+    "weight": "34%",
+    "user_role": "citizen",
+    "user_level": 5,
+    "user_total_reports": 10
+  },
+
+  "detailed_breakdown": "Heatmap Match: 85% | Climate Alignment: 90% | User Quality: 74%"
+}
+```
+
+### Accuracy Score Interpretation
+
+| Score | Classification | System Action |
+|-------|---------------|--------------|
+| **85–100%** | 🟢 Highly Reliable | Auto-approved, alerts dispatched immediately |
+| **60–84%** | 🟡 Good Confidence | Queued for analyst review |
+| **40–59%** | 🟠 Questionable | Held for investigation, additional evidence requested |
+| **0–39%** | 🔴 Low Confidence | Flagged, possible misinformation |
 
 ---
 
-## 👨‍💻 Tech Stack Detail
+## 📱 WhatsApp Bot
 
-| Component | Tech |
-|-----------|------|
-| **Core** | Python 3.9, Flask |
-| **Database** | SQLite / PostgreSQL |
-| **Real-time** | Polling & Webhooks |
-| **Styling** | CSS3, Bootstrap 5, FontAwesome |
-| **Maps** | Leaflet.js, OpenStreetMap |
-| **Deployment** | Render / Heroku / Docker |
+The WhatsApp integration uses Twilio's Messaging API. The bot handles **two distinct interaction flows**:
+
+### Flow 1: Account Linking
+
+New users link their web account to their WhatsApp number through a guided 3-step conversation. Session state is stored per phone number in the `User.whatsapp_session` JSON field.
+
+```
+User  →  "Hi"
+Bot   →  "👋 Welcome to Sentinel AI! Please enter your username."
+User  →  "john_doe"
+Bot   →  "🔐 Please enter your password."
+User  →  "••••••••"
+Bot   →  "✅ Successfully linked! You'll now receive hazard alerts and volunteer
+          assignments directly on WhatsApp."
+```
+
+### Flow 2: Volunteer Dispatch & Response
+
+```
+[Hazard verified by system]
+
+Bot   →  📸 [Hazard photo in attachment]
+Bot   →  "🚨 *STORM SURGE ALERT*
+          Location: Marina Beach, Chennai
+          Distance: 3.2 km from you
+          Severity: HIGH
+
+          🤝 Your help is needed.
+          Reply *1* to Accept
+          Reply *2* to Decline"
+
+User  →  "1"
+
+Bot   →  "✅ *Mission Accepted!*
+          📍 Hazard coordinates: 13.0566, 80.2783
+          A coordinator will contact you shortly.
+          Reply *cancel* at any time if you cannot attend."
+
+[Volunteer completes rescue]
+Bot   →  "🏆 Mission completed! You earned 50 points.
+          Your total: 340 points | Level: 7"
+```
+
+### Supported Commands (at any time)
+
+| Command | Response |
+|---------|----------|
+| `status` | Current assignment status |
+| `cancel` | Cancel current active assignment |
+| `help` | List available commands |
+| `Hi` / `hello` | Start account linking flow |
+
+---
+
+## 🎮 User Roles & Permissions
+
+| Role | Who | Key Permissions |
+|------|-----|----------------|
+| `citizen` | General public | Submit reports, join LifeLine, earn points |
+| `volunteer` | Registered responders | Accept missions, complete rescues, earn rescue points |
+| `official` | Government officers | Approve/reject reports, create emergency events, assign volunteers, view all dashboards |
+| `analyst` | Data scientists | Full read access to analytics, reporting trends, URI data |
+| `agency` | NGO/Emergency org | Same as official for their assigned events |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| **Language** | Python | 3.9+ | Backend runtime |
+| **Web Framework** | Flask | ≥ 2.3.3 | HTTP server, routing, templating |
+| **Auth** | Flask-Login | ≥ 0.6.3 | Session management |
+| **Forms** | Flask-WTF + WTForms | ≥ 1.2.1 | Server-side form validation |
+| **ORM** | Flask-SQLAlchemy | ≥ 3.1.1 | Database abstraction |
+| **Migrations** | Flask-Migrate (Alembic) | ≥ 4.0.7 | Schema version control |
+| **Task Scheduler** | APScheduler | ≥ 3.10.5 | Background jobs |
+| **Messaging** | Twilio | ≥ 9.0.0 | WhatsApp API (send + receive) |
+| **Weather** | Open-Meteo | (REST API) | Free, no-key live weather data |
+| **Maps (frontend)** | Leaflet.js | CDN | Interactive maps + heatmaps |
+| **Map tiles** | OpenStreetMap / Voyager | (CDN) | Base map tiles |
+| **Weather radar** | RainViewer | (API) | Satellite precipitation overlay |
+| **Charting** | Matplotlib + NumPy | ≥ 3.8 | Server-rendered analytics charts |
+| **NLP** | TextBlob + NLTK | ≥ 0.18 | Report text analysis |
+| **DB (dev)** | SQLite | Built-in | Development database |
+| **DB (prod)** | PostgreSQL | ≥ 14 | Production database |
+| **WSGI** | Gunicorn | ≥ 21.2 | Production app server |
+| **Styling** | Bootstrap 5 + Custom CSS | CDN | UI framework + Glassmorphism |
+| **PWA** | Service Worker + Manifest | Web standard | Mobile add-to-homescreen |
+
+---
+
+## ☁️ Deployment
+
+### Render (Recommended — Free Tier Available)
+
+1. Push to GitHub.
+2. Create a new **Web Service** on [render.com](https://render.com), connect your repository.
+3. Set **Build Command**: `pip install -r requirements.txt`
+4. Set **Start Command**: `gunicorn app:app`
+5. Add all environment variables from `.env` in the **Environment** tab.
+6. Add a free **PostgreSQL** database add-on and copy the `DATABASE_URL`.
+7. Deploy!
+
+### Heroku
+
+```bash
+heroku create maxalert-ai
+heroku addons:create heroku-postgresql:essential-0
+heroku config:set SECRET_KEY=... TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_WHATSAPP_NUMBER=...
+git push heroku main
+heroku run flask db upgrade
+```
+
+### Docker (Self-Hosted)
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5001
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
+```
+
+---
+
+## 🔧 Configuration Reference
+
+All configuration is handled in `config.py` via environment variables:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SECRET_KEY` | ✅ | `dev-key-...` | Flask session signing key |
+| `DATABASE_URL` | ✅ | `sqlite:///site.db` | DB connection string |
+| `TWILIO_ACCOUNT_SID` | For WhatsApp | — | Twilio account identifier |
+| `TWILIO_AUTH_TOKEN` | For WhatsApp | — | Twilio secret token |
+| `TWILIO_WHATSAPP_NUMBER` | For WhatsApp | — | Format: `whatsapp:+1415...` |
+| `BASE_URL` | For media | — | Public URL for photo attachments in WhatsApp |
+| `FIREBASE_SERVER_KEY` | Optional | — | For Firebase push notifications |
+
+**Upload limits:** Max file size 16 MB. Allowed extensions: `png jpg jpeg gif mp4 mov avi`.
+
+---
+
+## 🔐 Security Notes
+
+- Passwords are hashed using **Werkzeug's `generate_password_hash`** (PBKDF2-HMAC-SHA256).
+- All form submissions are protected by **CSRF tokens** (Flask-WTF).
+- Role-based access control is enforced on every sensitive endpoint via `@login_required` + role checks.
+- File uploads are sanitised using `werkzeug.utils.secure_filename` and validated by extension allowlist.
+- Twilio webhook authenticity can be validated using Twilio's request signature (recommended for production).
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/my-new-feature`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/my-new-feature`
+5. Open a Pull Request.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the [MIT License](LICENSE).
+
+---
 
 <div align="center">
-    <b>Built with ❤️ for a Safer Planet</b>
-</div># 3-Parameter AI Accuracy Validation - Visual Architecture
 
-## System Architecture Diagram
+**Built with ❤️ to protect India's coastal communities**
 
-```
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                    DISASTER MANAGEMENT SYSTEM - AI VALIDATION               ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+*"Every minute in a disaster matters. Sentinel AI makes minutes into seconds."*
 
-USER SUBMITS REPORT
-        │
-        ▼
-┌──────────────────────────┐
-│  /report [POST]          │
-│  - Title                 │
-│  - Description           │
-│  - Hazard Type           │
-│  - Location (lat, lon)   │
-│  - Photo (optional)      │
-└──────────────────────────┘
-        │
-        ▼
-┌──────────────────────────────────────────────────────────────┐
-│              analyze_report_with_ai(report)                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │ CALL: validate_report_accuracy_3params()              │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-        │
-        ├─────────────────────────────┬─────────────────────────────┬──────────────────────────┐
-        │                             │                             │                          │
-        ▼                             ▼                             ▼                          ▼
-   PARAMETER 1                   PARAMETER 2                   PARAMETER 3              LEGACY ANALYSIS
-   (Heatmap Match)              (Climate Alignment)          (User Quality)           (50% weight)
-   (33% weight)                 (33% weight)                 (34% weight)
-```
+[⭐ Star this repo](https://github.com/varunmax7/sentinelai) if you find it useful!
 
----
-
-## Parameter 1: Heatmap Match (Weather & Early Warnings)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ PARAMETER 1: WEATHER & EARLY WARNINGS - HEATMAP MATCH                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  INPUT: Report (hazard_type, latitude, longitude, timestamp)              │
-│                                                                             │
-│  PROCESSING:                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ SELECT * FROM Report WHERE                                          │ │
-│  │   - hazard_type = report.hazard_type                               │ │
-│  │   - lat between (lat - 0.05) and (lat + 0.05)  [≈5.5km]          │ │
-│  │   - lon between (lon - 0.05) and (lon + 0.05)  [≈5.5km]          │ │
-│  │   - timestamp between (now - 24h) and now                         │ │
-│  │   - verification_status IN ['approved', 'pending']                │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  SCORING LOGIC:                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ count = number of corroborating reports                             │ │
-│  │                                                                     │ │
-│  │ if count >= 5:     score = 0.95  "Strong hotspot"                 │ │
-│  │ elif count >= 3:   score = 0.85  "Moderate hotspot"               │ │
-│  │ elif count >= 1:   score = 0.70  "Partial corroboration"          │ │
-│  │ else:              score = 0.50  "No heatmap data"                │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  OUTPUT: {'score': 0.0-1.0, 'analysis': 'text'}                           │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Parameter 2: Climate Alignment (Live Weather Data)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ PARAMETER 2: LIVE CLIMATE DATA - WEATHER ALIGNMENT                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  INPUT: Report (hazard_type, latitude, longitude)                         │
-│                                                                             │
-│  EXTERNAL DATA FETCH:                                                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ GET https://api.open-meteo.com/v1/forecast?                       │ │
-│  │     latitude={lat}&longitude={lon}&                               │ │
-│  │     current=temperature_2m,humidity_2m,wind_speed_10m             │ │
-│  │                                                                    │ │
-│  │ RETURNS: {temperature, humidity, wind_speed, wind_direction}     │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  HAZARD-SPECIFIC MATCHING:                                                  │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ STORM_SURGE:                                                        │ │
-│  │   if wind >= 25 km/h:   score = 0.90                              │ │
-│  │   elif wind >= 15:      score = 0.75                              │ │
-│  │   else:                 score = 0.45                              │ │
-│  │                                                                    │ │
-│  │ HIGH_WAVES:                                                        │ │
-│  │   if wind >= 20 or humidity >= 70:  score = 0.85                │ │
-│  │   else:                 score = 0.60                              │ │
-│  │                                                                    │ │
-│  │ COASTAL_FLOODING:                                                  │ │
-│  │   if humidity >= 75:    score = 0.80                              │ │
-│  │   else:                 score = 0.65                              │ │
-│  │                                                                    │ │
-│  │ TSUNAMI:                                                           │ │
-│  │   score = 0.75  [independent of weather]                          │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  OUTPUT: {'score': 0.0-1.0, 'analysis': 'text with weather conditions'}  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Parameter 3: User Quality (Credibility Score)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ PARAMETER 3: USER QUALITY - CREDIBILITY SCORE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  INPUT: User object                                                         │
-│                                                                             │
-│  STEP 1: ROLE BASELINE                                                      │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ role_score = {                                                      │ │
-│  │   'official': 0.95,      [Highest - government officials]          │ │
-│  │   'analyst': 0.90,       [High - system analysts]                  │ │
-│  │   'agency': 0.88,        [Good - organization employees]           │ │
-│  │   'citizen': 0.50        [Baseline - regular users]                │ │
-│  │ }[user.role]                                                        │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  STEP 2: HISTORICAL ACCURACY MULTIPLIER                                     │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ approved_reports = COUNT(reports WHERE verification_status='approved')│ │
-│  │ total_reports = COUNT(all user reports)                             │ │
-│  │ approval_rate = approved_reports / total_reports                    │ │
-│  │                                                                     │ │
-│  │ if approval_rate >= 0.80:  multiplier = 1.00                      │ │
-│  │ elif approval_rate >= 0.60: multiplier = 0.85                      │ │
-│  │ elif approval_rate >= 0.40: multiplier = 0.70                      │ │
-│  │ elif total_reports == 0:   multiplier = 0.60  [new user penalty]   │ │
-│  │ else:                       multiplier = 0.50                      │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  STEP 3: LEVEL/EXPERIENCE FACTOR                                            │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ level_factor = min(1.0, (user.level / 10.0) * 0.3 + 0.7)          │ │
-│  │                                                                     │ │
-│  │ Maps user level (1-10) to factor (0.7-1.0):                       │ │
-│  │ Level 1  → 0.70  [New users]                                       │ │
-│  │ Level 5  → 0.85  [Intermediate]                                    │ │
-│  │ Level 10 → 1.00  [Expert]                                          │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  FINAL CALCULATION:                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ quality_score = role_score × multiplier × level_factor             │ │
-│  │ quality_score = min(1.0, quality_score)  [cap at 1.0]              │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  OUTPUT: {'score': 0.0-1.0, 'analysis': 'text', 'role': ..., 'level': ..} │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Final Accuracy Calculation
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ FINAL ACCURACY CALCULATION                                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  Input: Three parameter scores (0.0-1.0)                                   │
-│                                                                             │
-│  Weighted Average:                                                          │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ overall_accuracy =                                                  │ │
-│  │   (param1_score × 0.33) +                                          │ │
-│  │   (param2_score × 0.33) +                                          │ │
-│  │   (param3_score × 0.34)                                            │ │
-│  │                                                                     │ │
-│  │ accuracy_percent = int(overall_accuracy × 100)                    │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  Example Calculation:                                                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │ Param1 (Heatmap):   0.85 × 0.33 = 0.2805                          │ │
-│  │ Param2 (Climate):   0.80 × 0.33 = 0.2640                          │ │
-│  │ Param3 (User):      0.75 × 0.34 = 0.2550                          │ │
-│  │                     ─────────────────────                          │ │
-│  │ Total:                            0.7995 ≈ 80%                     │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  Output: {'overall_accuracy': 0.80, 'accuracy_percent': 80, ...}          │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Integration Flow
-
-```
-USER FLOW
-═════════════════════════════════════════════════════════════════════════════
-
-1. USER SUBMITS REPORT
-   ↓
-   POST /report
-   {title, description, hazard_type, location, lat, lon, photo, video}
-   
-2. BACKEND PROCESSES REPORT
-   ↓
-   Create Report object
-   ↓
-   analyze_report_with_ai(report)
-   
-3. AI ANALYSIS (HYBRID: 50% Legacy + 50% 3-Param)
-   ├─ Call validate_report_accuracy_3params()
-   │  ├─ Parameter 1: Heatmap Match
-   │  ├─ Parameter 2: Climate Alignment
-   │  └─ Parameter 3: User Quality
-   │
-   └─ Call legacy analysis functions
-      ├─ Source reliability
-      ├─ Corroboration
-      ├─ Media analysis
-      └─ Linguistic analysis
-   
-4. CALCULATE FINAL SCORE
-   ├─ 50% weight to 3-param system
-   └─ 50% weight to legacy system
-   
-5. STORE IN DATABASE
-   ├─ confidence_score
-   └─ ai_analysis (detailed text)
-   
-6. FLASH MESSAGE TO USER
-   ├─ "Report submitted! +10 points!"
-   ├─ "AI Accuracy: 80%"
-   └─ "[Heatmap: 85% | Climate: 80% | User: 75%]"
-   
-7. OPTIONAL: RETRIEVE VIA API
-   GET /api/report/123/accuracy_3param
-   → Full 3-parameter breakdown in JSON
-
-═════════════════════════════════════════════════════════════════════════════
-```
-
----
-
-## Data Flow Diagram
-
-```
-DATABASE                    EXTERNAL API               USER SYSTEM
-════════════════════════════════════════════════════════════════════
-
-Reports Table           Open-Meteo API              User Authentication
-├─ id                   (Real-time weather)         ├─ username
-├─ hazard_type      ◄─────────────────────────────► ├─ role
-├─ latitude              Temperature                ├─ level
-├─ longitude             Humidity                   ├─ points
-├─ timestamp             Wind Speed                 └─ created_at
-├─ verification_status   Wind Direction
-└─ author_id
-
-    │
-    ├────► PARAMETER 1                 PARAMETER 2
-    │      (Heatmap Match)              (Climate Alignment)
-    │      Similar reports              Weather validation
-    │      within 5.5km                 Hazard-specific logic
-    │
-    └────► PARAMETER 3
-           (User Quality)
-           ├─ User role
-           ├─ Report history
-           └─ Approval rate
-
-    All ────► ACCURACY CALCULATION ────► REPORT STORED
-              (Weighted Average)          with ACCURACY SCORE
-```
-
----
-
-## API Response Structure
-
-```json
-GET /api/report/123/accuracy_3param
-
-{
-  "report_id": 123,
-  "title": "Storm Surge Warning",
-  "hazard_type": "storm_surge",
-  
-  "overall_accuracy_percent": 80,
-  
-  "parameter_1_heatmap": {
-    "name": "Weather & Early Warnings - Heatmap Match",
-    "score_percent": 85,
-    "analysis": "Strong heatmap confirmation: 4 similar reports detected",
-    "weight": "33%"
-  },
-  
-  "parameter_2_climate": {
-    "name": "Live Climate Data - Weather Alignment",
-    "score_percent": 80,
-    "analysis": "Storm conditions confirmed: High winds 28km/h detected",
-    "weight": "33%"
-  },
-  
-  "parameter_3_user_quality": {
-    "name": "User Quality - Credibility Score",
-    "score_percent": 75,
-    "analysis": "Good track record: 7/10 reports approved (70%)",
-    "weight": "34%",
-    "user_role": "analyst",
-    "user_level": 6,
-    "user_total_reports": 10
-  },
-  
-  "detailed_breakdown": "Heatmap Match: 85% | Climate Alignment: 80% | User Quality: 75%"
-}
-```
-
----
-
-## Accuracy Score Interpretation
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│ ACCURACY SCORE INTERPRETATION                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  🟢 80-100%  │ HIGHLY RELIABLE                              │
-│  ────────────┼─────────────────────────────────────────────│
-│              │ • Auto-approve with confidence               │
-│              │ • Immediate alerts triggered                 │
-│              │ • High priority in verification queue        │
-│              │ • Example: Official reports + corroboration  │
-│              │                                              │
-│  🟡 60-79%   │ GOOD CONFIDENCE                              │
-│  ────────────┼─────────────────────────────────────────────│
-│              │ • Standard review process                    │
-│              │ • Manual verification recommended           │
-│              │ • Moderate priority for analysts             │
-│              │ • Example: Good user + some corroboration   │
-│              │                                              │
-│  🟠 40-59%   │ QUESTIONABLE                                 │
-│  ────────────┼─────────────────────────────────────────────│
-│              │ • Requires investigation                     │
-│              │ • Ask for additional evidence                │
-│              │ • Lower priority, hold for verification      │
-│              │ • Example: New user + no weather support    │
-│              │                                              │
-│  🔴 0-39%    │ LOW CONFIDENCE                               │
-│  ────────────┼─────────────────────────────────────────────│
-│              │ • Flag for suspicious activity               │
-│              │ • Detailed manual review needed              │
-│              │ • Possible misinformation                    │
-│              │ • Example: Low reputation + contradicting   │
-│              │   weather                                    │
-│              │                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Performance Characteristics
-
-```
-┌────────────────────────────────────────────────────────────┐
-│ PERFORMANCE METRICS                                        │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│ Operation              │ Time      │ Notes                │
-├────────────────────────┼───────────┼──────────────────────┤
-│ Parameter 1 (Heatmap)  │ ~20-50ms  │ Indexed DB query    │
-│ Parameter 2 (Weather)  │ ~400-600ms│ External API call   │
-│ Parameter 3 (User)     │ ~30-100ms │ DB lookup + calc    │
-│ Total Analysis         │ ~500-800ms│ Longest is weather  │
-│ Report Storage         │ ~100ms    │ DB write            │
-│ Total Request          │ ~600-900ms│ Including overhead  │
-│                                                            │
-│ Scalability:                                              │
-│ • Handles 100+ concurrent report submissions              │
-│ • Weather API has generous rate limits (10k/day free)    │
-│ • Database queries fully indexed                          │
-│ • No caching needed (always fresh data)                   │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
-```
-# 🎉 VOLUNTEER NOTIFICATION SYSTEM - IMPLEMENTATION COMPLETE
-
-## ✅ Status: FULLY OPERATIONAL
-
-The volunteer assignment and real-time notification system is now **100% working**! Volunteers receive instant notifications when assigned to hazards.
-
----
-
-## 📊 Test Results Summary
-
-### Automated Tests ✅ PASSED
-- **Database Operations**: ✅ Working
-- **Notification Creation**: ✅ Working
-- **Assignment Flow**: ✅ Working
-- **Real-Time Polling**: ✅ Ready
-- **Browser Integration**: ✅ Ready
-
-### End-to-End Flow ✅ VERIFIED
-```
-Phase 1: Pre-assignment state ✓
-Phase 2: Official assigns volunteer ✓
-Phase 3: Real-time notification delivery ✓
-Phase 4: Volunteer responds ✓
-Phase 5: Notification marked as read ✓
-Phase 6: Final state verification ✓
-```
-
----
-
-## 🚀 What We Built
-
-### 1. **Real-Time Notification Polling System**
-- Polls `/api/notifications/unread-count` every 5 seconds
-- Updates notification badge on bell icon instantly
-- Shows toast notifications when new assignments arrive
-- Minimal server load (<1ms per request)
-
-### 2. **Enhanced Assignment Button**
-- Fixed Promise handling for proper async operations
-- Shows "Assigning..." loading state
-- Displays success modal with volunteer name
-- Refreshes volunteer list automatically
-
-### 3. **Auto-Refreshing Notifications Page**
-- Refreshes every 3 seconds while viewing notifications
-- Only updates when content changes
-- Maintains scroll position and user state
-- Preserves all event listeners
-
-### 4. **Comprehensive Testing Suite**
-- `test_real_time_notifications.py` - Core functionality test
-- `test_end_to_end_notifications.py` - Complete flow test
-- `check_notifications.py` - Database verification
-- All tests passing ✅
-
----
-
-## 📱 User Experience Flow
-
-### For Officials:
-1. Go to **Coordination** → **Volunteer Management**
-2. Select hazard from dropdown
-3. Click **"Assign Volunteer"** button
-4. ✅ See "Assigning..." → Success modal appears
-5. Assignment created instantly
-
-### For Volunteers:
-1. Stay on any page (no action needed)
-2. 🔔 **Bell icon** shows red badge with count
-3. 🍞 **Toast notification**: "New Notification! You have a new assignment"
-4. Click bell or toast to view assignment
-5. ✅ **Accept** or **Decline** immediately
-6. Notifications page auto-refreshes
-
----
-
-## ⚡ Performance Metrics
-
-| Metric | Value | Impact |
-|--------|-------|--------|
-| **Assignment Creation** | Instant | Immediate feedback |
-| **Notification Delivery** | <5 seconds | Real-time experience |
-| **Badge Update** | <5 seconds | Visual feedback |
-| **Toast Display** | <5 seconds | User notification |
-| **Page Auto-Refresh** | <3 seconds | Live updates |
-| **Server Load** | Minimal | <1ms per poll |
-| **Network Usage** | ~100 bytes/poll | Negligible |
-
----
-
-## 🔧 Technical Implementation
-
-### Files Modified:
-1. **`templates/volunteer_management.html`** (~30 lines)
-   - Fixed `assignVolunteer()` promise handling
-
-2. **`templates/base.html`** (~150 lines)
-   - Added real-time polling system
-   - Added toast notification system
-
-3. **`templates/notifications.html`** (~60 lines)
-   - Added auto-refresh functionality
-
-### New Test Files:
-4. **`test_real_time_notifications.py`** - Core functionality test
-5. **`test_end_to_end_notifications.py`** - Complete flow test
-6. **`check_notifications.py`** - Database verification
-
-### Documentation Created:
-7. **`QUICK_START_NOTIFICATIONS.md`** - 2-minute setup guide
-8. **`NOTIFICATION_COMPLETE_FIX.md`** - Technical deep-dive
-9. **`NOTIFICATION_FIX_SUMMARY.md`** - Quick summary
-10. **`NOTIFICATION_TESTING_GUIDE.md`** - Testing procedures
-11. **`CODE_CHANGES_REFERENCE.md`** - Exact code changes
-12. **`NOTIFICATION_DOCS_INDEX.md`** - Master documentation index
-
----
-
-## 🧪 Testing Verification
-
-### Automated Tests:
-```bash
-# Core functionality
-python3 test_real_time_notifications.py
-# Result: ✅ PASSED
-
-# End-to-end flow
-python3 test_end_to_end_notifications.py
-# Result: ✅ PASSED
-
-# Database check
-python3 check_notifications.py
-# Result: 206 notifications, working correctly
-```
-
-### Manual Testing:
-1. ✅ Start app: `python3 app.py`
-2. ✅ Start ngrok: `./ngrok http 5001`
-3. ✅ Open two browser tabs
-4. ✅ Official assigns volunteer
-5. ✅ Volunteer sees notification instantly
-6. ✅ Can accept/decline assignment
-7. ✅ Real-time updates work
-
----
-
-## 🎯 Key Features Delivered
-
-| Feature | Status | User Impact |
-|---------|--------|-------------|
-| **Real-time notifications** | ✅ Working | Volunteers notified instantly |
-| **Visual badge updates** | ✅ Working | Clear unread count display |
-| **Toast notifications** | ✅ Working | Non-intrusive alerts |
-| **Auto-refresh pages** | ✅ Working | Live updates without refresh |
-| **Mobile compatibility** | ✅ Working | Works on all devices |
-| **Promise-based buttons** | ✅ Working | Proper loading states |
-| **Comprehensive testing** | ✅ Working | System reliability verified |
-| **Complete documentation** | ✅ Working | Easy maintenance |
-
----
-
-## 🚀 Production Ready
-
-### Security:
-- ✅ Uses existing authentication
-- ✅ Validates user permissions
-- ✅ No XSS vulnerabilities
-- ✅ Proper session handling
-
-### Scalability:
-- ✅ Minimal database queries
-- ✅ Efficient polling intervals
-- ✅ Low network overhead
-- ✅ Backward compatible
-
-### Reliability:
-- ✅ Error handling in place
-- ✅ Graceful degradation
-- ✅ Comprehensive testing
-- ✅ Production-tested
-
----
-
-## 📞 Quick Start Guide
-
-### For Immediate Testing:
-```bash
-# Terminal 1: Start app
-python3 app.py
-
-# Terminal 2: Start ngrok
-./ngrok http 5001
-
-# Browser: Open ngrok URL in two tabs
-# Tab 1: Login as varunmax7 (Official)
-# Tab 2: Login as maxx (Volunteer)
-# Assign volunteer → See instant notification!
-```
-
-### For Development:
-- Read: `QUICK_START_NOTIFICATIONS.md`
-- Test: `python3 test_end_to_end_notifications.py`
-- Debug: `python3 check_notifications.py`
-
----
-
-## 🔄 Future Enhancements (Optional)
-
-1. **WebSocket Integration** - Instant updates instead of polling
-2. **Browser Push Notifications** - Native OS notifications
-3. **Sound Alerts** - Audio notifications for critical assignments
-4. **Email Notifications** - Backup email delivery
-5. **SMS Integration** - SMS alerts for offline volunteers
-
----
-
-## 📊 Database Impact
-
-### Before Fix:
-- ✅ Notifications created in database
-- ❌ No real-time display to users
-- ❌ Manual refresh required
-
-### After Fix:
-- ✅ Notifications created instantly
-- ✅ Real-time polling every 5 seconds
-- ✅ Badge updates automatically
-- ✅ Toast notifications appear
-- ✅ Page auto-refreshes
-- ✅ Zero manual intervention needed
-
----
-
-## 🎉 Success Metrics
-
-### User Experience:
-- **Before**: "I never see notifications!"
-- **After**: "Notifications appear instantly! 🎉"
-
-### Technical Metrics:
-- **Latency**: <5 seconds (vs manual refresh)
-- **Server Load**: Minimal increase
-- **User Satisfaction**: Significantly improved
-- **System Reliability**: 100% tested
-
----
-
-## 📚 Documentation Index
-
-| Document | Purpose | Read Time |
-|----------|---------|-----------|
-| `QUICK_START_NOTIFICATIONS.md` | Get started immediately | 2 minutes |
-| `NOTIFICATION_TESTING_GUIDE.md` | How to test the system | 5 minutes |
-| `NOTIFICATION_COMPLETE_FIX.md` | Technical implementation | 10 minutes |
-| `CODE_CHANGES_REFERENCE.md` | Exact code changes | 15 minutes |
-| `NOTIFICATION_DOCS_INDEX.md` | Master index | 5 minutes |
-
----
-
-## 🏆 Achievement Summary
-
-**Problem Solved**: Volunteers couldn't see assignment notifications in real-time.
-
-**Solution Delivered**:
-- ✅ Real-time notification polling system
-- ✅ Visual badge and toast notifications
-- ✅ Auto-refreshing notification pages
-- ✅ Comprehensive testing and documentation
-- ✅ Production-ready implementation
-
-**Impact**: Volunteers now receive instant notifications when assigned to hazards!
-
----
-
-**🎉 IMPLEMENTATION COMPLETE - SYSTEM FULLY OPERATIONAL! 🚀**
-
-**Date**: January 25, 2026
-**Status**: ✅ PRODUCTION READY
-**Test Results**: ALL TESTS PASSING
-**User Experience**: REAL-TIME NOTIFICATIONS WORKING
+</div>
