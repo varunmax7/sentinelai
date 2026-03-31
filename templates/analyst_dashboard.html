@@ -3,7 +3,7 @@
 {% block title %}Analyst Dashboard{% endblock %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
     .main-content-container {
         background: rgba(15, 23, 42, 0.92);
@@ -445,10 +445,10 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Load Leaflet (single source) -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Load MapLibre 3D Engine -->
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="{{ url_for('static', filename='js/god-mode-maps.js') }}"></script>
 <!-- Load Plugins -->
-<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -497,69 +497,26 @@
     });
 
     window.initMaps = function () {
-        console.log('🗺️ initMaps called');
+        console.log('🗺️ initMaps called (God Mode 3D)');
 
-        if (!document.getElementById('heatmapMap')) {
-            console.error('❌ heatmapMap element not found');
-            return;
-        }
-
-        if (typeof L === 'undefined') {
-            console.error('❌ Leaflet (L) is not defined - library failed to load');
+        if (!document.getElementById('heatmapMap') || !document.getElementById('warningMap')) {
+            console.error('❌ map elements not found');
             return;
         }
 
         try {
-            if (hMap) hMap.remove();
-            if (wMap) wMap.remove();
-
-            console.log('📍 Creating heatmap...');
-            hMap = L.map('heatmapMap').setView([20.5, 78.9], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(hMap);
-            console.log('✅ Heatmap base created');
-
+            console.log('📍 Creating 3D maps...');
+            hMap = new GodModeMap('heatmapMap');
+            
             if (DASHBOARD_DATA.reports && DASHBOARD_DATA.reports.length > 0) {
                 const pts = DASHBOARD_DATA.reports.map(r => [r.latitude, r.longitude, 1.0]);
-                L.heatLayer(pts, { radius: 35, blur: 15, maxOpacity: 0.8 }).addTo(hMap);
-                hMap.fitBounds(L.latLngBounds(pts.map(p => [p[0], p[1]])).pad(0.2));
+                hMap.setHeatmapData(pts);
             }
 
-            wMap = L.map('warningMap').setView([20.5, 78.9], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(wMap);
-
-            const weatherLegend = L.control({ position: 'bottomright' });
-            weatherLegend.onAdd = function () {
-                const div = L.DomUtil.create('div', 'weather-legend');
-                div.innerHTML = `
-                <div style="text-align: center; padding: 8px 12px;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #4ade80;">
-                        <div class="live-indicator" style="margin: 0;"></div>
-                        <span style="color: #e5e7eb;"><strong>LIVE</strong> Updates Every 1s</span>
-                    </div>
-                </div>
-            `;
-                return div;
-            };
-            weatherLegend.addTo(wMap);
+            wMap = new GodModeMap('warningMap', { showLiveUI: true });
 
             async function updateLiveWeather() {
                 try {
-                    if (window.weatherMarkers) {
-                        window.weatherMarkers.forEach(marker => wMap.removeLayer(marker));
-                    }
-                    if (window.hazardHeatLayer) {
-                        wMap.removeLayer(window.hazardHeatLayer);
-                    }
-                    if (window.hazardMarkers) {
-                        window.hazardMarkers.forEach(marker => wMap.removeLayer(marker));
-                    }
-                    window.weatherMarkers = [];
-                    window.hazardMarkers = [];
-
                     const [weatherResponse, incidentsResponse, govtHazardsResponse] = await Promise.all([
                         fetch('/api/weather_data'),
                         fetch('/api/live_hazard_incidents'),
@@ -570,27 +527,14 @@
                     const incidentsData = await incidentsResponse.json();
                     const govtHazardsData = await govtHazardsResponse.json();
 
+                    wMap.clearDynamicData();
+
                     if (incidentsData.incidents && incidentsData.incidents.length > 0) {
                         const heatPoints = incidentsData.incidents.map(incident => {
                             const intensity = incident.confidence_score || 0.5;
                             return [incident.latitude, incident.longitude, intensity];
                         });
-
-                        window.hazardHeatLayer = L.heatLayer(heatPoints, {
-                            radius: 35,
-                            blur: 20,
-                            maxOpacity: 0.8,
-                            maxZoom: 18,
-                            minOpacity: 0.2,
-                            gradient: {
-                                0.0: '#3b82f6',
-                                0.25: '#06b6d4',
-                                0.5: '#eab308',
-                                0.75: '#f59e0b',
-                                1.0: '#ef4444'
-                            }
-                        });
-                        window.hazardHeatLayer.addTo(wMap);
+                        wMap.setHeatmapData(heatPoints, false);
                     }
 
                     if (weatherData.alerts && weatherData.alerts.length > 0) {
@@ -598,68 +542,28 @@
                             const tempColor = alert.temperature > 35 ? '#ef4444' :
                                 alert.temperature > 28 ? '#f59e0b' :
                                     alert.temperature > 20 ? '#eab308' : '#06b6d4';
-                            const tempRadius = Math.min((alert.temperature / 10), 15);
-
-                            const tempMarker = L.circle([alert.latitude, alert.longitude], {
-                                radius: tempRadius * 2000,
-                                color: tempColor,
-                                fillColor: tempColor,
-                                fillOpacity: 0.3,
-                                weight: 2
-                            }).bindPopup(`
-                            <b>🌡️ ${alert.city}</b><br>
-                            Temperature: ${alert.temperature}°C<br>
-                            Humidity: ${alert.humidity}%<br>
-                            <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
-                        `);
-                            tempMarker.addTo(wMap);
-                            window.weatherMarkers.push(tempMarker);
-
-                            const windColor = alert.wind_speed > 40 ? '#ef4444' :
-                                alert.wind_speed > 25 ? '#f59e0b' : '#10b981';
-                            const windRadius = Math.min((alert.wind_speed / 5), 12);
-
-                            const windMarker = L.circle([alert.latitude, alert.longitude], {
-                                radius: windRadius * 2000,
-                                color: windColor,
-                                fillColor: windColor,
-                                fillOpacity: 0.15,
-                                weight: 2,
-                                dashArray: '5, 5'
-                            }).bindPopup(`
-                            <b>💨 ${alert.city} - Wind</b><br>
-                            Speed: ${alert.wind_speed} km/h<br>
-                            Direction: ${alert.wind_direction}°<br>
-                            <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
-                        `);
-                            windMarker.addTo(wMap);
-                            window.weatherMarkers.push(windMarker);
+                            
+                            wMap.addCirclePolygon(alert.latitude, alert.longitude, 15000, tempColor, 0.3, `
+                                <div style="color:#000; font-family:'Outfit'">
+                                    <b>🌡️ ${alert.city}</b><br>
+                                    Temperature: ${alert.temperature}°C<br>
+                                    Humidity: ${alert.humidity}%<br>
+                                    <small>Updated: ${new Date(alert.timestamp).toLocaleTimeString()}</small>
+                                </div>
+                            `);
                         });
                     }
 
                     if (govtHazardsData.hazards && govtHazardsData.hazards.length > 0) {
                         govtHazardsData.hazards.forEach(hazard => {
-                            const hazardColor = hazard.severity === 'critical' ? '#dc2626' :
-                                hazard.severity === 'high' ? '#ea580c' :
-                                    hazard.severity === 'medium' ? '#f59e0b' : '#06b6d4';
-
-                            const hazardMarker = L.circle([hazard.latitude, hazard.longitude], {
-                                radius: hazard.radius * 1000,
-                                color: hazardColor,
-                                fillColor: hazardColor,
-                                fillOpacity: 0.15,
-                                weight: 3,
-                                dashArray: '10, 5'
-                            }).bindPopup(`
-                            <b>⚠️ ${hazard.type}</b><br>
-                            Severity: <strong>${hazard.severity.toUpperCase()}</strong><br>
-                            Alert Level: ${hazard.alert_level}<br>
-                            Description: ${hazard.description}<br>
-                            Source: ${hazard.source}<br>
-                            <small>Updated: ${new Date(hazard.timestamp).toLocaleTimeString()}</small>
-                        `);
-                            hazardMarker.addTo(wMap);
-                            window.hazardMarkers.push(hazardMarker);
+                            wMap.addShockwaveMarker(hazard.latitude, hazard.longitude, `
+                                <div style="color:#000; font-family:'Outfit'">
+                                    <b>⚠️ ${hazard.type}</b><br>
+                                    Severity: <strong>${hazard.severity.toUpperCase()}</strong><br>
+                                    Description: ${hazard.description}<br>
+                                    <small>Updated: ${new Date(hazard.timestamp).toLocaleTimeString()}</small>
+                                </div>
+                            `);
                         });
                     }
                 } catch (error) {
@@ -667,29 +571,40 @@
                 }
             }
 
-            updateLiveWeather();
-            window.weatherUpdateInterval = setInterval(updateLiveWeather, 1000);
+            // Let MapLibre load, then start fetching
+            setTimeout(() => {
+                updateLiveWeather();
+                window.weatherUpdateInterval = setInterval(updateLiveWeather, 3500); // Slower interval for 3d performance
+            }, 1000);
 
+            // Fetch generic weather_warnings (circles)
             fetch('/api/weather_warnings')
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.length > 0) {
-                        const circles = data.map(w => L.circle([w.latitude, w.longitude], {
-                            radius: w.radius * 1000,
-                            color: w.severity === 'high' ? '#ef4444' : '#f59e0b',
-                            fillOpacity: 0.2
-                        }).bindPopup(`<b>${w.type} Alert</b>`));
-                        const group = L.featureGroup(circles).addTo(wMap);
-                        wMap.fitBounds(group.getBounds().pad(0.2));
+                        const bounds = new maplibregl.LngLatBounds();
+                        data.forEach(w => {
+                            const color = w.severity === 'high' ? '#ef4444' : '#f59e0b';
+                            wMap.addCirclePolygon(w.latitude, w.longitude, w.radius * 1000, color, 0.2, `<div style="color:#000;"><b>${w.type} Alert</b></div>`);
+                            bounds.extend([w.longitude, w.latitude]);
+                        });
+                        
+                        wMap.executeWhenLoaded(() => {
+                            if (!bounds.isEmpty()) {
+                                wMap.map.fitBounds(bounds, {
+                                    padding: 50,
+                                    maxZoom: 5,
+                                    pitch: 55,
+                                    bearing: -12.5,
+                                    duration: 2000
+                                });
+                            }
+                        });
                     }
                 });
 
-            setTimeout(() => {
-                if (hMap) hMap.invalidateSize();
-                if (wMap) wMap.invalidateSize();
-            }, 1000);
         } catch (error) {
-            console.error('❌ Map initialization error:', error);
+            console.error('❌ 3D Map initialization error:', error);
         }
     };
 

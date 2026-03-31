@@ -42,7 +42,7 @@ Most existing disaster management systems (like standard NDMA portals or generic
 | **Volunteer Logistics** | Manual phone trees, chaotic WhatsApp groups | **"Uber-style" Auto-Dispatch.** Finds available responders within a 10km radius dynamically matching skills via WhatsApp bot. |
 | **Alerting Precision** | Mass SMS blasts (causes panic & alert fatigue) | **Smart Geo-Fencing**. Alerts only hit users strictly within the hazard's specific impact radius based on severity. |
 | **Resource Supply Chain**| Top-down government handouts only | **LifeLine P2P Marketplace.** Decentralized local networking to match resource Donors with Requesters in real time. |
-| **Predictive Power** | Reactive (post-disaster mapping) | **PS-4.9 Risk Simulator.** Simulates localized climate hazards based on live metrics, predicting infrastructural stress before it happens. |
+| **Predictive Power** | Reactive (post-disaster mapping) | **Risk Simulator.** Simulates localized climate hazards based on live metrics, predicting infrastructural stress before it happens. |
 
 By collapsing reporting, verification, dispatch, and resource matching into a single autonomous pipeline, a process that used to take dozens of phone calls now takes **minutes**.
 
@@ -69,7 +69,7 @@ Once a hazard is verified, the system's logistics engine takes over:
 
 ### 🌍 3. Live Hazard Map, Simulator & Analytics
 - **Live Spatial Dashboards**: Leaflet.js heatmaps overlaid with real-time RainViewer weather radar layers.
-- **PS-4.9 Risk Simulator**: A deterministic modeling tool for analysts. Input impending rainfall (mm) and sea-level anomalies; the AI predicts sectoral infrastructure damage (Power, Water, Telecom, Housing) and outputs an actionable evacuation priority.
+- **Risk Simulator**: A deterministic modeling tool for analysts. Input impending rainfall (mm) and sea-level anomalies; the AI predicts sectoral infrastructure damage (Power, Water, Telecom, Housing) and outputs an actionable evacuation priority.
 - **Urban Resilience Index (URI)**: A dynamic, rolling score per geographic zone calculated from response times, hazard frequency, and community eco-activity density.
 
 ### 📢 4. Smart Geo-fenced Multi-channel Alerts

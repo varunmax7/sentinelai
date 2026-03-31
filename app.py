@@ -319,7 +319,7 @@ TRANSLATIONS = {
         'basic_dashboard': 'Basic Dashboard',
         'tools': 'Tools',
         'analyst_dashboard': 'Analyst Dashboard',
-        'risk_simulator': 'Risk Simulator (PS-4.9)',
+        'risk_simulator': 'Risk Simulator',
         'emergency_management': 'Emergency Management',
         'resource_management': 'Resource Management',
         'volunteer_management': 'Volunteer Management',
@@ -433,7 +433,7 @@ TRANSLATIONS = {
         'coordination_platform': 'ஒருங்கிணைப்பு தளம்',
         'basic_dashboard': 'அடிப்படை டாஷ்போர்டு',
         'analyst_dashboard': 'ஆய்வாளர் டாஷ்போர்டு',
-        'risk_simulator': 'இடர் சிமுலேட்டர் (PS-4.9)',
+        'risk_simulator': 'இடர் சிமுலேட்டர்',
         'emergency_management': 'அவசரகால மேலாண்மை',
         'resource_management': 'வள மேலாண்மை',
         'volunteer_management': 'தன்னார்வலர் மேலாண்மை',
@@ -512,7 +512,7 @@ TRANSLATIONS = {
         'coordination_platform': 'समन्वय मंच',
         'basic_dashboard': 'बुनियादी डैशबोर्ड',
         'analyst_dashboard': 'विश्लेषक डैशबोर्ड',
-        'risk_simulator': 'जोखिम सिम्युलेटर (PS-4.9)',
+        'risk_simulator': 'जोखिम सिम्युलेटर',
         'emergency_management': 'आपातकालीन प्रबंधन',
         'resource_management': 'संसाधन प्रबंधन',
         'volunteer_management': 'स्वयंसेवक प्रबंधन',
@@ -586,7 +586,7 @@ TRANSLATIONS = {
         'coordination_platform': 'సమన్వయ వేదిక',
         'basic_dashboard': 'ప్రాథమిక డాష్‌బోర్డ్',
         'analyst_dashboard': 'అనలిస్ట్ డాష్‌బోర్డ్',
-        'risk_simulator': 'రిస్క్ సిమ్యులేటర్ (PS-4.9)',
+        'risk_simulator': 'రిస్క్ సిమ్యులేటర్',
         'emergency_management': 'అత్యవసర నిర్వహణ',
         'resource_management': 'వనరుల నిర్వహణ',
         'volunteer_management': 'వాలంటీర్ నిర్వహణ',
@@ -637,7 +637,7 @@ TRANSLATIONS = {
         'coordination_platform': 'കോർഡിനേഷൻ പ്ലാറ്റ്ഫോം',
         'basic_dashboard': 'ബേസിക് ഡാഷ്ബോർഡ്',
         'analyst_dashboard': 'അനലിസ്റ്റ് ഡാഷ്ബോർഡ്',
-        'risk_simulator': 'റിസ്ക് സിമുലേറ്റർ (PS-4.9)',
+        'risk_simulator': 'റിസ്ക് സിമുലേറ്റർ',
         'emergency_management': 'അടിയന്തര മാനേജ്‌മെന്റ്',
         'resource_management': 'വിഭവ മാനേജ്‌മെന്റ്',
         'volunteer_management': 'വളണ്ടിയർ മാനേജ്‌മെന്റ്',
@@ -690,7 +690,7 @@ TRANSLATIONS = {
         'coordination_platform': 'ಸಮನ್ವಯ ವೇದಿಕೆ',
         'basic_dashboard': 'ಮೂಲ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
         'analyst_dashboard': 'ವಿಶ್ಲೇಷಕ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
-        'risk_simulator': 'ರಿಸ್ಕ್ ಸಿಮ್ಯುಲೇಟರ್ (PS-4.9)',
+        'risk_simulator': 'ರಿಸ್ಕ್ ಸಿಮ್ಯುಲೇಟರ್',
         'emergency_management': 'ತುರ್ತು ನಿರ್ವಹಣೆ',
         'resource_management': 'ಸಂಪನ್ಮೂಲ ನಿರ್ವಹಣೆ',
         'volunteer_management': 'ಸ್ವಯಂಸೇವಕ ನಿರ್ವಹಣೆ',
@@ -2593,7 +2593,7 @@ def analyst_dashboard():
 @app.route("/simulation")
 @login_required
 def simulation():
-    """Climate Risk & Disaster Impact Simulation Dashboard (PS-4.9)"""
+    """Climate Risk & Disaster Impact Simulation Dashboard"""
     if current_user.role not in ['official', 'analyst']:
         flash('You need elevated privileges to access the Simulation Dashboard.', 'warning')
         return redirect(url_for('home'))
@@ -2604,7 +2604,7 @@ def simulation():
 @app.route("/api/simulate_impact", methods=['POST'])
 @login_required
 def simulate_impact():
-    """Predictive AI simulation logic based on climate parameters (PS-4.9)"""
+    """Predictive AI simulation logic based on climate parameters"""
     if current_user.role not in ['official', 'analyst']:
         return jsonify({'error': 'Unauthorized'}), 403
         
