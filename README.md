@@ -1,4 +1,4 @@
-# 🛡️ Sentinel AI — Intelligent Disaster Management Platform
+# 🛡️ Sentinel AI — Multi-Agent Urban Disaster & Infrastructure Intelligence Platform
 
 <div align="center">
 
@@ -6,140 +6,377 @@
 [![Flask](https://img.shields.io/badge/Flask-2.3+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
 [![SQLite](https://img.shields.io/badge/SQLite%20%2F%20PostgreSQL-Ready-003B57?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Twilio](https://img.shields.io/badge/Twilio-WhatsApp_API-F22F46?style=for-the-badge&logo=twilio&logoColor=white)](https://twilio.com)
+[![Leaflet](https://img.shields.io/badge/Leaflet.js-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)](https://leafletjs.com)
+[![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-**An enterprise-grade, AI-powered disaster response platform built for India's coastal communities.**  
-*Turning fragmented, reactive crisis management into a proactive, automated, and intelligent command system.*
+**An enterprise-grade, AI-powered multi-agent disaster response & urban infrastructure management platform.**  
+*Addressing Problem Statement SH-SVA-03: Unifying fragmented urban departments through autonomous incident detection, coordinated multi-agent response, and real-time city-wide digital twin intelligence.*
 
-[Problem Statement](#-the-problem) • [Why Sentinel AI?](#-why-this-stands-out-vs-existing-platforms) • [Features](#-features) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [API Reference](#-api-reference) • [WhatsApp Bot](#-whatsapp-bot) • [Database Schema](#-database-schema)
+[Problem Statement](#-problem-statement-sh-sva-03) • [Solution](#-sentinel-ai-the-solution) • [App Flow](#-complete-application-flow) • [Features](#-feature-deep-dive) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [API Reference](#-api-reference) • [WhatsApp Bot](#-whatsapp-bot) • [Database Schema](#-database-schema)
 
 </div>
 
 ---
 
-## 🌊 The Problem
+## 🎯 Problem Statement: SH-SVA-03
 
-India has **7,516 km of coastline** with over **170 million people** living in low-lying areas vulnerable to cyclones, floods, storm surges, and tsunamis. Traditional disaster response in these regions suffers from systemic failures:
+> **Urban infrastructure management is fragmented across departments, leading to delayed incident detection, inefficient response, and increased operational costs. A multi-agent AI system integrated with a city digital twin is needed to autonomously prioritize incidents, coordinate actions, and ensure timely, compliant resolution.**
 
-- **Fragmented communication** — citizens call helplines, officials check social media, volunteers wait for orders. There is no unified channel.
-- **Slow verification** — a field report of rising floodwater takes hours to be manually confirmed by authorities, delaying response.
-- **Inefficient volunteer dispatch** — coordinators manually phone or message volunteers one by one, losing precious minutes.
-- **Language barriers** — critical alerts reaching local fishermen or coastal residents in non-native languages are often ignored.
-- **Zero predictive capabilities** — agencies react to disasters rather than simulating impacts ahead of time based on climate data.
+### The Crisis in Numbers
 
-**The result:** Response times measured in hours. Lives and resources lost that could have been saved.
+India has **7,516 km of coastline** with over **170 million people** living in low-lying urban areas vulnerable to cyclones, floods, storm surges, and tsunamis. Urban infrastructure management across Indian cities suffers from systemic, cross-departmental failures:
+
+| Problem Area | Impact |
+|:---|:---|
+| **🏛️ Departmental Silos** | Fire, police, municipal, health, and disaster agencies operate on separate communication channels. A single flood event requires 5+ departments to coordinate — manually. |
+| **⏱️ Delayed Detection** | A field report of rising floodwater takes **hours** to be manually confirmed by authorities, delaying response. Citizens call helplines, officials check social media, volunteers wait for orders. |
+| **📞 Inefficient Dispatch** | Coordinators manually phone or message volunteers one by one. Losing precious minutes while lives are at stake. |
+| **🌐 Language Barriers** | Critical alerts in non-native languages are often ignored by local communities — fishermen, farmers, coastal workers. |
+| **📊 Zero Predictive Power** | Agencies react to disasters rather than simulating impacts ahead of time. No city-wide digital twin exists. |
+| **💰 Operational Cost Overrun** | Redundant efforts, uncoordinated resource deployment, and reactive approaches drain government budgets. |
+
+**The result:** Response times measured in hours. Lives and resources lost that could have been saved with an intelligent, unified system.
 
 ---
 
-## ⚡ Why This Stands Out vs Existing Platforms
+## 🧠 Sentinel AI: The Solution
 
-Most existing disaster management systems (like standard NDMA portals or generic SOS apps) act merely as static information boards or one-way alert broadcasters. **Sentinel AI** acts as an autonomous nervous system for crisis management.
+Sentinel AI is not just another disaster app — it is a **multi-agent AI command system** that acts as the autonomous nervous system for urban crisis management.
+
+### Multi-Agent Architecture
+
+The platform deploys specialized AI agents that work in concert:
+
+| Agent | Role | Autonomy Level |
+|:---|:---|:---|
+| **🔍 Detection Agent** | Ingests citizen reports (online, offline via AI calling, SOS), satellite data, TGDPS rainfall feeds, and weather APIs. Cross-validates using 3-parameter AI scoring. | Fully autonomous |
+| **📋 Prioritization Agent** | Ranks incidents by severity, proximity to critical infrastructure, population density, and weather alignment. Auto-approves high-confidence reports (≥85%). | Fully autonomous |
+| **🚁 Dispatch Agent** | "Uber-style" volunteer matching — queries available responders within 10km, fires WhatsApp assignments, tracks acceptance/completion. | Semi-autonomous |
+| **📡 Alert Agent** | Geo-fenced push notifications — alerts only users within the hazard impact radius (not mass blasts). 20km radius notifications with disaster images and safe rescue locations. | Fully autonomous |
+| **📊 Analytics Agent** | Powers the Analyst Dashboard — live satellite overlays, TGDPS real-time rainfall maps (state + district level), climate source integration, risk simulators. | Continuous |
+| **🤝 Coordination Agent** | Manages inter-departmental resource allocation, SITREP generation, agency registry, and supply chain tracking. | Semi-autonomous |
+
+### Why Sentinel AI vs. Existing Platforms
 
 | Feature Area | Traditional Platforms | 🛡️ Sentinel AI |
-|--------------|-----------------------|----------------|
+|:---|:---|:---|
 | **Response Speed** | Manual verification (takes hours) | **Sub-second AI Validation** (3-parameter checking algorithm) |
-| **Accessibility** | Requires app downloads, English-first | **No-install PWA + WhatsApp integration + Voice SOS.** Auto-translates to 6 regional languages via GPS. |
-| **Volunteer Logistics** | Manual phone trees, chaotic WhatsApp groups | **"Uber-style" Auto-Dispatch.** Finds available responders within a 10km radius dynamically matching skills via WhatsApp bot. |
-| **Alerting Precision** | Mass SMS blasts (causes panic & alert fatigue) | **Smart Geo-Fencing**. Alerts only hit users strictly within the hazard's specific impact radius based on severity. |
-| **Resource Supply Chain**| Top-down government handouts only | **LifeLine P2P Marketplace.** Decentralized local networking to match resource Donors with Requesters in real time. |
-| **Predictive Power** | Reactive (post-disaster mapping) | **Risk Simulator.** Simulates localized climate hazards based on live metrics, predicting infrastructural stress before it happens. |
-
-By collapsing reporting, verification, dispatch, and resource matching into a single autonomous pipeline, a process that used to take dozens of phone calls now takes **minutes**.
+| **Reporting Channels** | Single-channel (app or phone) | **Omni-channel**: Online reports, offline AI calling agent, one-tap Voice SOS with lat/long, WhatsApp bot |
+| **Accessibility** | Requires app downloads, English-first | **No-install PWA + WhatsApp + Voice SOS.** Auto-translates to 6 regional languages via GPS |
+| **Volunteer Logistics** | Manual phone trees, chaotic groups | **"Uber-style" Auto-Dispatch.** 10km radius, skill-matched, WhatsApp-native |
+| **Alerting Precision** | Mass SMS blasts (causes panic) | **Smart Geo-Fencing.** 20km radius alerts with disaster images + safe rescue locations |
+| **Resource Supply Chain** | Top-down handouts only | **LifeLine P2P Marketplace** + Supply chain tracking for physical disaster items |
+| **Predictive Power** | Reactive (post-disaster) | **Risk Simulator + Live TGDPS Satellite Rainfall Maps** (state & district level) |
+| **Dept. Coordination** | Phone calls between offices | **Unified Coordination Dashboard** — agencies, resources, SITREPs, volunteers |
+| **Community Engagement** | None | **Volunteering Hub** — beach cleanups, tree planting, NGO onboarding |
+| **Gamification** | None | **Points + Govt Certification + Leaderboards** with top performer recognition |
 
 ---
 
-## ✨ Features
+## 🔄 Complete Application Flow
 
-### 🚨 1. Voice SOS & Crowdsourced Reporting
-* **One-Tap Audio SOS**: Citizens can simply speak into their phones. The system uses natural language processing (NLP) to extract transcripts, identify keywords (e.g., "stuck," "water rising"), automatically categorize the hazard, and elevate priority to 'Critical'.
-* **Standard Reporting**: Fast manual reporting via PWA.
-* **AI Verification Engine**: Every report is instantly scored by the **3-Parameter Accuracy System™**:
-  - **Heatmap Match (33%)**: Cross-references spatial density of similar reports in a 5.5km radius over 24 hours.
-  - **Climate Alignment (33%)**: Queries Open-Meteo API to ensure live weather conditions (wind speed, humidity, etc.) mathematically support the claimed hazard.
-  - **User Quality Score (34%)**: Evaluates the historical credibility of the reporter based on past approval rates and account tier.
-* **Auto-Approval**: Reports scoring **≥ 85%** bypass human review, instantly triggering downstream alerts and volunteer dispatches.
+The following is the end-to-end operational flow of Sentinel AI, from incident detection to community resilience building:
 
-### 🤝 2. Automated Volunteer Dispatch (Uber-Style Rescue)
-Once a hazard is verified, the system's logistics engine takes over:
-1. Queries database for registered, available volunteers strictly within a **10 km radius**.
-2. Fires a **WhatsApp interactive message** (via Twilio) detailing hazard severity, coordinates, and photo evidence.
-3. Volunteers reply "1" to Accept or "2" to Decline directly within WhatsApp.
-4. Dashboard updates live for officials (Pending → Accepted → En Route → Completed).
-5. Post-rescue, volunteers upload photographic proof to close the ticket and receive gamified rank points.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        PHASE 1: INCIDENT DETECTION                         │
+│                                                                             │
+│  ┌─────────────┐  ┌──────────────────┐  ┌────────────────────────────────┐ │
+│  │ 📱 Online   │  │ 📞 Offline via   │  │ 🆘 SOS Button                 │ │
+│  │   Report    │  │   AI Calling     │  │   (One-tap with lat/long,     │ │
+│  │   (PWA)     │  │   Agent          │  │    auto-records audio,        │ │
+│  │             │  │                  │  │    NLP extracts keywords)     │ │
+│  └──────┬──────┘  └────────┬─────────┘  └──────────────┬─────────────────┘ │
+│         │                  │                           │                    │
+│         └──────────────────┴───────────────────────────┘                    │
+│                            │                                                │
+│                   ┌────────▼────────┐                                       │
+│                   │  🤖 AI Verification Engine                              │
+│                   │  3-Parameter Accuracy System™                           │
+│                   │                                                         │
+│                   │  P1: Heatmap Match (33%)                                │
+│                   │      → Similar reports in 5.5km / 24hr                  │
+│                   │  P2: Climate Alignment (33%)                            │
+│                   │      → Open-Meteo live weather validation               │
+│                   │  P3: User Quality Score (34%)                           │
+│                   │      → Historical credibility of reporter               │
+│                   │                                                         │
+│                   │  Score ≥ 85% → AUTO-APPROVED                            │
+│                   │  Score < 85% → Queued for Official Review               │
+│                   └────────┬────────┘                                       │
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│                   PHASE 2: ANALYST DASHBOARD & DIGITAL TWIN                 │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  🛰️ Live Satellite Climate Sources                                    │  │
+│  │  • RainViewer real-time radar overlay                                  │  │
+│  │  • Open-Meteo weather data (temp, humidity, wind, weather codes)       │  │
+│  │  • TGDPS Live Rainfall Map — State Level (auto-refresh)               │  │
+│  │  • TGDPS Live Rainfall Map — District Level (33 districts selectable) │  │
+│  │  • INSAT satellite overlay                                            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  📊 Analytics & Risk Simulation                                       │  │
+│  │  • Hazard distribution charts                                         │  │
+│  │  • Reports timeline & trend analysis                                  │  │
+│  │  • User engagement metrics                                            │  │
+│  │  • Risk Simulator: Input rainfall + sea-level → predict infra damage  │  │
+│  │  • Urban Resilience Index (URI) per geographic zone                    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│                   PHASE 3: OFFICIAL APPROVAL & ALERTING                     │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │  🏛️ Official Review Panel                                       │       │
+│  │  • View AI accuracy breakdown                                    │       │
+│  │  • Approve / Reject with reasons                                 │       │
+│  │  • Escalate priority (Normal → High → Critical)                  │       │
+│  └────────────────────────┬────────────────────────────────────────┘       │
+│                           │ APPROVED                                       │
+│  ┌────────────────────────▼────────────────────────────────────────┐       │
+│  │  📢 Smart Geo-Fenced Alerts (20km radius)                       │       │
+│  │  • Push notifications to users within impact zone                │       │
+│  │  • WhatsApp alerts with disaster report IMAGE                    │       │
+│  │  • Safe rescue location coordinates included                     │       │
+│  │  • Multi-language auto-translation                               │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│               PHASE 4: VOLUNTEER DISPATCH & RESCUE OPERATIONS               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │  🤝 "Uber-Style" Volunteer Matching                              │       │
+│  │  1. Query available volunteers within 10km radius                 │       │
+│  │  2. Match by skills (medical, rescue, logistics)                  │       │
+│  │  3. Fire WhatsApp message with photo + coordinates                │       │
+│  │  4. Volunteer replies "1" Accept / "2" Decline                    │       │
+│  │  5. Real-time status: Pending → Accepted → En Route → Completed  │       │
+│  │  6. Upload completion photo as proof → earn points                │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│           PHASE 5: LIFELINE — SUPPLY CHAIN & RESOURCE MANAGEMENT            │
+│                                                                             │
+│  ┌──────────────────────────────┐  ┌──────────────────────────────────────┐│
+│  │ 🏪 P2P Resource Marketplace  │  │ 📦 Physical Supply Chain Tracking   ││
+│  │                              │  │                                      ││
+│  │ Citizens list:               │  │ Government & NGO agencies:           ││
+│  │ • What they HAVE (food,      │  │ • Register in Agency Registry       ││
+│  │   medicine, blankets, boats) │  │ • Track resource allocation          ││
+│  │ • What they NEED             │  │   (Allocated → Deployed → Used)     ││
+│  │                              │  │ • Situation Reports (SITREPs)       ││
+│  │ SafeLink™ auto-matches      │  │ • Cross-department coordination     ││
+│  │ donors ↔ requesters         │  │                                      ││
+│  │ by proximity                 │  │ All reports by people & govt         ││
+│  │                              │  │ consolidated in one dashboard        ││
+│  └──────────────────────────────┘  └──────────────────────────────────────┘│
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│            PHASE 6: COMMUNITY VOLUNTEERING & RESILIENCE BUILDING            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │  🌿 Shonha's Community Hub                                      │       │
+│  │                                                                   │       │
+│  │  Anyone can be a volunteer and help people:                       │       │
+│  │  • Vacate & evacuate during disasters                             │       │
+│  │  • Feed affected communities                                      │       │
+│  │  • Join NGO/Govt initiatives directly through the app             │       │
+│  │  • Beach cleanups & plastic reduction drives                      │       │
+│  │  • Tree planting campaigns                                        │       │
+│  │  • Environmental conservation activities                          │       │
+│  │                                                                   │       │
+│  │  Eco-Tracker: Log activities → earn carbon savings credits        │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+└────────────────────────────┼────────────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────────────┐
+│              PHASE 7: GAMIFICATION, RECOGNITION & CERTIFICATION             │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │  🏆 Points & Honours System                                      │       │
+│  │                                                                   │       │
+│  │  • Points earned for: reporting, volunteering, eco-activities     │       │
+│  │  • Levels: Eco Beginner → Climate Hero                            │       │
+│  │  • Badges: First Report, Rescue Hero, Eco Warrior, etc.           │       │
+│  │  • Leaderboards: Individual, Community, Eco-specific              │       │
+│  │  • Top performers recognized with Government Certification        │       │
+│  │  • Social features: Follow users, view profiles, share reports    │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-### 🌍 3. Live Hazard Map, Simulator & Analytics
-- **Live Spatial Dashboards**: Leaflet.js heatmaps overlaid with real-time RainViewer weather radar layers.
-- **Risk Simulator**: A deterministic modeling tool for analysts. Input impending rainfall (mm) and sea-level anomalies; the AI predicts sectoral infrastructure damage (Power, Water, Telecom, Housing) and outputs an actionable evacuation priority.
-- **Urban Resilience Index (URI)**: A dynamic, rolling score per geographic zone calculated from response times, hazard frequency, and community eco-activity density.
+### Cross-Cutting Capabilities
 
-### 📢 4. Smart Geo-fenced Multi-channel Alerts
-Prevents alert fatigue. If a Storm Surge is detected, the system sends push notifications and WhatsApp alerts strictly to users whose saved Home Locations fall within a scaled radius (e.g., 15km for storm surge, 2km for swell surge) rather than spamming entire states.
+| Capability | Description |
+|:---|:---|
+| **🌐 Multi-Lingual** | Auto-detects language from GPS coordinates. Supports English, Telugu, Tamil, Malayalam, Kannada, Hindi. Manual toggle available. |
+| **📱 Progressive Web App** | Installable on mobile — no app store needed. Works offline via Service Worker caching. |
+| **💬 WhatsApp Integration** | Full bot flow — account linking, volunteer dispatch, status updates, report submission — all via WhatsApp. |
+| **🎖️ Govt Certification** | Top performers receive official government-recognized certificates for disaster response contributions. |
+| **🔔 Real-time Notifications** | In-app notification bell with 5-second polling. Push notifications via Firebase. |
 
-### 🌐 5. Auto-detected Multilingual Interface
-Using an algorithmic map of Indian coastal linguistic boundaries, the PWA auto-loads the correct language (English, Tamil, Malayalam, Telugu, Kannada, Hindi) based on the user's GPS coordinates upon first load. Supports manual toggling as well.
+---
+
+## ✨ Feature Deep-Dive
+
+### 🚨 1. Omni-Channel Incident Reporting
+
+| Channel | How It Works |
+|:---|:---|
+| **Online Report (PWA)** | Fast form-based reporting with photo/video upload, GPS auto-fill, hazard type selection |
+| **Offline AI Calling Agent** | Citizens without internet call the AI agent, which transcribes speech, extracts hazard type and location, auto-creates a report |
+| **SOS Button** | One-tap emergency — captures GPS coordinates (lat/long), records audio, NLP extracts keywords ("stuck", "water rising"), auto-categorizes hazard, elevates to Critical priority |
+
+### 🤖 2. AI Verification Engine — 3-Parameter Accuracy System™
+
+Every report is instantly scored:
+
+| Parameter | Weight | How It Works |
+|:---|:---|:---|
+| **Heatmap Match** | 33% | Cross-references spatial density of similar reports in a 5.5km radius over 24 hours |
+| **Climate Alignment** | 33% | Queries Open-Meteo API — validates that live weather conditions (wind speed, humidity, weather codes) support the claimed hazard |
+| **User Quality Score** | 34% | Historical credibility — approval rate, account age, user level, role-based trust multiplier |
+
+| Score | Classification | System Action |
+|:---|:---|:---|
+| **85–100%** | 🟢 Highly Reliable | Auto-approved → alerts dispatched immediately |
+| **60–84%** | 🟡 Good Confidence | Queued for official review |
+| **40–59%** | 🟠 Questionable | Held for investigation |
+| **0–39%** | 🔴 Low Confidence | Flagged as potential misinformation |
+
+### 🛰️ 3. Analyst Dashboard & City Digital Twin
+
+The crown jewel of the platform — a comprehensive analytical command center:
+
+- **Live Satellite Overlays**: RainViewer real-time precipitation radar overlaid on Leaflet.js maps
+- **TGDPS Integration**: Live rainfall status maps from the Telangana Development Planning Society
+  - **State-Level Map**: Full Telangana state with 500+ AWS station markers, auto-refreshing
+  - **District-Level Map**: Select from 33 districts — Hyderabad, Adilabad, Warangal, etc. — for granular weather intelligence
+- **Risk Simulator**: Input projected rainfall (mm) and sea-level anomalies → AI predicts sectoral infrastructure damage across Power, Water, Telecom, Housing → outputs evacuation priority
+- **Urban Resilience Index (URI)**: Dynamic 0–100 score per geographic zone, calculated from response times, hazard frequency, and community eco-activity density
+- **Analytics Charts**: Hazard distribution, reports timeline, user engagement, trending hazard types
+
+### 🤝 4. Uber-Style Volunteer Dispatch
+
+Once a hazard is verified:
+1. **Query** — find registered, available volunteers within **10km radius**
+2. **Match** — filter by skills (medical, rescue, logistics, general)
+3. **Dispatch** — fire WhatsApp interactive message with hazard photo, coordinates, severity
+4. **Respond** — volunteer replies "1" Accept or "2" Decline directly in WhatsApp
+5. **Track** — real-time lifecycle: `Pending → Accepted → En Route → Completed`
+6. **Verify** — upload completion photo as proof → earn gamified points
+
+### 📢 5. Smart Geo-Fenced Alerts (20km Radius)
+
+Prevents alert fatigue through precision targeting:
+- Alerts only reach users whose home locations fall within the hazard impact radius
+- Includes the **disaster report image** for visual context
+- Includes **safe rescue location** coordinates
+- Scaled radius based on hazard type (e.g., 15km for storm surge, 2km for localized swell)
+- Multi-channel: in-app push + WhatsApp + notification bell
 
 ### 🛰️ 6. LifeLine — P2P Emergency Resource Marketplace
-When supply chains break down, communities survive together.
-- **SafeLink™ Matching Engine**: Users list what they need (insulin, boats, blankets) or what they have. The algorithm auto-pairs Donors with Requesters based on proximity.
-- **Visual Mapping**: Glowing connection lines appear on the LifeLine map to visualize successful supply handoffs natively.
 
-### ♻️ 7. Eco-Sustainability Tracker (Mitigation & Gamification)
-Building resilience before disaster strikes. Users log eco-friendly behaviors (plastic reduction, public transit, tree planting) to earn points and level up (Eco Beginner → Climate Hero). Activities are optionally photo-verified by AI, converting efforts into estimated kilograms of CO2 saved. Includes leaderboards and badges.
+When supply chains break down, communities survive together:
+- **SafeLink™ Matching Engine**: Users list what they NEED (insulin, boats, blankets) or what they HAVE → algorithm auto-pairs by proximity
+- **Visual Mapping**: Glowing connection lines on the LifeLine map visualize successful supply matches
+- **Government + Citizen Reports**: All reports consolidated — from citizens and government agencies — in one unified view
 
-### 🏛️ 8. Government-NGO Coordination Platform
-A centralized command sector restricted to `official` and `agency` roles:
-- **Agency Registry**: Register specific government departments and NGOs.
-- **Resource Allocation Ledger**: Track exact quantities of medical/food supplies sent from distinct agencies to specific emergency checkpoints (Allocated → Deployed → Used → Returned).
-- **SITREPs**: Formal situation reports mapped against ongoing emergency events.
+### 📦 7. Supply Chain Management
+
+Physical resource tracking for disaster response operations:
+- **Agency Registry**: Register government departments and NGOs
+- **Resource Allocation Ledger**: Track quantities of medical/food supplies — `Allocated → Deployed → Used → Returned`
+- **Situation Reports (SITREPs)**: Formal field reports mapped against ongoing emergency events
+- **Inter-Department Coordination**: Break departmental silos with a unified coordination dashboard
+
+### 🌿 8. Community Volunteering Hub (Shonha's App)
+
+Building resilience before and after disasters:
+- **Join as Volunteer**: Anyone can register — part of government or any NGO
+- **Help during disasters**: Assist with evacuation, feeding, medical aid
+- **Environmental Initiatives**: Beach cleanups, tree planting, plastic reduction drives
+- **Eco-Tracker**: Log eco-friendly behaviors → earn estimated kg of CO2 saved
+- **Levels**: Eco Beginner → Eco Enthusiast → Green Champion → Climate Hero
+
+### 🏆 9. Gamification & Government Certification
+
+| Element | Details |
+|:---|:---|
+| **Points System** | Earn points for reporting, volunteering, eco-activities, completing missions |
+| **Levels** | Progressive leveling based on accumulated points |
+| **Badges** | Achievement badges — First Report, Rescue Hero, Eco Warrior, Community Leader |
+| **Leaderboards** | Individual rankings, community rankings, eco-specific rankings |
+| **Top Performers** | Recognized with **Government Certification** for outstanding contributions |
+| **Social Features** | Follow other users, view profiles, share reports as "reels" |
+
+### 🌐 10. Multi-Lingual Support
+
+| Language | Detection Method |
+|:---|:---|
+| English | Default |
+| Telugu | GPS-detected (Telangana/AP coordinates) |
+| Tamil | GPS-detected (Tamil Nadu coordinates) |
+| Malayalam | GPS-detected (Kerala coordinates) |
+| Kannada | GPS-detected (Karnataka coordinates) |
+| Hindi | GPS-detected (Hindi belt coordinates) |
+
+Auto-loads the correct language based on GPS coordinates upon first load. Manual toggling always available.
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      BROWSER / PWA CLIENT                       │
-│                                                                 │
-│  Bootstrap 5 · Vanilla CSS (Glassmorphism) · Leaflet.js         │
-│  Service Worker · Web App Manifest (Add-to-Homescreen)          │
-│  Language: Auto-detected by GPS · Polling every 5s              │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ HTTPS
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│                     FLASK APPLICATION                           │
-│                  (Factory Pattern · Port 5001)                  │
-│                                                                 │
-│  ┌───────────────┐ ┌────────────────┐ ┌─────────────────────┐  │
-│  │ Report Engine │ │Volunteer Engine│ │  WhatsApp Handler   │  │
-│  │ 3-Param AI    │ │ Auto-Dispatch  │ │  Twilio Webhooks    │  │
-│  │ Geo-Alerts    │ │ 10km Geo-Query │ │  Multi-step Session │  │
-│  └───────┬───────┘ └───────┬────────┘ └──────────┬──────────┘  │
-│          │                 │                     │             │
-│  ┌───────▼─────────────────▼─────────────────────▼──────────┐  │
-│  │                SQLAlchemy ORM                             │  │
-│  │                                                           │  │
-│  │  sqlite:///site.db  (dev)                                 │  │
-│  │  postgresql://...   (production)                          │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              APScheduler Background Jobs                 │   │
-│  │  • Scheduled DB cleanup                                  │   │
-│  │  • Weather data pre-fetching                             │   │
-│  │  • Alert expiry processing                               │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└────────────────────┬─────────────────────────────────────────── ┘
-                     │
-         ┌───────────┴────────────┐
-         │                        │
-┌────────▼──────────┐  ┌──────────▼─────────────────────────────┐
-│   Twilio API      │  │         Open-Meteo API (Free)           │
-│                   │  │                                         │
-│ WhatsApp messages │  │ GET /v1/forecast?latitude=...           │
-│ Inbound webhooks  │  │ temperature_2m · humidity_2m            │
-│ Media attachments │  │ wind_speed_10m · weather_code           │
-└───────────────────┘  └─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BROWSER / PWA CLIENT                             │
+│                                                                          │
+│  Bootstrap 5 · Glassmorphism CSS · Leaflet.js · Chart.js                 │
+│  Service Worker (Offline) · Web App Manifest (Add-to-Homescreen)         │
+│  Language: Auto-detected by GPS · Real-time polling every 5s             │
+│  Voice SOS: MediaRecorder API + NLP keyword extraction                   │
+└────────────────────────────┬─────────────────────────────────────────────┘
+                             │ HTTPS
+                             │
+┌────────────────────────────▼─────────────────────────────────────────────┐
+│                        FLASK APPLICATION                                  │
+│                     (Port 5001 · 116 Routes · 5600+ Lines)               │
+│                                                                           │
+│  ┌───────────────┐ ┌────────────────┐ ┌──────────────┐ ┌─────────────┐  │
+│  │ 🔍 Detection  │ │ 📋 Prioritize  │ │ 🚁 Dispatch  │ │ 📡 Alert    │  │
+│  │    Agent      │ │    Agent       │ │    Agent     │ │    Agent    │  │
+│  │ 3-Param AI    │ │ Auto-approval  │ │ 10km Geo-Q   │ │ 20km Fence  │  │
+│  │ NLP + SOS     │ │ Severity rank  │ │ WhatsApp bot │ │ Multi-lang  │  │
+│  └───────┬───────┘ └───────┬────────┘ └──────┬───────┘ └──────┬──────┘  │
+│          │                 │                  │                │          │
+│  ┌───────▼─────────────────▼──────────────────▼────────────────▼───────┐  │
+│  │                     SQLAlchemy ORM (23 Models)                       │  │
+│  │                                                                      │  │
+│  │  sqlite:///site.db  (development)                                    │  │
+│  │  postgresql://...   (production — Render / Heroku / AWS)             │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │                    APScheduler Background Jobs                        │ │
+│  │  • Scheduled DB cleanup    • Weather data pre-fetching                │ │
+│  │  • Alert expiry processing • TGDPS map proxy refresh                  │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+└────────────┬──────────────┬──────────────┬──────────────┬────────────────┘
+             │              │              │              │
+   ┌─────────▼──────┐ ┌────▼─────────┐ ┌──▼──────────┐ ┌▼───────────────┐
+   │  Twilio API    │ │ Open-Meteo   │ │ TGDPS Gov   │ │ RainViewer     │
+   │  WhatsApp msgs │ │ Weather API  │ │ Live Rainfall│ │ Satellite Radar│
+   │  Inbound hooks │ │ (Free, no-key│ │ Map Proxy   │ │ Precipitation  │
+   │  Media attach. │ │  weather data│ │ (State+Dist)│ │ Overlay API    │
+   └────────────────┘ └──────────────┘ └─────────────┘ └────────────────┘
 ```
 
 ---
@@ -147,128 +384,140 @@ A centralized command sector restricted to `official` and `agency` roles:
 ## 📁 Project Structure
 
 ```
-disaster_management/
+sentinel-ai/
 │
-├── app.py              # Main Flask application — all routes, business logic,
-│                       # WhatsApp bot handler, background scheduler jobs,
-│                       # multilingual translation tables, and AI analytics
+├── app.py                  # Main Flask application — 116 routes, 5600+ lines
+│                           # All business logic, AI engines, WhatsApp handler,
+│                           # background jobs, TGDPS proxy, multi-lingual tables
 │
-├── models.py           # SQLAlchemy ORM models (15 tables — see schema below)
+├── models.py               # SQLAlchemy ORM — 23 database models
 │
-├── forms.py            # WTForms definitions for all user-facing forms
-│                       # (registration, reporting, coordination, eco-tracking, etc.)
+├── forms.py                # WTForms definitions for all user-facing forms
 │
-├── utils.py            # Core utility library:
-│                       # - 3-Parameter AI validation engine
-│                       # - Haversine distance calculator
-│                       # - WhatsApp/Twilio message sender
-│                       # - Geo-fenced alert logic
-│                       # - Carbon savings calculator
-│                       # - Eco-activity point system
+├── utils.py                # Core utility library:
+│                           # - 3-Parameter AI validation engine
+│                           # - Haversine distance calculator
+│                           # - WhatsApp/Twilio message sender
+│                           # - Geo-fenced alert logic
+│                           # - Carbon savings calculator
 │
-├── translations.py     # Extended multilingual string tables (6 languages)
-│
-├── config.py           # Environment-aware Flask configuration
-│
-├── requirements.txt    # Python dependencies
-├── Procfile            # Heroku/Render deployment entry point
-├── start_system.sh     # Helper script to start app + tunnel
-├── setup_whatsapp.sh   # WhatsApp Twilio sandbox setup helper
+├── translations.py         # Extended multilingual string tables (6 languages)
+├── config.py               # Environment-aware Flask configuration
+├── requirements.txt        # Python dependencies (19 packages)
+├── Procfile                # Heroku/Render deployment entry point
+├── start_system.sh         # Helper: start app + ngrok tunnel
+├── setup_whatsapp.sh       # WhatsApp Twilio sandbox setup
 │
 ├── static/
-│   ├── css/style.css   # Global stylesheet (glassmorphism, animations)
-│   ├── js/script.js    # Core frontend JS (maps, notifications, polling)
-│   ├── js/pwa.js       # Progressive Web App registration
-│   ├── sw.js           # Service Worker (offline caching)
-│   ├── manifest.json   # PWA manifest (icons, display mode)
-│   ├── icons/          # PWA app icons (various sizes)
-│   └── uploads/        # User-uploaded photos and videos
+│   ├── css/style.css       # Global stylesheet (glassmorphism, animations)
+│   ├── js/
+│   │   ├── script.js       # Core frontend (maps, notifications, polling)
+│   │   ├── analyst_dashboard.js  # TGDPS live map refresh + district selector
+│   │   └── pwa.js          # PWA service worker registration
+│   ├── sw.js               # Service Worker (offline caching)
+│   ├── manifest.json       # PWA manifest (icons, display mode)
+│   ├── icons/              # PWA app icons (multiple sizes)
+│   ├── uploads/            # User-uploaded photos and videos
+│   └── videos/             # Report video evidence
 │
-├── templates/          # Jinja2 HTML templates
-│   ├── base.html           # Global layout: navbar, notification bell,
-│   │                       # real-time polling JS, toast notifications
-│   ├── home.html           # Landing page + live report feed
-│   ├── report.html         # Hazard submission form
-│   ├── dashboard.html      # Analytics dashboard
-│   ├── lifeline_map.html   # LifeLine P2P resource map
-│   ├── coordination.html   # Coordinator command center
-│   ├── volunteer_management.html
-│   ├── situation_reports.html
-│   ├── notifications.html
-│   └── ...                 # 30+ additional templates
+├── templates/              # 48+ Jinja2 HTML templates
+│   ├── base.html               # Global layout, navbar, notification bell
+│   ├── index.html              # Landing page + live report feed
+│   ├── report.html             # Hazard submission (online reporting)
+│   ├── dashboard.html          # Main user dashboard
+│   ├── analyst_dashboard.html  # Full analyst command center + TGDPS maps
+│   ├── simulation.html         # Risk simulator interface
+│   ├── coordination_dashboard.html  # Inter-department coordination
+│   ├── volunteer_management.html    # Volunteer dispatch & tracking
+│   ├── lifeline.html           # P2P resource marketplace
+│   ├── lifeline_map.html       # LifeLine visual mapping
+│   ├── community_hub.html      # Community volunteering hub
+│   ├── eco_tracker.html        # Eco-sustainability tracker
+│   ├── notifications.html      # Alert center
+│   ├── reels.html              # Social report sharing
+│   └── ...                     # 34+ additional templates
 │
-├── migrations/         # Flask-Migrate Alembic database migrations
-└── instance/           # SQLite database file (gitignored)
+├── migrations/             # Flask-Migrate Alembic database migrations
+└── instance/               # SQLite database file (gitignored)
 ```
 
 ---
 
 ## 🗄️ Database Schema
 
-The application uses **15 database tables** managed via SQLAlchemy + Flask-Migrate:
+The application uses **23 database models** managed via SQLAlchemy + Flask-Migrate:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         CORE MODELS                                 │
-├──────────────────┬──────────────────────────────────────────────────┤
-│ User             │ id · username · email · password_hash · role      │
-│                  │ points · level · language · home_lat/lon          │
-│                  │ whatsapp_number · whatsapp_session (multi-step)   │
-│                  │ alert_preferences (JSON) · push_token             │
-├──────────────────┼──────────────────────────────────────────────────┤
-│ Report           │ id · title · description · hazard_type · location │
-│                  │ latitude · longitude · image_file · video_file    │
-│                  │ confidence_score · ai_analysis                    │
-│                  │ verification_status (pending/approved/rejected)   │
-│                  │ priority · status · alert_radius · alert_sent     │
-│                  │ likes_count · comments_count · views_count        │
-├──────────────────┼──────────────────────────────────────────────────┤
-│ Notification     │ id · user_id · message · report_id · assignment_id│
-│                  │ is_read · is_alert · created_at · expires_at      │
-├──────────────────┼──────────────────────────────────────────────────┤
-│ Like             │ id · user_id · report_id (unique constraint)      │
-│ Comment          │ id · user_id · report_id · text · timestamp       │
-│ LocalApproval    │ id · user_id · report_id (crowd-verification)     │
-│ ReportView       │ id · user_id · report_id (unique view tracking)   │
-│ Badge / UserBadge│ Achievement system                                │
-│ followers        │ Association table (follower_id · followed_id)     │
-└──────────────────┴──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CORE MODELS                                    │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ User             │ id · username · email · password_hash · role          │
+│                  │ points · level · language · home_lat/lon              │
+│                  │ whatsapp_number · whatsapp_session (multi-step)       │
+│                  │ alert_preferences (JSON) · push_token                 │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Report           │ id · title · description · hazard_type · location     │
+│                  │ latitude · longitude · image_file · video_file        │
+│                  │ confidence_score · ai_analysis · priority             │
+│                  │ verification_status (pending/approved/rejected)       │
+│                  │ alert_radius · alert_sent · likes/comments/views      │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Notification     │ id · user_id · message · report_id · assignment_id   │
+│                  │ is_read · is_alert · created_at · expires_at          │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Like / Comment   │ Social interaction models                             │
+│ LocalApproval    │ Crowd-verification of reports                         │
+│ ReportView       │ Unique view tracking per user                         │
+│ Badge / UserBadge│ Achievement system                                    │
+│ followers        │ Association table (user ↔ user)                      │
+└──────────────────┴──────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                    COORDINATION MODELS                              │
-├──────────────────┬──────────────────────────────────────────────────┤
-│ Agency           │ Government / NGO registry                        │
-│ EmergencyEvent   │ Formal incident creation by officials            │
-│ ResourceAlloc.   │ Agency resource → event allocation tracking      │
-│ Volunteer        │ Volunteer profile (skills, availability, location)│
-│ VolunteerAssign. │ Assignment lifecycle: pending→accepted→completed  │
-│                  │ + completion_photo + points_earned               │
-│ SituationReport  │ Structured field reports (SITREPs) by officials  │
-└──────────────────┴──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      COORDINATION MODELS                                 │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ Agency           │ Government / NGO registry with contact details        │
+│ EmergencyEvent   │ Formal incident creation by officials                 │
+│ ResourceAlloc.   │ Agency resource → event allocation tracking          │
+│ Volunteer        │ Profile: skills, availability, location, certif.      │
+│ VolunteerAssign. │ Lifecycle: pending→accepted→en_route→completed       │
+│ SituationReport  │ Structured field reports (SITREPs)                    │
+└──────────────────┴──────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────┐
-│               SUSTAINABILITY & COMMUNITY MODELS                     │
-├──────────────────┬──────────────────────────────────────────────────┤
-│ PlasticUsage     │ Plastic reduction log with AI verification score  │
-│ CarbonSavings    │ General eco-activity carbon offset records        │
-│ CommunityEvent   │ Disaster-prep / environmental meetups            │
-│ EventParticipant │ User ↔ CommunityEvent participation tracking     │
-└──────────────────┴──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 SUSTAINABILITY & COMMUNITY MODELS                        │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ PlasticUsage     │ Plastic reduction log with AI verification            │
+│ CarbonSavings    │ General eco-activity carbon offset records            │
+│ CommunityEvent   │ Environmental meetups (beach cleanup, tree planting)  │
+│ EventParticipant │ User ↔ CommunityEvent participation                 │
+└──────────────────┴──────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                    LIFELINE P2P MODELS                              │
-├──────────────────┬──────────────────────────────────────────────────┤
-│ ResourceListing  │ Have / Need listings (food, water, medical, etc.) │
-│ ResourceMatch    │ SafeLink™ — matching a "need" to a "have"        │
-└──────────────────┴──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      LIFELINE P2P MODELS                                 │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ ResourceListing  │ Have / Need listings (food, water, medical, shelter)  │
+│ ResourceMatch    │ SafeLink™ matching engine (donor ↔ requester)       │
+└──────────────────┴──────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────┐
-│              URBAN RESILIENCE INDEX (URI) MODELS                    │
-├──────────────────┬──────────────────────────────────────────────────┤
-│ ResilienceZone   │ Geographic grid zones for scoring                │
-│ ResilienceScore  │ Historical 0–100 URI scores per zone+period      │
-└──────────────────┴──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                URBAN RESILIENCE INDEX (URI) MODELS                       │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ ResilienceZone   │ Geographic grid zones for scoring                     │
+│ ResilienceScore  │ Historical 0–100 URI scores per zone + period        │
+└──────────────────┴──────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 🎮 User Roles & Permissions
+
+| Role | Who | Key Permissions |
+|:---|:---|:---|
+| `citizen` | General public | Submit reports, join LifeLine, earn points, participate in community events |
+| `volunteer` | Registered responders | Accept rescue missions, complete assignments, upload proof, earn rescue points |
+| `official` | Government officers | Approve/reject reports, create emergencies, assign volunteers, view all dashboards, issue certifications |
+| `analyst` | Data scientists / planners | Full access to analyst dashboard, risk simulator, TGDPS maps, URI data, all analytics |
+| `agency` | NGO / Emergency org | Manage agency resources, create SITREPs, coordinate cross-department responses |
 
 ---
 
@@ -277,7 +526,7 @@ The application uses **15 database tables** managed via SQLAlchemy + Flask-Migra
 ### Prerequisites
 
 | Requirement | Notes |
-|-------------|-------|
+|:---|:---|
 | **Python 3.9+** | Tested on 3.11 |
 | **Twilio Account** | Free trial works; needs WhatsApp Sandbox enabled |
 | **Ngrok / tunnel** | Required for local WhatsApp webhook testing only |
@@ -285,8 +534,8 @@ The application uses **15 database tables** managed via SQLAlchemy + Flask-Migra
 ### 1. Clone & Set Up Environment
 
 ```bash
-git clone https://github.com/varunmax7/MaxAlert-AI.git
-cd MaxAlert-AI
+git clone https://github.com/varunmax7/sentinelai.git
+cd sentinelai
 
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
@@ -308,11 +557,10 @@ TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886   # Twilio Sandbox number
 
-# --- Optional: Public base URL (needed for WhatsApp media attachments) ---
+# --- Optional ---
 BASE_URL=https://your-ngrok-subdomain.ngrok-free.app
+FIREBASE_SERVER_KEY=your_firebase_key    # For push notifications
 ```
-
-> **Note:** `DATABASE_URL` starting with `postgres://` is automatically rewritten to `postgresql://` (Heroku compatibility).
 
 ### 3. Initialise the Database
 
@@ -320,135 +568,90 @@ BASE_URL=https://your-ngrok-subdomain.ngrok-free.app
 flask db upgrade
 ```
 
-This runs all Alembic migration scripts and creates the database schema. For a fresh SQLite database, this also runs `db.create_all()` automatically on app start.
-
 ### 4. Run the Application
 
 ```bash
 python app.py
 # Server starts on http://0.0.0.0:5001
 # Access locally: http://localhost:5001
-# Access on LAN:  http://192.168.x.x:5001
 ```
 
-### 5. Expose to Internet (For WhatsApp & Mobile Testing)
+### 5. Expose to Internet (For WhatsApp Testing)
 
 ```bash
-# Option A: ngrok (recommended for development)
 ngrok http 5001
-# Copy the https://xxxxx.ngrok-free.app URL
-
-# Option B: Cloudflare Tunnel (no account needed for quick test)
-cloudflared tunnel --url http://localhost:5001
-```
-
-Then in **Twilio Console → Messaging → Try it out → Send a WhatsApp message**, set your webhook URL to:
-```
-https://YOUR-TUNNEL-URL/whatsapp/webhook
+# Set webhook URL in Twilio Console:
+# https://YOUR-TUNNEL-URL/webhook/whatsapp
 ```
 
 ---
 
 ## 📡 API Reference
 
-All JSON endpoints require authentication unless noted otherwise.
+All JSON endpoints require authentication via session cookie unless noted.
 
-### Reports
+### Reports & Detection
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+|:---|:---|:---|:---|
 | `GET` | `/api/reports` | ✅ | Paginated list of all reports |
-| `GET` | `/api/reports/active` | ✅ | Active (non-resolved) reports |
-| `GET` | `/api/hazards/map` | ✅ | GeoJSON FeatureCollection for Leaflet map |
-| `GET` | `/api/report/<id>/accuracy_3param` | ✅ | Full 3-parameter AI accuracy breakdown |
-| `POST` | `/report` (form) | ✅ | Submit a new hazard report |
-| `POST` | `/approve_report/<id>` | 🔐 Official | Manually approve a pending report |
-| `POST` | `/reject_report/<id>` | 🔐 Official | Reject a report with reason |
+| `GET` | `/api/hazards/active` | ✅ | Active hazards for map overlay |
+| `GET` | `/api/report/<id>/accuracy_3param` | ✅ | Full 3-param AI accuracy breakdown |
+| `POST` | `/report` | ✅ | Submit a new hazard report |
+| `POST` | `/api/submit_sos` | ✅ | Submit emergency SOS with audio + GPS |
+| `POST` | `/verify_report/<id>` | 🔐 Official | Approve/reject a pending report |
+
+### Coordination & Dispatch
+
+| Method | Endpoint | Auth | Description |
+|:---|:---|:---|:---|
+| `POST` | `/api/coordination/assign-volunteer` | 🔐 Official | Assign volunteer to hazard |
+| `POST` | `/api/coordination/assignment/respond` | ✅ Volunteer | Accept/decline assignment |
+| `POST` | `/api/coordination/assignment/<id>/complete` | ✅ | Complete with proof photo |
+| `GET` | `/api/coordination/volunteers/nearby` | 🔐 Official | Find volunteers within radius |
+| `GET` | `/api/coordination/assignments/active` | 🔐 Official | Active assignments list |
+
+### Analytics & Weather
+
+| Method | Endpoint | Auth | Description |
+|:---|:---|:---|:---|
+| `GET` | `/api/weather_data` | ✅ | Live weather from Open-Meteo |
+| `GET` | `/api/live_hazard_incidents` | ✅ | Active incidents for maps |
+| `GET` | `/api/live_govt_hazards` | ✅ | Government-sourced hazard data |
+| `GET` | `/api/proxy/tgdps_map?path=aws.jsp` | Public | Proxied TGDPS state rainfall map |
+| `GET` | `/api/proxy/tgdps_map?path=livejsp/Hyderabad.jsp` | Public | District-level rainfall map |
+| `POST` | `/api/simulate_impact` | ✅ | Risk simulation engine |
 
 ### Notifications
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/notifications/unread-count` | ✅ | Returns `{"count": N}` — polled every 5 s |
-| `POST` | `/api/notification/<id>/read` | ✅ | Mark a notification as read |
-| `POST` | `/api/notifications/mark-all-read` | ✅ | Mark all notifications as read |
+|:---|:---|:---|:---|
+| `GET` | `/api/notifications/unread-count` | ✅ | Unread count (polled every 5s) |
+| `POST` | `/api/notification/<id>/read` | ✅ | Mark notification as read |
+| `POST` | `/clear_all_notifications` | ✅ | Clear all notifications |
 
-### Coordination
+### Community & LifeLine
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/coordination/assignments/active` | 🔐 Official | Active volunteer assignments |
-| `POST` | `/api/volunteer/assign` | 🔐 Official | Assign a volunteer to a hazard |
-| `POST` | `/api/volunteer/<id>/complete` | ✅ Volunteer | Submit rescue completion + proof photo |
-| `GET` | `/api/lifeline/listings` | ✅ | All open resource listings |
-| `POST` | `/api/lifeline/match` | ✅ | Create a SafeLink match between listings |
+|:---|:---|:---|:---|
+| `GET` | `/lifeline` | ✅ | LifeLine P2P marketplace |
+| `POST` | `/lifeline/create` | ✅ | Create resource listing (have/need) |
+| `GET` | `/lifeline/map` | ✅ | Visual resource match mapping |
+| `GET` | `/community_hub` | ✅ | Community events listing |
+| `POST` | `/community/create` | ✅ | Create community event |
+| `GET` | `/api/eco_stats` | ✅ | Eco-tracker statistics |
 
 ### WhatsApp
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/whatsapp/webhook` | (Twilio sig) | Inbound message handler (Twilio callback) |
-
-### Example Response: 3-Parameter Accuracy
-
-```http
-GET /api/report/42/accuracy_3param
-Authorization: (session cookie)
-```
-
-```json
-{
-  "report_id": 42,
-  "title": "Storm Surge at Marina Beach",
-  "hazard_type": "storm_surge",
-  "overall_accuracy_percent": 83,
-
-  "parameter_1_heatmap": {
-    "name": "Heatmap Match",
-    "score_percent": 85,
-    "analysis": "Moderate heatmap confirmation: 3 similar reports detected in area",
-    "weight": "33%"
-  },
-
-  "parameter_2_climate": {
-    "name": "Climate Alignment",
-    "score_percent": 90,
-    "analysis": "Storm conditions confirmed: High winds 31km/h detected",
-    "weight": "33%"
-  },
-
-  "parameter_3_user_quality": {
-    "name": "User Quality Score",
-    "score_percent": 74,
-    "analysis": "Good track record: 7/10 reports approved (70%)",
-    "weight": "34%",
-    "user_role": "citizen",
-    "user_level": 5,
-    "user_total_reports": 10
-  },
-
-  "detailed_breakdown": "Heatmap Match: 85% | Climate Alignment: 90% | User Quality: 74%"
-}
-```
-
-### Accuracy Score Interpretation
-
-| Score | Classification | System Action |
-|-------|---------------|--------------|
-| **85–100%** | 🟢 Highly Reliable | Auto-approved, alerts dispatched immediately |
-| **60–84%** | 🟡 Good Confidence | Queued for analyst review |
-| **40–59%** | 🟠 Questionable | Held for investigation, additional evidence requested |
-| **0–39%** | 🔴 Low Confidence | Flagged, possible misinformation |
+|:---|:---|:---|:---|
+| `POST` | `/webhook/whatsapp` | Twilio | Inbound message handler |
 
 ---
 
 ## 📱 WhatsApp Bot
 
-The WhatsApp integration uses Twilio's Messaging API. The bot handles **two distinct interaction flows**:
-
 ### Flow 1: Account Linking
-
-New users link their web account to their WhatsApp number through a guided 3-step conversation. Session state is stored per phone number in the `User.whatsapp_session` JSON field.
 
 ```
 User  →  "Hi"
@@ -456,16 +659,16 @@ Bot   →  "👋 Welcome to Sentinel AI! Please enter your username."
 User  →  "john_doe"
 Bot   →  "🔐 Please enter your password."
 User  →  "••••••••"
-Bot   →  "✅ Successfully linked! You'll now receive hazard alerts and volunteer
-          assignments directly on WhatsApp."
+Bot   →  "✅ Successfully linked! You'll now receive hazard alerts
+          and volunteer assignments directly on WhatsApp."
 ```
 
-### Flow 2: Volunteer Dispatch & Response
+### Flow 2: Volunteer Dispatch
 
 ```
 [Hazard verified by system]
 
-Bot   →  📸 [Hazard photo in attachment]
+Bot   →  📸 [Hazard photo attached]
 Bot   →  "🚨 *STORM SURGE ALERT*
           Location: Marina Beach, Chennai
           Distance: 3.2 km from you
@@ -476,89 +679,77 @@ Bot   →  "🚨 *STORM SURGE ALERT*
           Reply *2* to Decline"
 
 User  →  "1"
-
 Bot   →  "✅ *Mission Accepted!*
           📍 Hazard coordinates: 13.0566, 80.2783
-          A coordinator will contact you shortly.
-          Reply *cancel* at any time if you cannot attend."
+          Reply *cancel* at any time."
 
 [Volunteer completes rescue]
 Bot   →  "🏆 Mission completed! You earned 50 points.
-          Your total: 340 points | Level: 7"
+          Total: 340 points | Level: 7"
 ```
 
-### Supported Commands (at any time)
+### Supported Commands
 
 | Command | Response |
-|---------|----------|
+|:---|:---|
 | `status` | Current assignment status |
-| `cancel` | Cancel current active assignment |
+| `cancel` | Cancel active assignment |
 | `help` | List available commands |
 | `Hi` / `hello` | Start account linking flow |
 
 ---
 
-## 🎮 User Roles & Permissions
-
-| Role | Who | Key Permissions |
-|------|-----|----------------|
-| `citizen` | General public | Submit reports, join LifeLine, earn points |
-| `volunteer` | Registered responders | Accept missions, complete rescues, earn rescue points |
-| `official` | Government officers | Approve/reject reports, create emergency events, assign volunteers, view all dashboards |
-| `analyst` | Data scientists | Full read access to analytics, reporting trends, URI data |
-| `agency` | NGO/Emergency org | Same as official for their assigned events |
-
----
-
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Language** | Python | 3.9+ | Backend runtime |
-| **Web Framework** | Flask | ≥ 2.3.3 | HTTP server, routing, templating |
-| **Auth** | Flask-Login | ≥ 0.6.3 | Session management |
-| **Forms** | Flask-WTF + WTForms | ≥ 1.2.1 | Server-side form validation |
-| **ORM** | Flask-SQLAlchemy | ≥ 3.1.1 | Database abstraction |
-| **Migrations** | Flask-Migrate (Alembic) | ≥ 4.0.7 | Schema version control |
-| **Task Scheduler** | APScheduler | ≥ 3.10.5 | Background jobs |
-| **Messaging** | Twilio | ≥ 9.0.0 | WhatsApp API (send + receive) |
-| **Weather** | Open-Meteo | (REST API) | Free, no-key live weather data |
-| **Maps (frontend)** | Leaflet.js | CDN | Interactive maps + heatmaps |
-| **Map tiles** | OpenStreetMap / Voyager | (CDN) | Base map tiles |
-| **Weather radar** | RainViewer | (API) | Satellite precipitation overlay |
-| **Charting** | Matplotlib + NumPy | ≥ 3.8 | Server-rendered analytics charts |
-| **NLP** | TextBlob + NLTK | ≥ 0.18 | Report text analysis |
-| **DB (dev)** | SQLite | Built-in | Development database |
-| **DB (prod)** | PostgreSQL | ≥ 14 | Production database |
-| **WSGI** | Gunicorn | ≥ 21.2 | Production app server |
-| **Styling** | Bootstrap 5 + Custom CSS | CDN | UI framework + Glassmorphism |
-| **PWA** | Service Worker + Manifest | Web standard | Mobile add-to-homescreen |
+| Layer | Technology | Purpose |
+|:---|:---|:---|
+| **Language** | Python 3.9+ | Backend runtime |
+| **Web Framework** | Flask ≥ 2.3.3 | HTTP server, routing, templating |
+| **Auth** | Flask-Login ≥ 0.6.3 | Session management |
+| **Forms** | Flask-WTF + WTForms | Server-side validation |
+| **ORM** | Flask-SQLAlchemy ≥ 3.1.1 | Database abstraction |
+| **Migrations** | Flask-Migrate (Alembic) | Schema version control |
+| **Task Scheduler** | APScheduler ≥ 3.10.5 | Background jobs |
+| **Messaging** | Twilio ≥ 9.0.0 | WhatsApp API |
+| **Weather API** | Open-Meteo | Free live weather data |
+| **Rainfall Data** | TGDPS (Telangana Govt) | Live state + district rainfall maps |
+| **Maps** | Leaflet.js | Interactive maps + heatmaps |
+| **Map Tiles** | OpenStreetMap / Voyager | Base map tiles |
+| **Weather Radar** | RainViewer | Satellite precipitation overlay |
+| **Charts** | Matplotlib + NumPy | Server-rendered analytics |
+| **NLP** | TextBlob + NLTK | Report text analysis + SOS parsing |
+| **DB (dev)** | SQLite | Development database |
+| **DB (prod)** | PostgreSQL ≥ 14 | Production database |
+| **WSGI** | Gunicorn ≥ 21.2 | Production app server |
+| **Frontend** | Bootstrap 5 + Glassmorphism CSS | UI framework |
+| **PWA** | Service Worker + Manifest | Installable web app |
+| **Media** | Pillow ≥ 10.2 | Image processing |
 
 ---
 
 ## ☁️ Deployment
 
-### Render (Recommended — Free Tier Available)
+### Render (Recommended)
 
-1. Push to GitHub.
-2. Create a new **Web Service** on [render.com](https://render.com), connect your repository.
-3. Set **Build Command**: `pip install -r requirements.txt`
-4. Set **Start Command**: `gunicorn app:app`
-5. Add all environment variables from `.env` in the **Environment** tab.
-6. Add a free **PostgreSQL** database add-on and copy the `DATABASE_URL`.
+1. Push to GitHub
+2. Create a **Web Service** on [render.com](https://render.com)
+3. **Build Command**: `pip install -r requirements.txt`
+4. **Start Command**: `gunicorn app:app`
+5. Add environment variables from `.env`
+6. Add free **PostgreSQL** database add-on
 7. Deploy!
 
 ### Heroku
 
 ```bash
-heroku create maxalert-ai
+heroku create sentinel-ai
 heroku addons:create heroku-postgresql:essential-0
-heroku config:set SECRET_KEY=... TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_WHATSAPP_NUMBER=...
+heroku config:set SECRET_KEY=... TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=...
 git push heroku main
 heroku run flask db upgrade
 ```
 
-### Docker (Self-Hosted)
+### Docker
 
 ```dockerfile
 FROM python:3.11-slim
@@ -572,41 +763,25 @@ CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
 
 ---
 
-## 🔧 Configuration Reference
+## 🔐 Security
 
-All configuration is handled in `config.py` via environment variables:
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `SECRET_KEY` | ✅ | `dev-key-...` | Flask session signing key |
-| `DATABASE_URL` | ✅ | `sqlite:///site.db` | DB connection string |
-| `TWILIO_ACCOUNT_SID` | For WhatsApp | — | Twilio account identifier |
-| `TWILIO_AUTH_TOKEN` | For WhatsApp | — | Twilio secret token |
-| `TWILIO_WHATSAPP_NUMBER` | For WhatsApp | — | Format: `whatsapp:+1415...` |
-| `BASE_URL` | For media | — | Public URL for photo attachments in WhatsApp |
-| `FIREBASE_SERVER_KEY` | Optional | — | For Firebase push notifications |
-
-**Upload limits:** Max file size 16 MB. Allowed extensions: `png jpg jpeg gif mp4 mov avi`.
-
----
-
-## 🔐 Security Notes
-
-- Passwords are hashed using **Werkzeug's `generate_password_hash`** (PBKDF2-HMAC-SHA256).
-- All form submissions are protected by **CSRF tokens** (Flask-WTF).
-- Role-based access control is enforced on every sensitive endpoint via `@login_required` + role checks.
-- File uploads are sanitised using `werkzeug.utils.secure_filename` and validated by extension allowlist.
-- Twilio webhook authenticity can be validated using Twilio's request signature (recommended for production).
+- Passwords hashed with **Werkzeug PBKDF2-HMAC-SHA256**
+- All forms protected by **CSRF tokens** (Flask-WTF)
+- Role-based access control on every sensitive endpoint
+- File uploads sanitised via `secure_filename` + extension allowlist
+- Upload limit: **16 MB** — Allowed: `png jpg jpeg gif mp4 mov avi`
+- Twilio webhook signature validation (recommended for production)
+- TGDPS proxy route includes path traversal protection
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/my-new-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/my-new-feature`
-5. Open a Pull Request.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit changes: `git commit -m 'Add feature'`
+4. Push: `git push origin feature/my-feature`
+5. Open a Pull Request
 
 ---
 
@@ -618,9 +793,11 @@ This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
 
-**Built with ❤️ to protect India's coastal communities**
+**Built with ❤️ for Smart India Hackathon — SH-SVA-03**
 
-*"Every minute in a disaster matters. Sentinel AI makes minutes into seconds."*
+*"Every minute in a disaster matters. Sentinel AI turns hours into seconds — unifying departments, empowering communities, saving lives."*
+
+**116 API Routes · 23 Database Models · 48 Templates · 6 Languages · 5 AI Agents**
 
 [⭐ Star this repo](https://github.com/varunmax7/sentinelai) if you find it useful!
 

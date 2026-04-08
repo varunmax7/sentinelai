@@ -26,6 +26,34 @@
 
         // Initialize charts
         setTimeout(initializeCharts, 800);
+
+        // Track the currently selected district path so auto-refresh always uses the right one
+        let currentDistrictPath = 'livejsp/Yadadri.jsp';
+
+        // Handle District Dropdown Selection - update IMMEDIATELY on change
+        const districtSelect = document.getElementById('districtSelect');
+        const districtMap = document.getElementById('districtMap');
+        if (districtSelect && districtMap) {
+            districtSelect.addEventListener('change', function(e) {
+                currentDistrictPath = e.target.value;
+                districtMap.src = `/api/proxy/tgdps_map?path=${currentDistrictPath}`;
+            });
+        }
+
+        // Start TGDPS Map auto-refresh (30 seconds - long enough for slow govt server)
+        setInterval(() => {
+            const tgdpsMap = document.getElementById('tgdpsMap');
+            if (tgdpsMap) {
+                const url = new URL(tgdpsMap.src);
+                url.searchParams.set('_t', new Date().getTime());
+                tgdpsMap.src = url.toString();
+            }
+            
+            // Always refresh district map using the CURRENTLY selected district
+            if (districtMap) {
+                districtMap.src = `/api/proxy/tgdps_map?path=${currentDistrictPath}&_t=${new Date().getTime()}`;
+            }
+        }, 30000);
     });
 
     function initializeMaps() {

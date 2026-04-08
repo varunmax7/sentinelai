@@ -5593,6 +5593,71 @@ def complete_resource_match(match_id):
     flash('Resource match completed! Thank you for supporting the community +20 Points.', 'success')
     return redirect(url_for('lifeline'))
 
+@app.route('/api/proxy/tgdps_map')
+def proxy_tgdps_map():
+    path = request.args.get('path', 'aws.jsp')
+    
+    # Simple validation against path traversal
+    if '..' in path or path.startswith('http'):
+        path = 'aws.jsp'
+        
+    url = f'https://tgdps.telangana.gov.in/{path}'
+    try:
+        response = requests.get(url, timeout=5)
+        html = response.text
+        # Patch relative URLs to absolute so images and styles still work
+        html = html.replace('href="', 'href="https://tgdps.telangana.gov.in/')
+        html = html.replace("href='", "href='https://tgdps.telangana.gov.in/")
+        html = html.replace('src="', 'src="https://tgdps.telangana.gov.in/')
+        html = html.replace("src='", "src='https://tgdps.telangana.gov.in/")
+        
+        # Patch relative paths up one dir for `livejsp/` nested pages
+        html = html.replace('href="https://tgdps.telangana.gov.in/../', 'href="https://tgdps.telangana.gov.in/')
+        html = html.replace('src="https://tgdps.telangana.gov.in/../', 'src="https://tgdps.telangana.gov.in/')
+        
+        # Un-patch absolute urls that were accidentally broken
+        html = html.replace('https://tgdps.telangana.gov.in/http', 'http')
+        html = html.replace('https://tgdps.telangana.gov.in//', '//')
+        
+        # Inject custom CSS to hide all website headers, footers and menus to show ONLY the map
+        css_injection = """
+        <style>
+            /* Hide the main headers, menus, links row, and dropdown controls */
+            #header_color, 
+            #heading_front, 
+            #footer, 
+            body > table:first-of-type,
+            body > div#body > table[bgcolor="#FFFFFF"],
+            #dp_content_map1 > div[align="left"] {
+                display: none !important;
+            }
+            
+            body, #body {
+                background: white !important;
+                background-color: white !important;
+                padding-top: 20px;
+            }
+            
+            #aws_ts {
+                margin-top: 0 !important;
+            }
+        </style>
+        """
+        
+        # Only inject jQuery if the page is missing it to prevent overwriting existing plugins like maphilight
+        if 'jquery-3' not in html.lower() and 'jquery.min.js' not in html.lower() and 'code.jquery.com' not in html.lower():
+            jquery_injection = '<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>\n'
+            # Inject right at the beginning of the head so it exists before any mapping scripts run
+            if '<head>' in html:
+                html = html.replace('<head>', '<head>\n' + jquery_injection, 1)
+            else:
+                html = jquery_injection + html
+            
+        html = html.replace('</head>', css_injection + '\n</head>')
+        
+        return Response(html, mimetype='text/html')
+    except Exception as e:
+        return f"Error loading map: {str(e)}", 500
 
 if __name__ == '__main__':
     with app.app_context():

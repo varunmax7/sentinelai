@@ -330,6 +330,80 @@
         </div>
     </div>
 
+    <!-- TGDPS Live Rainfall Map -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card overflow-hidden">
+                <div class="card-header border-bottom border-white border-opacity-10 py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold">Live Telangana Rainfall Status (State Level)</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="live-indicator"></span>
+                        <span class="text-success fw-bold small">LIVE (10s Refresh)</span>
+                    </div>
+                </div>
+                <div class="card-body p-0" style="background: white;">
+                    <iframe id="tgdpsMap" src="/api/proxy/tgdps_map?path=aws.jsp" style="width: 100%; height: 750px; border: none; border-radius: 0 0 20px 20px;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- District Specific Live Rainfall Map -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card overflow-hidden">
+                <div class="card-header border-bottom border-white border-opacity-10 py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold d-flex align-items-center gap-2">
+                        Live District Rainfall Status 
+                        <select id="districtSelect" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 250px; display: inline-block;" onchange="document.getElementById('districtMap').src='/api/proxy/tgdps_map?path=' + this.value + '&_t=' + Date.now()">
+                            <option value="livejsp/Adilabad.jsp">Adilabad</option>
+                            <option value="livejsp/Bhadradri.jsp">Bhadradri Kothagudem</option>
+                            <option value="live/ghmc/index.jsp">GHMC</option>
+                            <option value="livejsp/Hanumakonda.jsp">Hanumakonda</option>
+                            <option value="livejsp/Hyderabad.jsp">Hyderabad</option>
+                            <option value="livejsp/Jagtial.jsp">Jagtial</option>
+                            <option value="livejsp/Jangaon.jsp">Jangaon</option>
+                            <option value="livejsp/Jayashankar.jsp">Jayashankar</option>
+                            <option value="livejsp/Jogulamba.jsp">Jogulamba Gadwal</option>
+                            <option value="livejsp/Kamareddy.jsp">Kamareddy</option>
+                            <option value="livejsp/Karimnagar.jsp">Karimnagar</option>
+                            <option value="livejsp/Khammam.jsp">Khammam</option>
+                            <option value="livejsp/Komarambhem.jsp">Kumaram Bheem</option>
+                            <option value="livejsp/Mahabubabad.jsp">Mahabubabad</option>
+                            <option value="livejsp/MahabubNagar.jsp">Mahabubnagar</option>
+                            <option value="livejsp/Mancherial.jsp">Mancherial</option>
+                            <option value="livejsp/Medak.jsp">Medak</option>
+                            <option value="livejsp/Medchal.jsp">Medchal-Malkajgiri</option>
+                            <option value="livejsp/Mulugu.jsp">Mulugu</option>
+                            <option value="livejsp/Nagarkurnool.jsp">Nagarkurnool</option>
+                            <option value="livejsp/Nalgonda.jsp">Nalgonda</option>
+                            <option value="livejsp/Narayanpet.jsp">Narayanapet</option>
+                            <option value="livejsp/Nirmal.jsp">Nirmal</option>
+                            <option value="livejsp/Nizamabad.jsp">Nizamabad</option>
+                            <option value="livejsp/Peddapalli.jsp">Peddapalli</option>
+                            <option value="livejsp/Rajanna.jsp">Rajanna Sircilla</option>
+                            <option value="livejsp/Rangareddy.jsp">Rangareddy</option>
+                            <option value="livejsp/Sangareddy.jsp">Sangareddy</option>
+                            <option value="livejsp/Siddipet.jsp">Siddipet</option>
+                            <option value="livejsp/Suryapet.jsp">Suryapet</option>
+                            <option value="livejsp/Vikarabad.jsp">Vikarabad</option>
+                            <option value="livejsp/Wanaparthy.jsp">Wanaparthy</option>
+                            <option value="livejsp/Warangal.jsp">Warangal</option>
+                            <option value="livejsp/Yadadri.jsp" selected>Yadadri Bhuvanagiri</option>
+                        </select>
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="live-indicator"></span>
+                        <span class="text-success fw-bold small">LIVE (10s Refresh)</span>
+                    </div>
+                </div>
+                <div class="card-body p-0" style="background: white;">
+                    <iframe id="districtMap" src="/api/proxy/tgdps_map?path=livejsp/Yadadri.jsp" style="width: 100%; height: 750px; border: none; border-radius: 0 0 20px 20px;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts -->
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
