@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaxAlert AI — Certificate of Excellence | {{ user.username }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Top action bar — hidden on print */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            z-index: 10;
+        }
+
+        .btn-download {
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #111;
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.4); }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+
+        /* ─── CERTIFICATE CARD ─── */
+        .cert-wrapper {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .certificate {
+            width: 100%;
+            aspect-ratio: 1.414 / 1; /* A4 landscape */
+            background: #fff;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* — OUTER BORDER — */
+        .border-outer {
+            position: absolute;
+            inset: 14px;
+            border: 3px solid #b8860b;
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .border-inner {
+            position: absolute;
+            inset: 20px;
+            border: 1px solid #d4af37;
+            border-radius: 1px;
+            z-index: 1;
+        }
+
+        /* — BG WATERMARK — */
+        .watermark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 0;
+            opacity: 0.04;
+            font-size: 14rem;
+        }
+
+        /* — CORNER ORNAMENTS — */
+        .corner {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            z-index: 2;
+        }
+        .corner-tl { top: 10px; left: 10px; }
+        .corner-tr { top: 10px; right: 10px; transform: scaleX(-1); }
+        .corner-bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
+        .corner-br { bottom: 10px; right: 10px; transform: scale(-1); }
+
+        /* — MAIN CONTENT — */
+        .cert-content {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+            padding: 2.5% 8%;
+            width: 100%;
+        }
+
+        .govt-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .govt-logo {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, #1e3a5f, #0f2240);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            border: 2px solid #b8860b;
+            flex-shrink: 0;
+        }
+
+        .govt-title-block { text-align: center; }
+
+        .govt-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: #8b7535;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .app-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #1e3a5f;
+            line-height: 1;
+            letter-spacing: 2px;
+        }
+
+        .app-tagline {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.58rem;
+            color: #8b7535;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .divider-gold {
+            width: 60%;
+            margin: 0.8rem auto;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, #b8860b, #d4af37, #b8860b, transparent);
+        }
+
+        .cert-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #8b1a1a;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .cert-subtitle {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.88rem;
+            color: #555;
+            font-style: italic;
+            margin-bottom: 0.9rem;
+        }
+
+        .presented-to {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.82rem;
+            letter-spacing: 3px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .recipient-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #1e3a5f 0%, #b8860b 50%, #1e3a5f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+        }
+
+        .cert-body {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.88rem;
+            color: #444;
+            line-height: 1.65;
+            max-width: 75%;
+            margin: 0 auto 1rem;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 0.5rem 0 1rem;
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-num {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #b8860b;
+        }
+
+        .stat-lbl {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 5%;
+            margin-top: 0.5rem;
+        }
+
+        .sig-block { text-align: center; min-width: 140px; }
+
+        .sig-line {
+            width: 130px;
+            height: 1px;
+            background: #1e3a5f;
+            margin: 0 auto 4px;
+        }
+
+        .sig-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            letter-spacing: 1px;
+        }
+
+        .sig-role {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.55rem;
+            color: #888;
+            letter-spacing: 1px;
+        }
+
+        /* Seal */
+        .cert-seal {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1e3a5f 0%, #0f2240 100%);
+            border: 3px solid #b8860b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            position: relative;
+        }
+
+        .seal-emoji { font-size: 1.8rem; }
+        .seal-text { font-size: 0.38rem; letter-spacing: 1px; text-transform: uppercase; color: #d4af37; font-family: 'Inter', sans-serif; }
+
+        /* Top / bottom banding */
+        .band-top {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 8px;
+            background: linear-gradient(90deg, #1e3a5f, #b8860b, #1e3a5f);
+        }
+        .band-bottom {
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 8px;
+            background: linear-gradient(90deg, #b8860b, #1e3a5f, #b8860b);
+        }
+
+        .cert-id-bar {
+            position: absolute;
+            bottom: 12px;
+            right: 30px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.5rem;
+            color: #aaa;
+            letter-spacing: 1px;
+            z-index: 4;
+        }
+
+        /* ─── PRINT STYLES ─── */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+            }
+
+            .action-bar { display: none !important; }
+
+            .certificate {
+                width: 297mm;
+                height: 210mm;
+                box-shadow: none;
+                aspect-ratio: unset;
+                border-radius: 0;
+                page-break-after: avoid;
+            }
+
+            .cert-wrapper { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <button class="btn-download btn-primary" onclick="window.print()">
+            🖨️ Print / Save as PDF
+        </button>
+        <button class="btn-download btn-secondary" onclick="window.history.back()">
+            ← Back to Leaderboard
+        </button>
+    </div>
+
+    <div class="cert-wrapper">
+        <div class="certificate" id="certificate">
+
+            <!-- Bands -->
+            <div class="band-top"></div>
+            <div class="band-bottom"></div>
+
+            <!-- Borders -->
+            <div class="border-outer"></div>
+            <div class="border-inner"></div>
+
+            <!-- Watermark -->
+            <div class="watermark">🛡️</div>
+
+            <!-- Corner SVG ornaments -->
+            <svg class="corner corner-tl" viewBox="0 0 70 70" fill="none">
+                <path d="M5 5 L30 5 L5 30 Z" fill="#b8860b" opacity="0.5"/>
+                <path d="M5 5 L5 40 Q5 5 40 5 Z" stroke="#b8860b" stroke-width="1.5" fill="none"/>
+                <circle cx="5" cy="5" r="4" fill="#b8860b"/>
+            </svg>
+            <svg class="corner corner-tr" viewBox="0 0 70 70" fill="none">
+                <path d="M5 5 L30 5 L5 30 Z" fill="#b8860b" opacity="0.5"/>
+                <path d="M5 5 L5 40 Q5 5 40 5 Z" stroke="#b8860b" stroke-width="1.5" fill="none"/>
+                <circle cx="5" cy="5" r="4" fill="#b8860b"/>
+            </svg>
+            <svg class="corner corner-bl" viewBox="0 0 70 70" fill="none">
+                <path d="M5 5 L30 5 L5 30 Z" fill="#b8860b" opacity="0.5"/>
+                <path d="M5 5 L5 40 Q5 5 40 5 Z" stroke="#b8860b" stroke-width="1.5" fill="none"/>
+                <circle cx="5" cy="5" r="4" fill="#b8860b"/>
+            </svg>
+            <svg class="corner corner-br" viewBox="0 0 70 70" fill="none">
+                <path d="M5 5 L30 5 L5 30 Z" fill="#b8860b" opacity="0.5"/>
+                <path d="M5 5 L5 40 Q5 5 40 5 Z" stroke="#b8860b" stroke-width="1.5" fill="none"/>
+                <circle cx="5" cy="5" r="4" fill="#b8860b"/>
+            </svg>
+
+            <!-- Main Content -->
+            <div class="cert-content">
+
+                <!-- Govt Header -->
+                <div class="govt-header">
+                    <div class="govt-logo">🛡️</div>
+                    <div class="govt-title-block">
+                        <div class="govt-label">Government of India — Disaster Management Authority</div>
+                        <div class="app-name">MaxAlert AI</div>
+                        <div class="app-tagline">Sentinel Disaster Response Network</div>
+                    </div>
+                    <div class="govt-logo">🏛️</div>
+                </div>
+
+                <div class="divider-gold"></div>
+
+                <div class="cert-title">Certificate of Excellence</div>
+                <div class="cert-subtitle">In Recognition of Outstanding Contribution to Disaster Relief &amp; Community Protection</div>
+
+                <div class="presented-to">This Certificate is Proudly Presented To</div>
+
+                <div class="recipient-name">{{ user.username }}</div>
+
+                <div class="cert-body">
+                    for demonstrating exceptional dedication, courage, and commitment to public safety through active participation in
+                    disaster reporting, emergency response, and community welfare initiatives on the <strong>MaxAlert AI — Sentinel Platform</strong>.
+                    This honour is conferred in recognition of achieving <strong>{{ points | int }}</strong> contribution points.
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-num">{{ points | int }}</div>
+                        <div class="stat-lbl">Total Points</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-num">{{ completed_rescues }}</div>
+                        <div class="stat-lbl">Rescues Completed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-num">{{ date.split(' ')[-1] }}</div>
+                        <div class="stat-lbl">Year of Award</div>
+                    </div>
+                </div>
+
+                <div class="signature-row">
+                    <div class="sig-block">
+                        <div class="sig-line"></div>
+                        <div class="sig-name">District Collector</div>
+                        <div class="sig-role">Sentinels Emergency Division</div>
+                    </div>
+
+                    <div class="cert-seal">
+                        <div class="seal-emoji">🏅</div>
+                        <div class="seal-text">Verified · {{ date }}</div>
+                    </div>
+
+                    <div class="sig-block">
+                        <div class="sig-line"></div>
+                        <div class="sig-name">Director General</div>
+                        <div class="sig-role">MaxAlert AI Platform</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Cert ID -->
+            <div class="cert-id-bar">Cert ID: {{ cert_id }}</div>
+
+        </div>
+    </div>
+
+</body>
+</html>

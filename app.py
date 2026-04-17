@@ -1477,8 +1477,7 @@ def view_certificate(user_id):
     user = User.query.get_or_404(user_id)
     
     # Logic for certification eligibility
-    # 1. Must be a volunteer with at least one completed rescue
-    # 2. OR must have points > 100
+    # Must have points >= 2000
     volunteer = Volunteer.query.filter_by(user_id=user.id).first()
     completed_rescues = 0
     if volunteer:
@@ -1487,10 +1486,10 @@ def view_certificate(user_id):
             status='completed'
         ).count()
         
-    is_eligible = (completed_rescues > 0) or (user.points >= 100)
+    is_eligible = (user.points >= 2000)
     
     if not is_eligible and current_user.id == user.id:
-        flash("You are not yet eligible for government certification. Complete a rescue or earn more points!", "info")
+        flash("You need 2000 points to unlock your Government Certificate. Keep going!", "info")
         return redirect(url_for('profile', username=user.username))
     elif not is_eligible:
         flash("This user is not yet eligible for certification.", "warning")
@@ -1501,6 +1500,36 @@ def view_certificate(user_id):
                           completed_rescues=completed_rescues,
                           date=datetime.utcnow().strftime('%B %d, %Y'),
                           cert_id=f"SH-CRT-{user.id}-{datetime.utcnow().strftime('%Y%m%d')}")
+
+@app.route("/certificate/download/<int:user_id>")
+@login_required
+def download_certificate(user_id):
+    """Render a beautiful printable certificate page for eligible users"""
+    user = User.query.get_or_404(user_id)
+    
+    # Only allow the user themselves or admins
+    if current_user.id != user.id and not current_user.is_admin:
+        flash("You can only download your own certificate.", "danger")
+        return redirect(url_for('leaderboards'))
+    
+    if user.points < 2000:
+        flash("You need 2000 points to download your Government Certificate!", "warning")
+        return redirect(url_for('leaderboards'))
+    
+    volunteer = Volunteer.query.filter_by(user_id=user.id).first()
+    completed_rescues = 0
+    if volunteer:
+        completed_rescues = VolunteerAssignment.query.filter_by(
+            volunteer_id=volunteer.id,
+            status='completed'
+        ).count()
+    
+    return render_template('certificate_download.html',
+                           user=user,
+                           completed_rescues=completed_rescues,
+                           date=datetime.utcnow().strftime('%B %d, %Y'),
+                           cert_id=f"MAXALERT-{user.id}-{datetime.utcnow().strftime('%Y%m%d')}",
+                           points=user.points)
 
 @app.route("/report", methods=['GET', 'POST'])
 @login_required
@@ -4599,12 +4628,20 @@ def get_hazard_volunteers_count(hazard_type, hazard_id):
 @app.route("/api/leaderboard", methods=['GET'])
 @login_required
 def get_leaderboard():
-    """Get volunteer leaderboard sorted by points"""
+    """Get volunteer leaderboard sorted by points with regional support"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
+    district = request.args.get('district', 'all', type=str)
     
+    # Base query
+    volunteers_query = Volunteer.query
+    
+    # Regional filter
+    if district and district != 'all':
+        volunteers_query = volunteers_query.filter(Volunteer.location.ilike(f'%{district}%'))
+        
     # Get all volunteers sorted by points descending
-    volunteers_query = Volunteer.query.order_by(
+    volunteers_query = volunteers_query.order_by(
         Volunteer.points.desc(),
         Volunteer.total_rescues.desc(),
         Volunteer.created_at.asc()
@@ -4614,14 +4651,23 @@ def get_leaderboard():
     
     leaderboard = []
     for idx, volunteer in enumerate(paginated.items, start=(page - 1) * per_page + 1):
+        title = ""
+        if idx == 1:
+            if district and district != 'all':
+                title = f"{district} Guardian 🎖️"
+            else:
+                title = "Global Sentinel 🎖️"
+                
         leaderboard.append({
             'rank': idx,
             'user_id': volunteer.user.id,
             'username': volunteer.user.username,
+            'title': title,
             'points': volunteer.points,
             'rescues': volunteer.total_rescues,
             'experience': volunteer.experience_level,
-            'is_verified': volunteer.is_verified
+            'is_verified': volunteer.is_verified,
+            'location': volunteer.location or 'Unknown'
         })
     
     return jsonify({
