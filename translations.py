@@ -249,7 +249,7 @@ TRANSLATIONS = {
         'about': 'గురించి',
         'report': 'హాజర్డ్ నివేదించండి',
         'dashboard': 'డాష్బోర్డ్',
-        'profile': 'ప్రొఫైల్',
+        'profile': 'ప్రொఫైల్',
         'leaderboard': 'లీడర్బోర్డ్',
         'login': 'లాగిన్',
         'register': 'నమోదు',
@@ -273,6 +273,50 @@ TRANSLATIONS = {
         'en_language': 'ఆంగ్లం',
         'te_language': 'తెలుగు',
         # Add more Telugu translations...
+    },
+    'ml': {
+        'home': 'ഹോം',
+        'about': 'വിവരങ്ങൾ',
+        'report': 'അപകടം റിപ്പോർട്ട് ചെയ്യുക',
+        'dashboard': 'ഡാഷ്‌ബോർഡ്',
+        'profile': 'പ്രൊഫൈൽ',
+        'leaderboard': 'ലീഡർബോർഡ്',
+        'login': 'ലോഗിൻ',
+        'register': 'രജിസ്റ്റർ',
+        'logout': 'ലോഗ് ഔട്ട്',
+        'search': 'തിരയുക',
+        'notifications': 'അറിയിപ്പുകൾ',
+        
+        'tsunami': 'സുനാമി',
+        'storm_surge': 'തിരമാല',
+        'high_waves': 'ഉയർന്ന വായു',
+        'coastal_flooding': 'തീരദേശ വെള്ളപ്പൊക്കം',
+        
+        'report_submitted': 'നിങ്ങളുടെ റിപ്പോർട്ട് സമർപ്പിച്ചു! +10 പോയിന്റുകൾ! AI ആത്മവിശ്വാസം: {confidence}%',
+        'en_language': 'ഇംഗ്ലീഷ്',
+        'ml_language': 'മലയാളം',
+    },
+    'kn': {
+        'home': 'ಮನೆ',
+        'about': 'ಬಗ್ಗೆ',
+        'report': 'ಅಪಾಯ ವರದಿ ಮಾಡಿ',
+        'dashboard': 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        'profile': 'ಪ್ರೊಫೈಲ್',
+        'leaderboard': 'ಲೀಡರ್‌ಬೋರ್ಡ್',
+        'login': 'ಲಾಗಿನ್',
+        'register': 'ನೋಂದಣಿ',
+        'logout': 'ಲಾಗ್‌ಔಟ್',
+        'search': 'ಹುಡುಕಿ',
+        'notifications': 'ಅಧಿಸೂಚನೆಗಳು',
+        
+        'tsunami': 'ಸುನಾಮಿ',
+        'storm_surge': 'ಚಂಡಮಾರುತ',
+        'high_waves': 'ಹೆಚ್ಚಿನ ಅಲೆಗಳು',
+        'coastal_flooding': 'ಕರಾವಳಿ ಪ್ರವಾಹ',
+        
+        'report_submitted': 'ನಿಮ್ಮ ವರದಿ ಸಲ್ಲಿಕೆಯಾಗಿದೆ! +10 ಅಂಕಗಳು! AI ವಿಶ್ವಾಸ: {confidence}%',
+        'en_language': 'ಇಂಗ್ಲಿಷ್',
+        'kn_language': 'ಕನ್ನಡ',
     }
 }
 

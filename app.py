@@ -1339,6 +1339,15 @@ def profile(username):
     rejected_reports = sum(1 for report in reports if report.verification_status == 'rejected')
     total_points = user.points
     
+    # Calculate volunteer stats if applicable
+    volunteer = Volunteer.query.filter_by(user_id=user.id).first()
+    completed_rescues = 0
+    if volunteer:
+        completed_rescues = VolunteerAssignment.query.filter_by(
+            volunteer_id=volunteer.id, 
+            status='completed'
+        ).count()
+        
     return render_template('profile.html', 
                          title=f'{user.username} Profile',
                          user=user,
@@ -1347,7 +1356,8 @@ def profile(username):
                          verified_reports=verified_reports,
                          pending_reports=pending_reports,
                          rejected_reports=rejected_reports,
-                         total_points=total_points)
+                         total_points=total_points,
+                         completed_rescues=completed_rescues)
 
 @app.route("/edit_profile", methods=['GET', 'POST'])
 @login_required
@@ -1460,6 +1470,37 @@ def community_leaderboard():
     """Community Leaderboard - All users ranked by total combined points"""
     return render_template('community_leaderboard.html', title=translate('leaderboard'))
 
+@app.route("/certificate/<int:user_id>")
+@login_required
+def view_certificate(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Logic for certification eligibility
+    # 1. Must be a volunteer with at least one completed rescue
+    # 2. OR must have points > 100
+    volunteer = Volunteer.query.filter_by(user_id=user.id).first()
+    completed_rescues = 0
+    if volunteer:
+        completed_rescues = VolunteerAssignment.query.filter_by(
+            volunteer_id=volunteer.id, 
+            status='completed'
+        ).count()
+        
+    is_eligible = (completed_rescues > 0) or (user.points >= 100)
+    
+    if not is_eligible and current_user.id == user.id:
+        flash("You are not yet eligible for government certification. Complete a rescue or earn more points!", "info")
+        return redirect(url_for('profile', username=user.username))
+    elif not is_eligible:
+        flash("This user is not yet eligible for certification.", "warning")
+        return redirect(url_for('profile', username=user.username))
+        
+    return render_template('certificate_view.html', 
+                          user=user, 
+                          completed_rescues=completed_rescues,
+                          date=datetime.utcnow().strftime('%B %d, %Y'),
+                          cert_id=f"SH-CRT-{user.id}-{datetime.utcnow().strftime('%Y%m%d')}")
+
 @app.route("/report", methods=['GET', 'POST'])
 @login_required
 def report():
@@ -1488,21 +1529,49 @@ def report():
         report.confidence_score = ai_result['confidence_score']
         report.ai_analysis = ai_result['analysis']
         
+        # --- AI AUTO-APPROVAL SYSTEM (SH-SVA-03) ---
+        # Automatically approve reports with extremely high confidence (>= 85%)
+        is_auto_approved = False
+        if report.confidence_score >= 0.85:
+            report.verification_status = 'approved'
+            report.verified = True
+            report.verified_at = datetime.utcnow()
+            # Set a high priority since AI is very certain
+            report.priority = 'critical'
+            is_auto_approved = True
+            
+            # Auto-assign initial points for verified reporting
+            current_user.points += 20 # 10 base + 20 bonus for verified report
+            
+            # Create notification for the reporter
+            db.session.add(Notification(
+                user_id=current_user.id,
+                message=f'🚀 AI AUTO-APPROVED: Your report "{report.title}" was verified instantly. +30 points total rewarded!',
+                report_id=report.id
+            ))
+        else:
+            # Standard points for reporting
+            current_user.points += 10
+            
         db.session.add(report)
-        
-        # Award points for reporting
-        current_user.points += 10
         check_and_award_badges(current_user)
-        
         db.session.commit()
+        
+        # Trigger INSTANT alerts for auto-approved reports (Pulse of the City)
+        if is_auto_approved:
+            print(f"⚡ AUTO-DEPLOY: Triggering instant alerts for highly reliable hazard (Confidence: {report.confidence_score*100:.1f}%)")
+            # Auto-assign volunteers within 10km (Pulse of the coordination engine)
+            send_hazard_alerts(report, auto_assign_volunteers=True)
         
         # Show AI confidence in flash message with 3-parameter breakdown
         confidence_percent = report.confidence_score * 100
-        if ai_result.get('accuracy_3param'):
+        if is_auto_approved:
+            flash(f"🛡️ AUTO-VERIFIED: {translate('report_submitted', confidence=int(confidence_percent))} (Status: APPROVED)", "success")
+        elif ai_result.get('accuracy_3param'):
             param_breakdown = f" [Heatmap: {int(ai_result['accuracy_3param']['parameter_1_heatmap']['score']*100)}% | Climate: {int(ai_result['accuracy_3param']['parameter_2_climate']['score']*100)}% | User: {int(ai_result['accuracy_3param']['parameter_3_user_quality']['score']*100)}%]"
-            flash(f"{translate('report_submitted', confidence=confidence_percent)}{param_breakdown}", 'success')
+            flash(f"{translate('report_submitted', confidence=int(confidence_percent))}{param_breakdown}", 'success')
         else:
-            flash(translate('report_submitted', confidence=confidence_percent), 'success')
+            flash(translate('report_submitted', confidence=int(confidence_percent)), 'success')
         return redirect(url_for('home'))
     
     return render_template('report.html', title=translate('report'), form=form)
