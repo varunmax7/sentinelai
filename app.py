@@ -1638,6 +1638,19 @@ def dashboard():
             'ai_analysis': report.ai_analysis,
             'status': report.status or 'active',
             'priority': report.priority or 'medium'
+        })
+    
+    if not report_data:
+        report_data = sample_reports
+    
+    return render_template('dashboard.html', 
+                         title=translate('dashboard'), 
+                         reports=report_data,
+                         total_reports=total_reports,
+                         pending_reports=pending_reports,
+                         approved_reports=approved_reports,
+                         rejected_reports=rejected_reports,
+                         high_confidence_reports=high_confidence_reports,
                          reports_with_media=reports_with_media,
                          top_hazard_type=top_hazard_type,
                          top_hazard_count=top_hazard_count)
