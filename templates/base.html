@@ -946,8 +946,8 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="communityDropdown" role="button"
-                            data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void(0)" id="communityDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-users-cog me-1"></i>{{ translate('community') }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="communityDropdown">
@@ -974,8 +974,8 @@
                     <!-- Professional Tools Dropdown for Officials/Analysts -->
                     {% if current_user.is_authenticated and current_user.role in ['official', 'analyst'] %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="analyticsDropdown" role="button"
-                            data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void(0)" id="analyticsDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-chart-line me-1"></i>{{ translate('tools') }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="analyticsDropdown">
@@ -1085,8 +1085,8 @@
                     {% if current_user.is_authenticated %}
                     <!-- Desktop Language Selector -->
                     <li class="nav-item dropdown d-none d-md-flex me-2">
-                        <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button"
-                            data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void(0)" id="langDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-globe me-1"></i>{{ current_language.upper() }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="langDropdown">
@@ -1125,8 +1125,8 @@
 
                     <!-- User Profile -->
                     <li class="nav-item dropdown d-none d-md-block">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
-                            role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="javascript:void(0)" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="d-flex align-items-center">
                                 <div
                                     class="nav-avatar rounded-circle d-flex align-items-center justify-content-center me-2 bg-light">
