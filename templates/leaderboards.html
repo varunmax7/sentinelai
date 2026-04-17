@@ -28,40 +28,73 @@
         font-size: 1.1rem;
     }
 
-    /* Tab Navigation */
+    /* Tab Navigation — Sticky pill bar, visible on all screens */
     .tab-navigation {
         display: flex;
-        gap: 1rem;
+        gap: 0.5rem;
         margin-bottom: 2rem;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0.75rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
     }
 
+    .tab-navigation::-webkit-scrollbar { display: none; }
+
     .tab-btn {
-        padding: 1rem 2rem;
-        background: transparent;
-        border: none;
-        color: rgba(255, 255, 255, 0.6);
+        flex: 1;
+        min-width: 100px;
+        padding: 0.7rem 0.5rem;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        color: rgba(255, 255, 255, 0.65);
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 0.85rem;
         cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        border-bottom: 3px solid transparent;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        line-height: 1.2;
     }
 
     .tab-btn:hover {
-        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        transform: translateY(-1px);
     }
 
     .tab-btn.active {
+        background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,165,0,0.15));
+        border-color: #FFD700;
         color: #FFD700;
-        border-bottom-color: #FFD700;
+        box-shadow: 0 4px 15px rgba(255,215,0,0.2);
     }
 
     .tab-icon {
-        margin-right: 0.5rem;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
+        display: block !important; /* Always show icons */
+        line-height: 1;
+    }
+
+    .tab-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
     }
 
     /* Tab Content */
@@ -303,22 +336,7 @@
     }
 
     @media (max-width: 768px) {
-        .leaderboards-header h1 {
-            font-size: 2rem;
-        }
-
-        .tab-navigation {
-            gap: 0.5rem;
-        }
-
-        .tab-btn {
-            padding: 0.75rem 1rem;
-            font-size: 0.9rem;
-        }
-
-        .tab-icon {
-            display: none;
-        }
+        .leaderboards-header h1 { font-size: 2rem; }
 
         .leaderboard-header,
         .leaderboard-row,
@@ -332,44 +350,14 @@
         .points-value,
         .rescues-value,
         .experience-badge,
-        .progress-container {
-            display: none;
-        }
+        .progress-container { display: none; }
 
-        .rank-badge {
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-        }
+        .rank-badge { width: 50px; height: 50px; font-size: 1.2rem; }
     }
 
     @media (max-width: 576px) {
-        .leaderboards-container {
-            margin: 1rem 0.5rem;
-        }
-
-        .leaderboards-header h1 {
-            font-size: 1.5rem;
-        }
-
-        .tab-navigation {
-            flex-direction: column;
-            border-bottom: none;
-            gap: 0.5rem;
-        }
-
-        .tab-btn {
-            padding: 0.75rem;
-            border-bottom: none;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .tab-btn.active {
-            background: rgba(255, 215, 0, 0.1);
-            border-color: #FFD700;
-        }
+        .leaderboards-container { margin: 1rem 0.5rem; }
+        .leaderboards-header h1 { font-size: 1.5rem; }
 
         .leaderboard-header,
         .leaderboard-row,
@@ -380,11 +368,7 @@
             padding: 0.5rem;
         }
 
-        .rank-badge {
-            width: 45px;
-            height: 45px;
-            font-size: 1rem;
-        }
+        .rank-badge { width: 45px; height: 45px; font-size: 1rem; }
     }
 </style>
 {% endblock %}
@@ -397,16 +381,19 @@
         <p class="leaderboards-subtitle">View top contributors across different categories</p>
     </div>
 
-    <!-- Tab Navigation -->
+    <!-- Tab Navigation — Sticky pill bar -->
     <div class="tab-navigation">
         <button class="tab-btn active" data-tab="community" onclick="switchTab('community')">
-            <span class="tab-icon">👥</span>Community
+            <span class="tab-icon">👥</span>
+            <span class="tab-label">Community</span>
         </button>
         <button class="tab-btn" data-tab="rescue" onclick="switchTab('rescue')">
-            <span class="tab-icon">🚨</span>Rescue Heroes
+            <span class="tab-icon">🚨</span>
+            <span class="tab-label">Rescue Heroes</span>
         </button>
         <button class="tab-btn" data-tab="eco" onclick="switchTab('eco')">
-            <span class="tab-icon">♻️</span>Eco Champions
+            <span class="tab-icon">♻️</span>
+            <span class="tab-label">Eco Champions</span>
         </button>
     </div>
 
