@@ -450,7 +450,7 @@
                 <option value="Nizamabad">🏆 Nizamabad</option>
                 <option value="Yadadri">🏆 Yadadri Bhuvanagiri</option>
             </select>
-            {% if current_user.points >= 2000 %}
+            {% if current_user.points >= 100 %}
             <a href="/certificate/download/{{ current_user.id }}" target="_blank"
                style="display: inline-flex; align-items: center; gap: 0.5rem;
                       padding: 0.55rem 1.4rem; border-radius: 8px; font-weight: 800; font-size: 0.9rem;
@@ -468,7 +468,7 @@
                         background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.35);
                         border: 1px dashed rgba(255,255,255,0.15); cursor: not-allowed;"
                  title="Earn 2000 points to unlock your Government Certificate">
-                🔒 Certificate ({{ current_user.points }}/2000 pts)
+                🔒 Certificate ({{ current_user.points }}/100 pts)
             </div>
             {% endif %}
         </div>
@@ -646,7 +646,7 @@
             const titleBadge = v.title ? `<div style="color: #10b981; font-size: 0.85rem; font-weight: 800; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase;">${v.title}</div>` : '';
             
             // Progress Bar logic for Government Certification
-            const certGoal = 2000;
+            const certGoal = 100;
             const pts = v.points;
             const percent = Math.min((pts / certGoal) * 100, 100);
             const progressText = pts >= certGoal ? 
