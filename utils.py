@@ -1,5 +1,7 @@
 import os
 import random
+import csv
+import shutil
 from twilio.rest import Client
 from flask import current_app
 from werkzeug.utils import secure_filename
@@ -729,3 +731,50 @@ def _calculate_user_quality_score(user):
     except Exception as e:
         print(f"User quality score error: {e}")
         return {'score': 0.50, 'analysis': 'User quality assessment unavailable'}
+
+def sync_reports_to_csv(Report):
+    """Sync all reports from the database to all_reports.csv and all_reports_export.csv"""
+    try:
+        reports = Report.query.all()
+        # Define the header based on the system fields and user requirements
+        headers = [
+            'id', 'title', 'description', 'hazard_type', 'location', 
+            'latitude', 'longitude', 'image_file', 'video_file', 'timestamp', 
+            'user_id', 'status', 'priority', 'alert_radius', 'alert_sent', 
+            'alert_sent_at', 'verified', 'confidence_score', 'ai_analysis', 
+            'verification_status', 'rejection_reason', 'scheduled_deletion', 
+            'verified_by', 'verified_at', 'likes_count', 'comments_count', 
+            'shares_count', 'views_count', 'is_local_verified'
+        ]
+        
+        # Files are saved in the project root
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(project_root, 'all_reports.csv')
+        export_path = os.path.join(project_root, 'all_reports_export.csv')
+        
+        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=headers)
+            writer.writeheader()
+            for r in reports:
+                # Convert report object to dict
+                row = {}
+                for h in headers:
+                    val = getattr(r, h, None)
+                    # Helper for relationship objects if someone passes them
+                    if h == 'author_username' and hasattr(r, 'author'):
+                        val = r.author.username if r.author else 'Unknown'
+                        
+                    if isinstance(val, (datetime)):
+                        row[h] = val.strftime('%Y-%m-%d %H:%M:%S.%f')
+                    else:
+                        row[h] = val
+                writer.writerow(row)
+        
+        # Also update the export version
+        shutil.copy2(file_path, export_path)
+        
+        print(f"✅ REAL-TIME SYNC: {len(reports)} reports exported to CSV.")
+        return True
+    except Exception as e:
+        print(f"❌ CSV Sync Error: {e}")
+        return False

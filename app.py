@@ -16,7 +16,8 @@ from forms import (
 from utils import (
     save_file, calculate_distance, analyze_plastic_image, 
     calculate_carbon_savings, calculate_points_for_activity, 
-    validate_report_accuracy_3params, send_whatsapp_message
+    validate_report_accuracy_3params, send_whatsapp_message,
+    sync_reports_to_csv
 )  # UPDATED
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -1557,6 +1558,9 @@ def report():
         check_and_award_badges(current_user)
         db.session.commit()
         
+        # Sync to CSV for real-time persistence
+        sync_reports_to_csv(Report)
+        
         # Trigger INSTANT alerts for auto-approved reports (Pulse of the City)
         if is_auto_approved:
             print(f"⚡ AUTO-DEPLOY: Triggering instant alerts for highly reliable hazard (Confidence: {report.confidence_score*100:.1f}%)")
@@ -1634,19 +1638,6 @@ def dashboard():
             'ai_analysis': report.ai_analysis,
             'status': report.status or 'active',
             'priority': report.priority or 'medium'
-        })
-    
-    if not report_data:
-        report_data = sample_reports
-    
-    return render_template('dashboard.html', 
-                         title=translate('dashboard'), 
-                         reports=report_data,
-                         total_reports=total_reports,
-                         pending_reports=pending_reports,
-                         approved_reports=approved_reports,
-                         rejected_reports=rejected_reports,
-                         high_confidence_reports=high_confidence_reports,
                          reports_with_media=reports_with_media,
                          top_hazard_type=top_hazard_type,
                          top_hazard_count=top_hazard_count)
@@ -2032,6 +2023,9 @@ def delete_report(report_id):
     
     db.session.delete(report)
     db.session.commit()
+    
+    # Sync to CSV for real-time persistence
+    sync_reports_to_csv(Report)
     
     flash('Report deleted successfully.', 'success')
     
@@ -5380,6 +5374,9 @@ def submit_sos():
         
         db.session.add(report)
         db.session.commit()
+        
+        # Sync to CSV for real-time persistence
+        sync_reports_to_csv(Report)
         
         print(f"✅ SOS Report Created: ID {report.id}")
         
