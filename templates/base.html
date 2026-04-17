@@ -558,17 +558,24 @@
             }
 
             .navbar .dropdown-menu {
-                background-color: rgba(255, 255, 255, 0.95);
+                position: static !important;
+                float: none;
+                background-color: rgba(255, 255, 255, 0.05);
                 border: none;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                box-shadow: none;
+                margin-top: 0.5rem;
+                padding-left: 0.5rem;
             }
 
             .navbar .dropdown-item {
-                color: #333 !important;
+                color: rgba(255, 255, 255, 0.8) !important;
+                padding: 0.6rem 1rem;
+                background: transparent;
             }
 
             .navbar .dropdown-item:hover {
                 color: white !important;
+                background: rgba(255, 255, 255, 0.1);
             }
 
             main {
@@ -607,10 +614,7 @@
             }
 
             .dropdown-menu {
-                max-width: 90vw;
-                left: 5vw !important;
-                right: 5vw !important;
-                transform: translateX(0) !important;
+                max-width: 100%;
             }
         }
 
