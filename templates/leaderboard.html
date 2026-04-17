@@ -541,7 +541,7 @@
                 const titleBadge = vol.title ? `<div style="color: #10b981; font-size: 0.85rem; font-weight: 800; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase;">${vol.title}</div>` : '';
                 
                 // Progress Bar logic for Government Certification
-                const certGoal = 1000;
+                const certGoal = 500;
                 const pts = vol.points;
                 const percent = Math.min((pts / certGoal) * 100, 100);
                 const progressText = pts >= certGoal ? 
