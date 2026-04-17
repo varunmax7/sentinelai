@@ -1486,10 +1486,10 @@ def view_certificate(user_id):
             status='completed'
         ).count()
         
-    is_eligible = (user.points >= 100)
+    is_eligible = (user.points >= 1000)
     
     if not is_eligible and current_user.id == user.id:
-        flash("You need 100 points to unlock your Government Certificate. Keep going!", "info")
+        flash("You need 1000 points to unlock your Government Certificate. Keep going!", "info")
         return redirect(url_for('profile', username=user.username))
     elif not is_eligible:
         flash("This user is not yet eligible for certification.", "warning")
@@ -1512,8 +1512,8 @@ def download_certificate(user_id):
         flash("You can only download your own certificate.", "danger")
         return redirect(url_for('leaderboards'))
     
-    if user.points < 100:
-        flash("You need 100 points to download your Government Certificate!", "warning")
+    if user.points < 1000:
+        flash("You need 1000 points to download your Government Certificate!", "warning")
         return redirect(url_for('leaderboards'))
     
     volunteer = Volunteer.query.filter_by(user_id=user.id).first()
