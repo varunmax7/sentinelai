@@ -59,6 +59,40 @@ FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
 # see the far side of a 24-hour event.
 FORECAST_DAYS = _env_int('DISASTER_AGENT_FORECAST_DAYS', 3)
 
+# --- District monitoring grid (disaster_agent/districts.py) -----------------
+# Built by scripts/seed_districts.py from OpenStreetMap + Wikidata + Open-Meteo.
+# Absent file = fall back to the 26 curated regions, which is a supported
+# state rather than an error.
+DISTRICTS_FILE = os.environ.get(
+    'DISASTER_AGENT_DISTRICTS_FILE', os.path.join('data', 'disaster_agent', 'districts.json'))
+# A curated city point this close to a seeded district is dropped from the
+# grid - otherwise Lucknow the region and Lucknow the district both appear in
+# the watch list, reporting the same weather twice.
+DISTRICT_DEDUPE_KM = _env_float('DISASTER_AGENT_DISTRICT_DEDUPE_KM', 25.0)
+# Open-Meteo accepts a comma-separated multi-point request, but the URI length
+# caps it: 200 points answered in 1.4s, 400 returned HTTP 414. 150 leaves room
+# for the field list to grow.
+INGEST_BATCH_SIZE = _env_int('DISASTER_AGENT_INGEST_BATCH', 200)
+INGEST_RETRY_BACKOFF_S = _env_float('DISASTER_AGENT_INGEST_RETRY_BACKOFF_S', 4.0)
+INGEST_BATCH_PAUSE_S = _env_float('DISASTER_AGENT_INGEST_BATCH_PAUSE_S', 2.0)
+
+# --- Observed fire (disaster_agent/firms.py) --------------------------------
+# NASA FIRMS thermal anomalies, folded into the wildfire score so it reflects
+# what is BURNING and not only how readily fire would spread. Needs a free
+# FIRMS_MAP_KEY; without one the score stays fire-weather-only and says so.
+FIRMS_TTL_S = _env_int('DISASTER_AGENT_FIRMS_TTL_S', 1800)
+FIRMS_DAYS = _env_int('DISASTER_AGENT_FIRMS_DAYS', 2)
+# How near a detection has to be to count towards a district's score.
+FIRMS_RADIUS_KM = _env_float('DISASTER_AGENT_FIRMS_RADIUS_KM', 40.0)
+# Detection count at which the density term saturates.
+FIRMS_SATURATION_COUNT = _env_int('DISASTER_AGENT_FIRMS_SATURATION', 25)
+# Fire radiative power (MW) treated as the top of the scale.
+FIRMS_FRP_MAX_MW = _env_float('DISASTER_AGENT_FIRMS_FRP_MAX_MW', 100.0)
+# How much the observed signal can lift the modelled FFWI. At 1.0 a confirmed
+# active fire alone can carry the score; the default keeps conditions and
+# observation as genuine co-inputs.
+FIRMS_WEIGHT = _env_float('DISASTER_AGENT_FIRMS_WEIGHT', 0.6)
+
 # --- Step 2: deterministic projection -----------------------------------------
 # A source region's hazard signal must clear this (0-100) before it is worth
 # projecting downwind at all - otherwise every lightly-breezy region "projects"

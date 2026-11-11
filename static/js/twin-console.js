@@ -401,9 +401,25 @@
     TwinConsole.prototype.decideFlag = function (flagId, decision) {
         var self = this;
         postJSON("/api/twin/flags/" + flagId, { decision: decision })
-            .then(function () {
+            .then(function (result) {
                 self.refreshFlags();
                 self.openFlagQueue();
+                // Approving can now also dispatch (TWIN_DISPATCH_ON_APPROVE).
+                // Whether messages actually went to real phones is the single
+                // most important thing to tell the analyst who just clicked,
+                // so it is said explicitly either way rather than left to be
+                // inferred from the flag turning green.
+                var sent = result && result.dispatch;
+                if (sent) {
+                    self.notice("Flag approved and dispatched: " + sent.recipients +
+                        " people in a " + sent.radius_km + " km radius notified, " +
+                        sent.whatsapp_sent + " by WhatsApp" +
+                        (sent.whatsapp_failed ? " (" + sent.whatsapp_failed + " failed)" : "") +
+                        (sent.image_caption ? " \u00b7 image: " + sent.image_caption : "") + ".");
+                } else if (result && result.dispatch_error) {
+                    self.notice("Flag " + decision + "d, but NOT dispatched: " +
+                                result.dispatch_error);
+                }
             })
             .catch(function (err) {
                 self.notice("Could not " + decision + " that flag: " + err.message +

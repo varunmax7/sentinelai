@@ -7,6 +7,7 @@ testable on its own.
 """
 
 import json
+import os
 from datetime import datetime, timedelta
 
 from flask import Blueprint, Response, render_template, request, stream_with_context
@@ -421,8 +422,40 @@ def build_blueprints(db, models, Report):
                 'reason': 'flag_%s' % flag.status,
                 'flag_id': flag.id,
             })
-        return serializers.json_response(
-            {'flag': serializers.flag_payload(flag, city.slug if city else None)}, etag=False)
+
+        # Approving now also dispatches, if the deployment asks for it
+        # (TWIN_DISPATCH_ON_APPROVE). The analyst's click is still the only
+        # thing that reaches a phone, and the cooldown and audit row still
+        # apply - what is gone is the separate second click.
+        #
+        # A dispatch failure never fails the approval: the flag has been
+        # reviewed either way, and an analyst must be able to see that it was
+        # approved but not sent, rather than have the whole action roll back.
+        dispatch_result = dispatch_error = None
+        if (decision == 'approve' and twin_config.DISPATCH_ON_APPROVE
+                and not body.get('skip_dispatch')):
+            from . import dispatch as dispatch_service
+
+            try:
+                dispatch_result = dispatch_service.send(
+                    db, models, flag, getattr(current_user, 'id', None),
+                    note=body.get('note'), force=bool(body.get('force')),
+                    base_url=_public_base_url())
+                if city is not None:
+                    publish(city.slug, 'state', {
+                        'city': city.slug, 'reason': 'flag_dispatched',
+                        'flag_id': flag.id,
+                    })
+            except dispatch_service.DispatchError as exc:
+                dispatch_error = str(exc)
+            except Exception as exc:  # noqa: BLE001 - never lose the approval
+                dispatch_error = '%s: %s' % (type(exc).__name__, exc)
+
+        return serializers.json_response({
+            'flag': serializers.flag_payload(flag, city.slug if city else None),
+            'dispatch': dispatch_result,
+            'dispatch_error': dispatch_error,
+        }, etag=False)
 
     @api.route('/flags/<int:flag_id>/dispatch/preview')
     @twin_access_required(admin=True)
@@ -455,7 +488,8 @@ def build_blueprints(db, models, Report):
         try:
             result = dispatch_service.send(
                 db, models, flag, getattr(current_user, 'id', None),
-                note=body.get('note'), force=bool(body.get('force')))
+                note=body.get('note'), force=bool(body.get('force')),
+                base_url=_public_base_url())
         except dispatch_service.DispatchError as exc:
             return serializers.json_response({'error': str(exc)}, etag=False), 400
 
@@ -1032,6 +1066,23 @@ def build_blueprints(db, models, Report):
         return serializers.json_response({'seeded': report}, etag=False)
 
     # -- small helpers ------------------------------------------------------
+    def _public_base_url():
+        """The origin Twilio can actually fetch media from.
+
+        Twilio pulls a media URL from its own servers, so a localhost origin
+        is useless - `dispatch.alert_image` discards one rather than sending a
+        message whose picture silently never loads. PUBLIC_BASE_URL is how a
+        tunnelled dev box (ngrok) or a real deployment says where it is
+        reachable.
+        """
+        configured = os.environ.get('PUBLIC_BASE_URL') or os.environ.get('BASE_URL')
+        if configured:
+            return configured.rstrip('/')
+        try:
+            return request.url_root.rstrip('/')
+        except RuntimeError:
+            return None
+
     def _float_arg(name, default):
         try:
             return float(request.args.get(name, default))

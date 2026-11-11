@@ -14,12 +14,13 @@ from forms import (
     PlasticUsageForm, CarbonSavingsForm, CommunityEventForm, ResourceListingForm
 )
 from utils import (
-    save_file, calculate_distance, analyze_plastic_image, 
-    calculate_carbon_savings, calculate_points_for_activity, 
+    save_file, calculate_distance, analyze_plastic_image,
+    calculate_carbon_savings, calculate_points_for_activity,
     validate_report_accuracy_4params, send_whatsapp_message,
     sync_reports_to_csv, fetch_live_flood_gauges,
     TELANGANA_GAUGE_STATIONS, BENGALURU_GAUGE_STATIONS
 )  # UPDATED
+from safe_routing import safe_place_whatsapp_section
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import json
@@ -113,7 +114,8 @@ def _twin_notify(user_id, message):
 
 from twin.dispatch import register_alert_channel  # noqa: E402
 
-register_alert_channel(_twin_recipients_near, _twin_notify, send_whatsapp_message)
+register_alert_channel(_twin_recipients_near, _twin_notify, send_whatsapp_message,
+                       report_model=Report)
 
 # --- AI Disaster Prediction Agent -------------------------------------------
 # Additive: one blueprint, one table, one scheduled job. Watches live wind,
@@ -1607,7 +1609,7 @@ def report():
         report.confidence_score = ai_result['confidence_score']
         report.ai_analysis = ai_result['analysis']
         
-        # --- AI AUTO-APPROVAL SYSTEM (SIH 2026 PS 26206) ---
+        # --- AI AUTO-APPROVAL SYSTEM (PS 26206) ---
         # Automatically approve reports with extremely high confidence (>= 85%)
         is_auto_approved = False
         # A re-photographed image (a picture of a screen or a printout) is a
@@ -2056,13 +2058,17 @@ def send_hazard_alerts(report, auto_assign_volunteers=False, assigner_id=None):
             
             main_sid = None
             if should_send_details:
+                safe_place_section = safe_place_whatsapp_section(
+                    report.hazard_type, report.latitude, report.longitude, hazard_radius, u_lat, u_lon
+                )
                 alert_body = (
                     f"🚨 *Sentinel AI: HAZARD ALERT*\n\n"
                     f"⚠️ *{report.hazard_type.upper().replace('_', ' ')} ALERT*\n"
                     f"A hazard has been verified {distance:.1f}km from your location.\n\n"
                     f"📝 *Title:* {report.title}\n"
                     f"ℹ️ *Details:* {report.description[:400] + '...' if len(report.description) > 400 else report.description}\n"
-                    f"📍 *Location:* {report.location}\n\n"
+                    f"📍 *Location:* {report.location}\n"
+                    f"{safe_place_section}\n"
                     f"🔗 *Dashboard:* {base_url}/dashboard\n\n"
                     f"Stay safe! 🛡️"
                 )
@@ -2786,8 +2792,22 @@ def simulation():
     reports = Report.query.all()
     return render_template('simulation.html', title='Disaster Simulation', reports=reports)
 
-SENTINEL_LLM_URL = "https://sentienl-llm.vercel.app/chat"
-SENTINEL_LLM_KEY = "panduschool"
+# Strategic-report generation is served through OpenRouter, using NVIDIA's
+# Nemotron models directly (no third-party proxy). NVIDIA_API_KEY is an
+# OpenRouter-format key (see utils.py's vision_routes for the same pattern);
+# OPENROUTER_API_KEY / KIMI_API_KEY are tried too since they reach the same
+# gateway. Models are tried in order and the first one that returns usable
+# content wins, so a saturated free-tier model degrades to the next rather
+# than to the deterministic fallback report.
+OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
+SENTINEL_NEMOTRON_MODELS = tuple(
+    m.strip() for m in os.environ.get(
+        'SENTINEL_NEMOTRON_MODELS',
+        'nvidia/nemotron-3-super-120b-a12b:free,'
+        'nvidia/nemotron-3-ultra-550b-a55b:free,'
+        'nvidia/nemotron-3.5-lightning:free'
+    ).split(',') if m.strip()
+)
 
 SENTINEL_SYSTEM_PROMPT = (
     "You are SENTINEL AI's Resilience Strategy Engine — an expert government disaster risk analyst "
@@ -2799,28 +2819,70 @@ SENTINEL_SYSTEM_PROMPT = (
     "Power, Water, Telecom, and Housing sectors — a failure in one cascades to others."
 )
 
+
+def _sentinel_openrouter_keys():
+    keys = []
+    for candidate in (os.environ.get('NVIDIA_API_KEY'),
+                      os.environ.get('OPENROUTER_API_KEY'),
+                      os.environ.get('KIMI_API_KEY')):
+        if candidate and candidate not in keys:
+            keys.append(candidate)
+    return keys
+
+
 def call_sentinel_llm(prompt: str, system: str) -> str:
-    import subprocess, json as _json
-    payload = _json.dumps({
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user",   "content": prompt}
-        ],
-        "max_tokens": 600,
-        "temperature": 0.2
-    })
-    result = subprocess.run([
-        "curl", "-s", "--max-time", "45",
-        "--resolve", "sentienl-llm.vercel.app:443:216.198.79.3",
-        "-X", "POST", SENTINEL_LLM_URL,
-        "-H", f"X-API-Key: {SENTINEL_LLM_KEY}",
-        "-H", "Content-Type: application/json",
-        "-d", payload
-    ], capture_output=True, text=True, timeout=50)
-    if result.returncode != 0:
-        raise RuntimeError(f"curl failed (code {result.returncode}): {result.stderr[:200]}")
-    data = _json.loads(result.stdout)
-    return data["message"]["content"]
+    """Generates the strategic report with an NVIDIA Nemotron model via OpenRouter."""
+    keys = _sentinel_openrouter_keys()
+    if not keys:
+        raise RuntimeError(
+            'no OpenRouter-compatible API key configured '
+            '(set NVIDIA_API_KEY, OPENROUTER_API_KEY, or KIMI_API_KEY)')
+
+    last_error = None
+    for key in keys:
+        for model in SENTINEL_NEMOTRON_MODELS:
+            try:
+                response = requests.post(
+                    OPENROUTER_CHAT_URL,
+                    headers={
+                        'Authorization': f'Bearer {key}',
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://sentinel-ai.local',
+                        'X-Title': 'Sentinel AI Resilience Strategy Engine',
+                    },
+                    json={
+                        'model': model,
+                        'messages': [
+                            {'role': 'system', 'content': system},
+                            {'role': 'user', 'content': prompt},
+                        ],
+                        'max_tokens': 2000,
+                        'temperature': 0.2,
+                        # Nemotron 3's reasoning variants burn max_tokens on
+                        # chain-of-thought and return empty content unless
+                        # capped low - same failure mode documented for the
+                        # vision models in utils.py::vision_request_kwargs.
+                        'reasoning': {'effort': 'low'},
+                    },
+                    timeout=45,
+                )
+            except Exception as exc:  # noqa: BLE001
+                last_error = f'{model}: {type(exc).__name__}: {exc}'
+                continue
+
+            if response.status_code != 200:
+                last_error = f'{model}: HTTP {response.status_code}: {response.text[:200]}'
+                continue
+
+            data = response.json()
+            choices = data.get('choices') or []
+            content = (choices[0].get('message') or {}).get('content') if choices else None
+            if content:
+                return content
+            err = (data.get('error') or {}).get('message', 'empty content')
+            last_error = f'{model}: {err}'
+
+    raise RuntimeError(last_error or 'all Nemotron routes failed')
 
 def build_resilience_prompt(params: dict) -> str:
     return f"""Zone: {params.get('zone', 'Telangana Urban')}, Rainfall: {params.get('rainfall_mm')}mm, Sea Level: {params.get('sea_level_cm')}cm, Population at Risk: {params.get('population', 'N/A')}, Active Reports: {params.get('active_reports', 0)}, URI Score: {params.get('uri_score', 'N/A')}/100, Hazard: {params.get('hazard_type', 'Flood')}, Time Horizon: {params.get('time_horizon', 'Current')}.

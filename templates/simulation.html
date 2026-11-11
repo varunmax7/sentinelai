@@ -429,11 +429,11 @@
     <div id="aiReportBox" style="margin-top: 2rem; display: none;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:1.25rem; padding-bottom:0.75rem; border-bottom:1px solid rgba(16,185,129,0.2);">
             <div class="ai-pulse"></div>
-            <span style="font-size:13px; font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:0.08em;">AI Strategic Report — Sentinel LLM</span>
+            <span style="font-size:13px; font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:0.08em;">AI Strategic Report — Sentinel AI · NVIDIA Nemotron</span>
             <span style="font-size:11px; color:#475569; margin-left:auto;">Click any card to collapse</span>
         </div>
         <p class="small text-white-50" id="aiSummaryPlaceholder" style="line-height:1.5; display:none;">
-            🧠 Sentinel LLM is generating your strategic assessment...
+            🧠 NVIDIA Nemotron is generating your strategic assessment...
         </p>
         <div id="aiReportContent" style="display:none;"></div>
     </div>
@@ -590,7 +590,7 @@
             // Step 2: Kick off LLM analysis in the background (non-blocking)
             document.getElementById('aiSummaryPlaceholder').innerHTML =
                 '<span class="ai-pulse" style="display:inline-block;margin-right:8px;"></span>' +
-                '<span style="color:#94a3b8;">🧠 Sentinel LLM analyzing — this takes ~10s...</span>';
+                '<span style="color:#94a3b8;">🧠 NVIDIA Nemotron analyzing — this takes ~10s...</span>';
             document.getElementById('aiReportBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             fetch('/api/simulate_analysis', {

@@ -243,11 +243,18 @@
 <script>
     const map = L.map('lifeline_map', {
         zoomControl: false,
-        attributionControl: false
+        attributionControl: true
     }).setView([13.0827, 80.2707], 12);
 
-    // VIBRANT COLORED TILE LAYER
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+    // FREE, KEY-LESS TILE LAYER
+    // Note: CARTO's basemap tiles (basemaps.cartocdn.com) now require a paid
+    // API key and serve a placeholder tile reading "API KEY REQUIRED" without
+    // one, which is why the map was blank. OpenStreetMap's tile server needs
+    // no key and is already used elsewhere in this app (analyst_dashboard.js).
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
 
     const listingData = {{ listings| tojson }};
     const matchData = {{ matches| tojson }};

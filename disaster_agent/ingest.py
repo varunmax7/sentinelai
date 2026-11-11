@@ -18,6 +18,7 @@ lat/lon lists in a single request.
 """
 
 import math
+import time
 
 import requests
 
@@ -36,15 +37,63 @@ HOURLY_FIELDS = (
 )
 
 
-def fetch_region_signals(regions=None, timeout=None):
-    """One live signal dict per region. Never raises - a failed HTTP call
+# Last fetch's coverage. A partial fetch and a complete one used to be
+# indistinguishable downstream: the panel said "watching 400 districts" and
+# looked perfectly healthy while 394 were missing because the upstream free
+# tier had been exhausted. The shortfall is now reported, not swallowed.
+_COVERAGE = {'requested': 0, 'received': 0, 'error': None}
 
-    degrades to an empty list, and the caller (the projection step) treats no
-    signal as no hotspot rather than crashing the cycle.
+
+def last_coverage():
+    return dict(_COVERAGE)
+
+
+def fetch_region_signals(regions=None, timeout=None):
+    """One live signal dict per watched point. Never raises - a failed HTTP
+
+    call degrades to an empty list, and the caller (the projection step)
+    treats no signal as no hotspot rather than crashing the cycle.
+
+    Batched: the grid is ~800 districts now, and Open-Meteo's multi-point
+    request is capped by URI length - measured directly, 200 points answered
+    in 1.4s and 400 returned HTTP 414. One failed batch loses its own points,
+    not the whole cycle.
     """
-    regions = regions if regions is not None else as_dicts()
+    if regions is None:
+        from .districts import monitoring_grid
+        regions = monitoring_grid()
     if not regions:
         return []
+
+    batch = max(1, agent_config.INGEST_BATCH_SIZE)
+    if len(regions) > batch:
+        _COVERAGE.update({'requested': len(regions), 'received': 0, 'error': None})
+        signals = []
+        for start in range(0, len(regions), batch):
+            chunk = regions[start:start + batch]
+            # Open-Meteo rate-limits a rapid burst of batches. Without a retry
+            # this silently returned only the first two batches of six - and
+            # because the grid is ordered by state, that looked like "every
+            # hazard in India is in Chhattisgarh" rather than like a failure.
+            got = None
+            for attempt in range(3):
+                got = fetch_region_signals(chunk, timeout=timeout)
+                if got:
+                    break
+                time.sleep(agent_config.INGEST_RETRY_BACKOFF_S * (attempt + 1))
+            signals.extend(got or [])
+            # Space the batches. Open-Meteo throttles a rapid burst far more
+            # readily than it throttles the same number of calls spread out,
+            # and the whole grid only has to be fetched once per cycle.
+            time.sleep(agent_config.INGEST_BATCH_PAUSE_S)
+        _COVERAGE['received'] = len(signals)
+        if len(signals) < len(regions):
+            _COVERAGE['error'] = (
+                'Only %d of %d watched points returned data. The weather API '
+                'refused the rest - usually its hourly free-tier limit. The '
+                'ranking below covers the points that answered, not the whole '
+                'grid.' % (len(signals), len(regions)))
+        return signals
 
     params = {
         'latitude': ','.join('%.4f' % r['lat'] for r in regions),
@@ -74,6 +123,20 @@ def fetch_region_signals(regions=None, timeout=None):
         signal = _parse_entry(region, entry)
         if signal is not None:
             signals.append(signal)
+
+    # One FIRMS fetch for the whole country, reused across every point in this
+    # batch - not one request per district against a rate-limited API.
+    try:
+        from . import firms
+
+        rows = firms.detections()
+        if rows:
+            for signal in signals:
+                signal['fire_detections'] = firms.summarise_near(
+                    signal['lat'], signal['lon'], rows=rows)
+    except Exception:  # noqa: BLE001 - observed fire is an enhancement, never a blocker
+        pass
+
     return signals
 
 
@@ -103,6 +166,11 @@ def _parse_entry(region, entry):
         'rain_forecast_3h_mm': _rain_ahead(entry, hours=3),
         'fire_weather_index': fosberg_fire_weather_index(
             temperature_c, humidity_pct, wind_speed_kmh),
+        # Observed fire, kept separate from the modelled index above. One is
+        # "how readily would fire spread here", the other is "something is
+        # burning here" - they must stay distinguishable in the payload even
+        # though the score combines them.
+        'fire_detections': None,
         # Carried through untouched so window.py can re-score each hour with
         # the same function that produced the headline number above.
         'hourly': entry.get('hourly') or {},

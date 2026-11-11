@@ -1794,7 +1794,10 @@
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
                         <div>
                             <span class="da-region-name" style="font-size:12.5px;">${s.region_name}</span>
-                            <span class="da-region-meta"> · ${s.state || ''} · ${hazardLabel(s.hazard_type)}</span>
+                            <span class="da-region-meta"> · ${s.state || ''} · ${hazardLabel(s.hazard_type)}${
+                                s.scale === 'district' ? ' · district' : ''}${
+                                s.fire_observed ? ' · 🔥 ' + s.fire_detections + ' satellite fire detection'
+                                    + (s.fire_detections > 1 ? 's' : '') : ''}</span>
                         </div>
                         <span class="da-region-meta">${bits.join(' · ')}</span>
                     </div>
@@ -1814,7 +1817,13 @@
             list.innerHTML = `
                 <div style="text-align:center; padding: 4px 0 12px; color:#64748b; font-size:12px;">
                     ✅ Nothing has crossed the alert threshold. Here is what the agent is currently watching
-                    across ${data.regions_monitored || ''} regions - the strongest signal is
+                    across ${data.districts_monitored
+                        ? data.districts_monitored + ' districts'
+                        : (data.regions_monitored || '') + ' regions'}${
+                        (data.coverage && data.coverage.error)
+                            ? ' <b style="color:#fbbf24;">(partial — ' + data.coverage.received
+                              + ' of ' + data.coverage.requested + ' returned data)</b>' : ''
+                    } - ranked worst first. The strongest signal is
                     <b style="color:#94a3b8;">${rows[0].strength}/100</b>, an alert fires above
                     <b style="color:#94a3b8;">${data.source_threshold}</b>. Sending an alert below
                     threshold is a judgment call an analyst makes - the agent will not do it on its own.

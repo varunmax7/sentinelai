@@ -121,7 +121,22 @@ def source_strengths(signal):
         strengths['heat_wave'] = _normalise(temp, HEAT_MIN_C, HEAT_MAX_C)
 
     if 'wildfire' in biased and ffwi is not None:
-        strengths['wildfire'] = ffwi
+        # FFWI alone answers "how readily would fire spread here", which is a
+        # forecast of conditions and says nothing about whether anything is
+        # actually alight. NASA FIRMS answers the other half. Combined with
+        # `max`, not an average: a confirmed active fire must never be pulled
+        # DOWN by calm weather, and dangerous weather must never be pulled
+        # down by an absence of detections - which is also what a cloudy
+        # satellite pass looks like.
+        from . import config as _agent_config
+        from . import firms as _firms
+
+        observed = signal.get('fire_detections')
+        if observed and observed.get('count'):
+            boost = _firms.observed_boost(observed) * _agent_config.FIRMS_WEIGHT
+            strengths['wildfire'] = _clamp(max(ffwi, boost))
+        else:
+            strengths['wildfire'] = ffwi
 
     return strengths
 

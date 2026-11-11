@@ -97,6 +97,14 @@ def build_blueprint(db, models):
                     'region_slug': signal['slug'],
                     'region_name': signal['name'],
                     'state': signal['state'],
+                    # 'district' or 'region', so the UI can say which grid a
+                    # row came from rather than implying they are the same.
+                    'scale': signal.get('scale', 'region'),
+                    'elevation_m': signal.get('elevation_m'),
+                    # Observed fire, reported separately from the modelled
+                    # fire-weather index below - they are different claims.
+                    'fire_detections': (signal.get('fire_detections') or {}).get('count') or 0,
+                    'fire_observed': bool((signal.get('fire_detections') or {}).get('count')),
                     'latitude': signal['lat'],
                     'longitude': signal['lon'],
                     'hazard_type': hazard_type,
@@ -117,12 +125,24 @@ def build_blueprint(db, models):
                 })
         ranked.sort(key=lambda r: r['strength'], reverse=True)
 
-        limit = min(request.args.get('limit', 8, type=int) or 8, 26)
+        # The grid is ~800 districts now, so the old cap of 26 would have hidden
+        # everything below the worst few. Still bounded - this is a watch list,
+        # not a data dump - but bounded at something an analyst can scroll.
+        limit = min(request.args.get('limit', 40, type=int) or 40, 200)
+        from . import districts as district_grid
+        from . import firms
+
         return jsonify({
             'signals': ranked[:limit],
             'regions_monitored': len(raw_signals),
+            'districts_monitored': sum(1 for x in raw_signals if x.get('scale') == 'district'),
+            'grid': 'districts' if district_grid.available() else 'curated regions',
             'source_threshold': agent_config.SOURCE_SIGNAL_MIN,
             'hotspot_threshold': agent_config.HOTSPOT_THRESHOLD,
+            'observed_fire': {'available': firms.available(), 'reason': firms.last_error()},
+            # Says outright when the grid was only partially fetched, so a
+            # short list never passes for a complete one.
+            'coverage': ingest.last_coverage(),
         })
 
     @api.route('/run', methods=['POST'])

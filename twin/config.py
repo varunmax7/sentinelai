@@ -239,17 +239,33 @@ AGENT_ENABLED = _env_flag('TWIN_AGENT_ENABLED', True)
 # uses for image analysis. KIMI_API_KEY is checked first because that is what
 # this deployment sets; the other names are accepted so a differently-configured
 # environment does not have to be renamed to work.
-LLM_API_KEY = (os.environ.get('KIMI_API_KEY')
-               or os.environ.get('OPENROUTER_API_KEY')
-               or os.environ.get('TWIN_LLM_API_KEY')
-               or '')
+# OpenAI first when its key is present, OpenRouter behind it. LLM_PROVIDER
+# picks the endpoint and request shape in twin/llm.py - the two APIs are
+# close but not identical (see that module).
+LLM_PROVIDER = (os.environ.get('TWIN_LLM_PROVIDER') or
+                ('openai' if os.environ.get('OPENAI_API_KEY') else 'openrouter')).strip().lower()
+
+LLM_API_KEY = (os.environ.get('OPENAI_API_KEY') if LLM_PROVIDER == 'openai' else None) \
+              or os.environ.get('KIMI_API_KEY') \
+              or os.environ.get('OPENROUTER_API_KEY') \
+              or os.environ.get('TWIN_LLM_API_KEY') \
+              or ''
 
 # Default is the non-reasoning Kimi. The reasoning variants (kimi-k2.5,
 # kimi-k2-thinking) work too, but they spend most of max_tokens on chain of
 # thought - about 5x the tokens for identical extraction output, and an empty
 # `content` field if the budget runs out. This is classification and
 # summarisation at temperature 0; there is nothing here to reason about.
-AGENT_MODEL = os.environ.get('TWIN_AGENT_MODEL', 'moonshotai/kimi-k2-0905')
+# gpt-4.1-mini is the default on OpenAI: measured against this agent's own
+# Brief/ExtractionResult schemas it answers in 1.7-2.8s for ~380-580 tokens.
+# gpt-5-nano is NOT the default despite being a tempting "nano" - it is a
+# reasoning model and spent all 2000 tokens thinking, returning empty content
+# with finish_reason=length. It does work, but needs an 8000-token budget and
+# 15.7s for the same answer. Pin it with TWIN_AGENT_MODEL if you want it.
+_DEFAULT_MODEL = {'openai': 'gpt-4.1-mini'}.get(LLM_PROVIDER, 'moonshotai/kimi-k2-0905')
+AGENT_MODEL = (os.environ.get('TWIN_AGENT_MODEL')
+               or os.environ.get('TWIN_LLM_MODEL')
+               or _DEFAULT_MODEL)
 LLM_TIMEOUT_S = _env_float('TWIN_LLM_TIMEOUT_S', 90.0)
 # Risk score above which a cluster becomes a flag for an admin to review.
 FLAG_THRESHOLD = _env_float('TWIN_FLAG_THRESHOLD', 60.0)
@@ -342,6 +358,23 @@ DISPATCH_MAX_RADIUS_KM = _env_float('TWIN_DISPATCH_MAX_RADIUS_KM', 25.0)
 # recipients, so someone just outside the flagged cells is not silently
 # skipped by an exact-boundary search.
 DISPATCH_BUFFER_KM = _env_float('TWIN_DISPATCH_BUFFER_KM', 1.5)
+
+# Attach a picture of the alert area to the WhatsApp message. Twilio fetches
+# the URL from its own servers, so only a publicly reachable one is ever used -
+# a localhost path would silently produce an image-less message.
+DISPATCH_ATTACH_IMAGE = _env_flag('TWIN_DISPATCH_ATTACH_IMAGE', True)
+DISPATCH_IMAGE_RADIUS_KM = _env_float('TWIN_DISPATCH_IMAGE_RADIUS_KM', 5.0)
+DISPATCH_IMAGE_SPAN_M = _env_int('TWIN_DISPATCH_IMAGE_SPAN_M', 1200)
+
+# Dispatch the moment an analyst approves a flag, instead of requiring a
+# second, separate "Dispatch" click.
+#
+# This is a deliberate reduction in confirmation steps, requested by the
+# owner. Approve still means a human looked at the flag and decided - there is
+# still no scheduler->phone path, and the cooldown and audit row still apply.
+# What it removes is the second chance to change your mind between "this is
+# real" and "tell the public". Set to 0 to put that step back.
+DISPATCH_ON_APPROVE = _env_flag('TWIN_DISPATCH_ON_APPROVE', True)
 
 # --- Access control --------------------------------------------------------
 # Roles allowed to read twin data. Add roles here, never on individual routes.

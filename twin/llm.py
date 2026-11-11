@@ -21,7 +21,41 @@ import requests
 
 from . import config as twin_config
 
-ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
+OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
+OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+
+# OpenAI's reasoning families bill their chain of thought against the
+# completion budget and return EMPTY content with finish_reason="length" when
+# it runs out. Measured on this agent's own Brief schema: gpt-5-nano spent all
+# 2000 tokens reasoning and returned "", then answered correctly at 8000.
+_REASONING_PREFIXES = ('gpt-5', 'o1', 'o3', 'o4')
+REASONING_MAX_TOKENS = 8000
+
+
+def _is_reasoning(model):
+    return str(model).startswith(_REASONING_PREFIXES)
+
+
+def _openai_strict_schema(node):
+    """Pydantic's JSON schema, adjusted for OpenAI's strict mode.
+
+    OpenAI requires every object to carry `additionalProperties: false` and to
+    list every property in `required`. Pydantic emits neither, so a schema that
+    OpenRouter accepts verbatim is rejected by OpenAI with
+    "'additionalProperties' is required to be supplied and to be false".
+    Verified against Brief and ExtractionResult.
+    """
+    if isinstance(node, dict):
+        if node.get('type') == 'object' or 'properties' in node:
+            node.setdefault('additionalProperties', False)
+            if 'properties' in node:
+                node['required'] = list(node['properties'].keys())
+        for value in node.values():
+            _openai_strict_schema(value)
+    elif isinstance(node, list):
+        for value in node:
+            _openai_strict_schema(value)
+    return node
 
 # OpenRouter asks for these so usage shows up attributed rather than anonymous.
 _HEADERS_EXTRA = {
@@ -33,9 +67,15 @@ _HEADERS_EXTRA = {
 class StructuredLLM(object):
     """Calls one model and validates the reply against a Pydantic schema."""
 
-    def __init__(self, api_key=None, model=None, timeout=None, max_tokens=2000):
+    def __init__(self, api_key=None, model=None, timeout=None, max_tokens=2000,
+                 provider=None):
         self.api_key = api_key or twin_config.LLM_API_KEY
         self.model = model or twin_config.AGENT_MODEL
+        self.provider = (provider or twin_config.LLM_PROVIDER or 'openrouter').lower()
+        # A reasoning model needs room for its chain of thought on top of the
+        # answer, or it returns nothing at all.
+        if _is_reasoning(self.model):
+            max_tokens = max(max_tokens, REASONING_MAX_TOKENS)
         self.timeout = timeout or twin_config.LLM_TIMEOUT_S
         self.max_tokens = max_tokens
         self.calls = 0
@@ -60,21 +100,35 @@ class StructuredLLM(object):
         # cannot satisfy exactly; retrying non-strict gets a usable answer from
         # those rather than dropping straight to the offline fallback.
         for strict in (True, False):
+            json_schema = schema.model_json_schema()
             payload = {
                 'model': self.model,
-                # Extraction and summarisation, not creative writing.
-                'temperature': 0,
-                'max_tokens': self.max_tokens,
                 'messages': messages,
                 'response_format': {
                     'type': 'json_schema',
                     'json_schema': {
                         'name': schema.__name__,
                         'strict': strict,
-                        'schema': schema.model_json_schema(),
+                        'schema': json_schema,
                     },
                 },
             }
+            if self.provider == 'openai':
+                import copy
+
+                payload['response_format']['json_schema']['schema'] = \
+                    _openai_strict_schema(copy.deepcopy(json_schema))
+                if _is_reasoning(self.model):
+                    # These reject `max_tokens` and a non-default temperature
+                    # outright - a 400, not a warning.
+                    payload['max_completion_tokens'] = self.max_tokens
+                else:
+                    payload['max_tokens'] = self.max_tokens
+                    payload['temperature'] = 0
+            else:
+                # Extraction and summarisation, not creative writing.
+                payload['temperature'] = 0
+                payload['max_tokens'] = self.max_tokens
             parsed = self._attempt(schema, payload)
             if parsed is not None:
                 return parsed
@@ -83,11 +137,15 @@ class StructuredLLM(object):
     def _attempt(self, schema, payload):
         try:
             self.calls += 1
+            endpoint = (OPENAI_ENDPOINT if self.provider == 'openai'
+                        else OPENROUTER_ENDPOINT)
+            headers = {'Authorization': 'Bearer %s' % self.api_key,
+                       'Content-Type': 'application/json'}
+            if self.provider != 'openai':
+                headers.update(_HEADERS_EXTRA)
             response = requests.post(
-                ENDPOINT,
-                headers=dict(_HEADERS_EXTRA,
-                             **{'Authorization': 'Bearer %s' % self.api_key,
-                                'Content-Type': 'application/json'}),
+                endpoint,
+                headers=headers,
                 json=payload,
                 timeout=self.timeout,
             )
